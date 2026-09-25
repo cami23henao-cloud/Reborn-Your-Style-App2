@@ -120,8 +120,9 @@ export function setActiveSession(account: StoredUserAccount | null): void {
 export async function registerVerifiedUser(params: {
   name: string;
   email: string;
-  password: string;
+  password?: string;
   role: 'cliente' | 'profesional';
+  avatarUrl?: string;
   phone?: string;
   department?: string;
   municipality?: string;
@@ -140,7 +141,7 @@ export async function registerVerifiedUser(params: {
     return { success: false, error: emailVal.error || 'Correo electrónico inválido.' };
   }
 
-  if (!password || password.length < 6) {
+  if (password !== undefined && password !== '' && password.length < 6) {
     return { success: false, error: 'La contraseña debe tener al menos 6 caracteres.' };
   }
 
@@ -162,7 +163,8 @@ export async function registerVerifiedUser(params: {
   }
 
   // Cryptographically hash password (no plain passwords stored)
-  const passwordHash = await computeSHA256(password);
+  const passwordToHash = password && password.length >= 6 ? password : `oauth_${Date.now()}_${Math.random()}`;
+  const passwordHash = await computeSHA256(passwordToHash);
 
   const userId = `usr-${Date.now()}`;
   const username = `@${nameClean.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
@@ -172,7 +174,7 @@ export async function registerVerifiedUser(params: {
     name: nameClean,
     email: emailClean,
     role: params.role,
-    avatarUrl: '', // Neutral space by default: no invented or automatic profile pictures
+    avatarUrl: params.avatarUrl || '', // Google avatar or clean empty
     username,
     bio: params.role === 'profesional' ? 'Taller de confección y transformación textil' : '',
     location: params.municipality && params.department ? `${params.municipality}, ${params.department}` : 'Colombia',
@@ -556,6 +558,61 @@ export async function loginOrRegisterWithGoogle(params: {
   setActiveSession(newUser);
 
   return { success: true, user: newUser, isNewUser: true };
+}
+
+/**
+ * Strict Google Login for Existing Accounts Only:
+ * Strictly checks that the account already exists in Reborn Your Style database.
+ * NEVER creates automatic accounts, profiles, or dummy data.
+ */
+export async function loginWithGoogleExistingOnly(email: string): Promise<{
+  success: boolean;
+  notRegistered?: boolean;
+  error?: string;
+  user?: StoredUserAccount;
+}> {
+  const emailClean = (email || '').trim().toLowerCase();
+  if (!emailClean) {
+    return {
+      success: false,
+      error: 'Por favor selecciona una cuenta de Google válida.',
+    };
+  }
+
+  const check = validateEmailFormat(emailClean);
+  if (!check.isValid) {
+    return {
+      success: false,
+      error: 'El formato de correo de Google no es válido.',
+    };
+  }
+
+  const db = getUsersDatabase();
+  const existing = db.find((u) => u.email.trim().toLowerCase() === emailClean);
+
+  if (!existing) {
+    return {
+      success: false,
+      notRegistered: true,
+      error: 'Esta cuenta de Google no está registrada en Reborn Your Style. Crea una cuenta antes de iniciar sesión.',
+    };
+  }
+
+  if (existing.profile.accountStatus === 'bloqueado') {
+    return {
+      success: false,
+      error: `Esta cuenta ha sido bloqueada. Motivo: ${existing.profile.blockReason || 'Incumplimiento de normas'}.`,
+    };
+  }
+  if (existing.profile.accountStatus === 'suspendido') {
+    return {
+      success: false,
+      error: `Esta cuenta se encuentra temporalmente suspendida. Motivo: ${existing.profile.suspensionReason || 'En revisión'}.`,
+    };
+  }
+
+  setActiveSession(existing);
+  return { success: true, user: existing };
 }
 
 /**

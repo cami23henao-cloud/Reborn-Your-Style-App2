@@ -386,3 +386,82 @@ export const logout = async (req: Request, res: Response) => {
     message: 'Sesión cerrada exitosamente.',
   });
 };
+
+/**
+ * Check if user is registered in database
+ * POST /api/auth/check-user
+ */
+export const checkUser = async (req: Request, res: Response) => {
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  const { email } = req.body;
+  const cleanEmail = (email || '').trim().toLowerCase();
+
+  if (!cleanEmail) {
+    return res.status(200).json({
+      success: false,
+      exists: false,
+      message: 'Correo no válido',
+    });
+  }
+
+  const exists =
+    usersStore.has(cleanEmail) ||
+    cleanEmail === 'admin@rebornyourstyle.com' ||
+    cleanEmail === 'admin@rebornstyle.co';
+
+  return res.status(200).json({
+    success: true,
+    exists,
+    message: exists
+      ? 'Cuenta registrada en Reborn Your Style.'
+      : 'Esta cuenta de Google no está registrada en Reborn Your Style. Crea una cuenta antes de iniciar sesión.',
+  });
+};
+
+/**
+ * Strict Google Login for Existing Users Only
+ * POST /api/auth/google/login
+ */
+export const googleLogin = async (req: Request, res: Response) => {
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  try {
+    const { email } = req.body;
+    const cleanEmail = (email || '').trim().toLowerCase();
+
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      return res.status(200).json({
+        success: false,
+        message: 'Por favor selecciona una cuenta de Google válida.',
+      });
+    }
+
+    const user = usersStore.get(cleanEmail);
+    if (!user) {
+      return res.status(200).json({
+        success: false,
+        notRegistered: true,
+        message: 'Esta cuenta de Google no está registrada en Reborn Your Style. Crea una cuenta antes de iniciar sesión.',
+      });
+    }
+
+    const token = generateToken(user);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Inicio de sesión con Google exitoso.',
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
+  } catch (error: any) {
+    console.error('[AuthController.googleLogin Error]:', error.message);
+    return res.status(200).json({
+      success: false,
+      message: 'No pudimos procesar la autenticación con Google. Por favor intenta nuevamente.',
+    });
+  }
+};

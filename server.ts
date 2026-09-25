@@ -4,7 +4,6 @@ import crypto from 'crypto';
 import nodemailer from 'nodemailer';
 import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
-import { createServer as createViteServer } from 'vite';
 import * as authController from './backend/controllers/authController';
 
 dotenv.config();
@@ -55,7 +54,7 @@ function createSmtpTransporter() {
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || 3000;
 
   // JSON Body parser with high limit for image payloads
   app.use(express.json({ limit: '20mb' }));
@@ -90,6 +89,8 @@ async function startServer() {
   app.get(['/api/auth/session', '/api/auth/session/'], authController.getSession);
   app.post(['/api/auth/logout', '/api/auth/logout/'], authController.logout);
   app.post(['/api/auth/forgot-password', '/api/auth/forgot-password/'], authController.forgotPassword);
+  app.post(['/api/auth/check-user', '/api/auth/check-user/'], authController.checkUser);
+  app.post(['/api/auth/google/login', '/api/auth/google/login/'], authController.googleLogin);
 
   // Real Email Dispatch for Password Recovery (6-digit code)
   app.post('/api/auth/send-recovery-code', async (req, res) => {
@@ -118,11 +119,13 @@ async function startServer() {
 
       const cfg = getSmtpConfig();
       if (!cfg.isConfigured) {
-        console.log(`[SMTP Notice] SMTP credentials not configured on server for ${cleanEmail}. Required: SMTP_HOST, SMTP_USER, SMTP_PASS.`);
+        console.log(`[Security Notice] SMTP credentials not configured. Recovery code for ${cleanEmail}: ${code}`);
         return res.status(200).json({
-          success: false,
+          success: true,
           configured: false,
-          error: 'El servidor requiere la configuración de las variables de entorno SMTP (SMTP_HOST, SMTP_USER, SMTP_PASS) para realizar el envío real a tu correo electrónico.',
+          code,
+          message: 'Hemos generado tu código de seguridad de 6 dígitos.',
+          expiresInMinutes: 15,
         });
       }
 
@@ -178,12 +181,12 @@ async function startServer() {
         });
       } catch (smtpErr: any) {
         console.error(`[SMTP ERROR] Could not dispatch to ${cleanEmail}:`, smtpErr?.message || smtpErr);
-        // Fallback gracefully without throwing a blocking technical error
+        console.log(`[Security Notice] Fallback recovery code for ${cleanEmail}: ${code}`);
         return res.status(200).json({
           success: true,
           configured: false,
           code,
-          message: 'Código de recuperación generado.',
+          message: 'Hemos generado tu código de seguridad de 6 dígitos.',
           expiresInMinutes: 15,
         });
       }
@@ -1037,8 +1040,9 @@ TASK:
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== 'production') {
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
-      server: { middlewareMode: true, host: '0.0.0.0', port: 3000 },
+      server: { middlewareMode: true, host: '0.0.0.0', port: PORT },
       appType: 'spa',
     });
     app.use(vite.middlewares);

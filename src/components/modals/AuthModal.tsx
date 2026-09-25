@@ -4,9 +4,10 @@ import {
   registerVerifiedUser,
   loginUser,
   loginAdministrator,
-  loginOrRegisterWithGoogle,
+  loginWithGoogleExistingOnly,
   updateUserPassword,
   isAccountRegistered,
+  getUsersDatabase,
   StoredUserAccount
 } from '../../services/userStore';
 import {
@@ -32,7 +33,6 @@ async function safeApiCall<T = any>(
 
     const text = await res.text();
 
-    // Check if the response was HTML or reverse proxy intercept
     if (text.trim().startsWith('<') || text.includes('<!DOCTYPE') || text.includes('<!doctype') || text.includes('<html')) {
       return {
         success: false,
@@ -77,7 +77,7 @@ interface AuthModalProps {
   initialMode?: 'login' | 'register';
 }
 
-type AuthViewMode = 'login' | 'register' | 'forgot_password' | 'google_prompt' | 'admin';
+type AuthViewMode = 'login' | 'register' | 'forgot_password' | 'admin';
 
 export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
@@ -106,12 +106,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
-  const [devRecoveryCode, setDevRecoveryCode] = useState<string | null>(null);
   const [resendCooldown, setResendCooldown] = useState(0);
 
-  // Google Direct Prompt
-  const [googleEmailInput, setGoogleEmailInput] = useState('');
-  const [googleNameInput, setGoogleNameInput] = useState('');
+  // Google OAuth State & Strict Existing User Check
+  const [showGoogleConfig, setShowGoogleConfig] = useState(false);
+  const [googleClientIdInput, setGoogleClientIdInput] = useState('');
+  const [unregisteredGoogleEmail, setUnregisteredGoogleEmail] = useState('');
+  const [showGoogleNotRegistered, setShowGoogleNotRegistered] = useState(false);
 
   // Admin access
   const [adminEmail, setAdminEmail] = useState('');
@@ -141,9 +142,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setConfirmNewPassword('');
       setShowNewPassword(false);
       setShowConfirmNewPassword(false);
-      setDevRecoveryCode(null);
-      setGoogleEmailInput('');
-      setGoogleNameInput('');
+      setShowGoogleConfig(false);
+      setGoogleClientIdInput('');
+      setUnregisteredGoogleEmail('');
+      setShowGoogleNotRegistered(false);
       setAdminEmail('');
       setAdminPassword('');
       setErrorMsg('');
@@ -160,44 +162,121 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   }, [resendCooldown]);
 
+  // Helper to process an authenticated Google Email strictly against Reborn Your Style database
+  const processGoogleEmail = async (
+    rawEmail: string,
+    extraProfile?: { name?: string; picture?: string }
+  ) => {
+    const cleanEmail = (rawEmail || '').trim().toLowerCase();
+
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      setErrorMsg('Por favor selecciona una cuenta de Google válida.');
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    setErrorMsg('');
+    setSuccessMsg('');
+    setShowGoogleNotRegistered(false);
+
+    // 1. Check in local registered database
+    let isRegistered = isAccountRegistered(cleanEmail);
+
+    // 2. Also verify in backend database
+    if (!isRegistered) {
+      const checkRes = await safeApiCall<{ exists: boolean }>('/api/auth/check-user', 'POST', {
+        email: cleanEmail,
+      });
+      if (checkRes.success && checkRes.data?.exists) {
+        isRegistered = true;
+      }
+    }
+
+    // A) If user is in REGISTRATION mode:
+    if (viewMode === 'register') {
+      if (isRegistered) {
+        setIsLoading(false);
+        setErrorMsg('Esta cuenta de Google ya está registrada en Reborn Your Style. Por favor inicia sesión.');
+        return;
+      }
+
+      // Create new verified account with chosen role and real Google details
+      try {
+        const regRes = await registerVerifiedUser({
+          name: extraProfile?.name || cleanEmail.split('@')[0],
+          email: cleanEmail,
+          role: selectedRole,
+          avatarUrl: extraProfile?.picture,
+        });
+
+        setIsLoading(false);
+        if (regRes.success && regRes.user) {
+          setSuccessMsg(`¡Bienvenido(a) a Reborn Your Style, ${regRes.user.name}!`);
+          setTimeout(() => {
+            onLoginAccount(regRes.user!);
+            onClose();
+          }, 600);
+        } else {
+          setErrorMsg(regRes.error || 'No fue posible registrar la cuenta con Google.');
+        }
+      } catch {
+        setIsLoading(false);
+        setErrorMsg('No pudimos procesar el registro con Google. Inténtalo nuevamente.');
+      }
+      return;
+    }
+
+    // B) If user is in LOGIN mode:
+    // STRICT RULE: If the account does NOT exist in Reborn Your Style:
+    // - Deny access
+    // - Do NOT create an account
+    // - Do NOT create a profile
+    // - Do NOT login
+    // - Show the exact professional message requested
+    if (!isRegistered) {
+      setIsLoading(false);
+      setUnregisteredGoogleEmail(cleanEmail);
+      setShowGoogleNotRegistered(true);
+      setErrorMsg('Esta cuenta de Google no está registrada en Reborn Your Style. Crea una cuenta antes de iniciar sesión.');
+      return;
+    }
+
+    // Account exists: login securely to the existing account
+    try {
+      const result = await loginWithGoogleExistingOnly(cleanEmail);
+      setIsLoading(false);
+
+      if (result.success && result.user) {
+        setSuccessMsg(`¡Bienvenido(a) de nuevo, ${result.user.name}!`);
+        setTimeout(() => {
+          onLoginAccount(result.user!);
+          onClose();
+        }, 500);
+      } else {
+        setErrorMsg(result.error || 'No fue posible iniciar sesión con esta cuenta de Google.');
+      }
+    } catch {
+      setIsLoading(false);
+      setErrorMsg('No pudimos procesar la autenticación. Por favor intenta nuevamente.');
+    }
+  };
+
   // Listen for Google OAuth postMessage if popup flow is used
   useEffect(() => {
     const handleGoogleMessage = async (event: MessageEvent) => {
       if (event.data?.type === 'GOOGLE_AUTH_SUCCESS' && event.data?.user) {
         const gUser = event.data.user;
-        setIsLoading(true);
-        setErrorMsg('');
-        try {
-          const result = await loginOrRegisterWithGoogle({
-            email: gUser.email,
-            name: gUser.name,
-            avatarUrl: gUser.picture,
-            role: selectedRole,
-          });
-          setIsLoading(false);
-          if (result.success && result.user) {
-            setSuccessMsg(
-              result.isNewUser
-                ? `¡Bienvenido(a) a Reborn Your Style, ${result.user.name}!`
-                : `¡Hola de nuevo, ${result.user.name}!`
-            );
-            setTimeout(() => {
-              onLoginAccount(result.user!);
-              onClose();
-            }, 600);
-          } else {
-            setErrorMsg(result.error || 'No pudimos completar el acceso con Google.');
-          }
-        } catch {
-          setIsLoading(false);
-          setErrorMsg('No pudimos procesar la cuenta de Google. Intenta nuevamente.');
-        }
+        await processGoogleEmail(gUser.email);
+      } else if (event.data?.type === 'GOOGLE_AUTH_ERROR') {
+        setIsLoading(false);
+        setErrorMsg('Acceso con Google no completado: ' + (event.data.error || 'Operación cancelada'));
       }
     };
 
     window.addEventListener('message', handleGoogleMessage);
     return () => window.removeEventListener('message', handleGoogleMessage);
-  }, [selectedRole, onLoginAccount, onClose]);
+  }, [onLoginAccount, onClose]);
 
   if (!isOpen) return null;
 
@@ -281,6 +360,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     setIsLoading(true);
     try {
+      // Sync with backend API
+      await safeApiCall('/api/auth/register', 'POST', {
+        name: cleanName,
+        email: cleanEmail,
+        password,
+        role: selectedRole,
+      });
+
+      // Save in persistent verified users database
       const res = await registerVerifiedUser({
         name: cleanName,
         email: cleanEmail,
@@ -305,12 +393,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
 
-  // 3. Initiate "Continuar con Google"
+  // 3. Initiate "Continuar con Google" with prompt=select_account
   const handleGoogleClick = async () => {
     setErrorMsg('');
     setSuccessMsg('');
+    setShowGoogleNotRegistered(false);
 
-    // Check if Google Identity Services GIS token client is available in window
+    // Check if Google Client ID is configured
     let effectiveClientId =
       (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID ||
       localStorage.getItem('reborn_google_client_id') ||
@@ -325,16 +414,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     const gClient = (window as any).google?.accounts?.oauth2;
 
+    // If official Google Identity Services client is available with client_id, open official Google selector
     if (gClient && effectiveClientId) {
       try {
         setIsLoading(true);
         const tokenClient = gClient.initTokenClient({
           client_id: effectiveClientId,
           scope: 'email profile openid',
+          prompt: 'select_account', // Explicitly request account chooser
           callback: async (tokenResponse: any) => {
             if (tokenResponse.error) {
               setIsLoading(false);
-              setErrorMsg('Acceso con Google cancelado o no completado: ' + (tokenResponse.error_description || tokenResponse.error));
+              setErrorMsg('Acceso con Google cancelado o no completado.');
               return;
             }
             if (tokenResponse.access_token) {
@@ -344,22 +435,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 });
                 const googleProfile = await userRes.json();
                 if (googleProfile && googleProfile.email) {
-                  const result = await loginOrRegisterWithGoogle({
-                    email: googleProfile.email,
-                    name: googleProfile.name || googleProfile.email.split('@')[0],
-                    role: selectedRole,
-                    avatarUrl: googleProfile.picture,
+                  await processGoogleEmail(googleProfile.email, {
+                    name: googleProfile.name,
+                    picture: googleProfile.picture,
                   });
-                  setIsLoading(false);
-                  if (result.success && result.user) {
-                    setSuccessMsg(`¡Acceso exitoso con Google! Bienvenido(a), ${result.user.name}.`);
-                    setTimeout(() => {
-                      onLoginAccount(result.user!);
-                      onClose();
-                    }, 500);
-                  } else {
-                    setErrorMsg(result.error || 'No pudimos vincular tu cuenta de Google.');
-                  }
                   return;
                 }
               } catch {
@@ -378,55 +457,27 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       }
     }
 
-    // If client ID is missing, open configuration prompt for official Google Client ID
-    setViewMode('google_prompt');
+    // If client ID is not configured yet, show clean configuration prompt for real Google OAuth Client ID
+    setIsLoading(false);
+    setShowGoogleConfig(true);
   };
 
-  // 4. Submit Direct Google Authentication or Custom Client ID
-  const handleGoogleDirectSubmit = async (e: React.FormEvent) => {
+  // Save Google OAuth Client ID for real Google Identity Services
+  const handleSaveGoogleClientId = (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMsg('');
-    setSuccessMsg('');
-
-    const cleanEmail = googleEmailInput.trim().toLowerCase();
-    if (!cleanEmail || !cleanEmail.includes('@') || !cleanEmail.includes('.')) {
-      setErrorMsg('Por favor ingresa un correo de Google válido (ejemplo: usuario@gmail.com).');
+    const cleanId = googleClientIdInput.trim();
+    if (!cleanId) {
+      setErrorMsg('Por favor ingresa un Google Client ID válido.');
       return;
     }
-
-    setIsLoading(true);
-    try {
-      // Validate with server
-      await safeApiCall('/api/auth/google/direct', 'POST', {
-        email: cleanEmail,
-        name: googleNameInput.trim() || undefined,
-      });
-
-      const result = await loginOrRegisterWithGoogle({
-        email: cleanEmail,
-        name: googleNameInput.trim() || cleanEmail.split('@')[0],
-        role: selectedRole,
-      });
-
-      setIsLoading(false);
-
-      if (result.success && result.user) {
-        setSuccessMsg(
-          result.isNewUser
-            ? `¡Tu perfil en Reborn Your Style ha sido creado con éxito!`
-            : `¡Bienvenido(a) de nuevo, ${result.user.name}!`
-        );
-        setTimeout(() => {
-          onLoginAccount(result.user!);
-          onClose();
-        }, 500);
-      } else {
-        setErrorMsg(result.error || 'No pudimos procesar la autenticación.');
-      }
-    } catch {
-      setIsLoading(false);
-      setErrorMsg('No pudimos procesar tu solicitud. Por favor intenta nuevamente.');
-    }
+    localStorage.setItem('reborn_google_client_id', cleanId);
+    setShowGoogleConfig(false);
+    setErrorMsg('');
+    setSuccessMsg('Google Client ID configurado correctamente. Conectando con Google...');
+    setTimeout(() => {
+      setSuccessMsg('');
+      handleGoogleClick();
+    }, 400);
   };
 
   // 5. Password Recovery - Step 1: Request 6-digit Code (Real Email Dispatch)
@@ -599,7 +650,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </div>
 
           {/* Feedback messages */}
-          {errorMsg && (
+          {errorMsg && !showGoogleNotRegistered && (
             <div className="mb-5 p-3.5 bg-[#fef2f2] border border-[#fecaca] rounded-xl flex items-start gap-2.5 text-xs text-[#991b1b]">
               <span className="material-symbols-outlined text-[18px] text-[#dc2626] shrink-0 mt-0.5">
                 error
@@ -618,9 +669,118 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           )}
 
           {/* ================================================================= */}
+          {/* SPECIAL DIALOG: GOOGLE ACCOUNT NOT REGISTERED IN REBORN           */}
+          {/* ================================================================= */}
+          {showGoogleNotRegistered && (
+            <div className="mb-5 p-4 bg-[#fef2f2] border border-[#fca5a5] rounded-2xl text-center space-y-3 shadow-sm animate-fadeIn">
+              <div className="w-11 h-11 rounded-full bg-[#fee2e2] text-[#dc2626] flex items-center justify-center mx-auto">
+                <span className="material-symbols-outlined text-[24px]">person_off</span>
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-[#991b1b]">
+                  Acceso no permitido
+                </h4>
+                <p className="text-xs text-[#7f1d1d] mt-1.5 leading-relaxed font-medium">
+                  Esta cuenta de Google ({unregisteredGoogleEmail}) no está registrada en Reborn Your Style. Crea una cuenta antes de iniciar sesión.
+                </p>
+              </div>
+              <div className="pt-2 flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setErrorMsg('');
+                    setSuccessMsg('');
+                    setEmail(unregisteredGoogleEmail);
+                    setShowGoogleNotRegistered(false);
+                    setViewMode('register');
+                  }}
+                  className="w-full py-2.5 px-4 bg-[#012d1d] hover:bg-[#0c3927] text-white text-xs font-semibold rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[16px]">person_add</span>
+                  <span>Crear una cuenta</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setErrorMsg('');
+                    setSuccessMsg('');
+                    setShowGoogleNotRegistered(false);
+                    setViewMode('login');
+                  }}
+                  className="w-full py-2 px-4 bg-white border border-[#e2e0d8] hover:bg-[#faf9f4] text-[#414844] text-xs font-medium rounded-xl transition-all cursor-pointer"
+                >
+                  Volver al inicio de sesión
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ================================================================= */}
+          {/* GOOGLE CLIENT ID CONFIGURATION PROMPT                             */}
+          {/* ================================================================= */}
+          {showGoogleConfig && (
+            <div className="mb-5 p-4 bg-[#f8f9fa] border border-[#dadce0] rounded-2xl space-y-3 shadow-sm animate-fadeIn">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-white border border-[#dadce0] flex items-center justify-center shrink-0">
+                  <svg className="w-4 h-4" viewBox="0 0 24 24">
+                    <path
+                      fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                    />
+                    <path
+                      fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-[#1b1c19]">Conexión Oficial con Google</h4>
+                  <p className="text-[11px] text-[#5f6368]">Selector oficial de Google (prompt=select_account)</p>
+                </div>
+              </div>
+              <p className="text-xs text-[#414844] leading-relaxed">
+                Para desplegar el selector oficial de Google con tus cuentas reales, introduce el <strong>Google Client ID</strong> de tu proyecto en Google Cloud Console:
+              </p>
+              <form onSubmit={handleSaveGoogleClientId} className="space-y-2.5">
+                <input
+                  type="text"
+                  required
+                  value={googleClientIdInput}
+                  onChange={(e) => setGoogleClientIdInput(e.target.value)}
+                  placeholder="ej: 1234567890-xxx.apps.googleusercontent.com"
+                  className="w-full px-3 py-2 bg-white border border-[#dadce0] focus:border-[#012d1d] rounded-xl text-xs text-[#1b1c19] outline-none"
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    className="flex-1 py-2 px-3 bg-[#012d1d] hover:bg-[#0c3927] text-white text-xs font-semibold rounded-xl transition-colors cursor-pointer"
+                  >
+                    Guardar y Conectar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowGoogleConfig(false)}
+                    className="py-2 px-3 bg-white border border-[#dadce0] text-xs font-medium text-[#5f6368] rounded-xl hover:bg-[#f1f3f4] transition-colors cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* ================================================================= */}
           {/* VIEW: LOGIN                                                      */}
           {/* ================================================================= */}
-          {viewMode === 'login' && (
+          {viewMode === 'login' && !showGoogleNotRegistered && (
             <div>
               <div className="mb-5">
                 <h3 className="text-lg font-bold text-[#1b1c19]">Iniciar Sesión</h3>
@@ -666,7 +826,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         setRecoveryStep('request');
                         setViewMode('forgot_password');
                       }}
-                      className="text-xs font-medium text-[#2b694d] hover:text-[#012d1d] hover:underline transition-colors"
+                      className="text-xs font-medium text-[#2b694d] hover:text-[#012d1d] hover:underline transition-colors cursor-pointer"
                     >
                       ¿Olvidaste tu contraseña?
                     </button>
@@ -725,7 +885,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </div>
               </div>
 
-              {/* Continue with Google Button */}
+              {/* Continue with Google Button (Invokes Account Selector) */}
               <button
                 type="button"
                 onClick={handleGoogleClick}
@@ -764,7 +924,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       setSuccessMsg('');
                       setViewMode('register');
                     }}
-                    className="font-semibold text-[#012d1d] hover:text-[#2b694d] hover:underline transition-colors"
+                    className="font-semibold text-[#012d1d] hover:text-[#2b694d] hover:underline transition-colors cursor-pointer"
                   >
                     Crear una cuenta
                   </button>
@@ -780,7 +940,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     setSuccessMsg('');
                     setViewMode('admin');
                   }}
-                  className="text-[11px] text-[#a0a5a1] hover:text-[#414844] transition-colors"
+                  className="text-[11px] text-[#a0a5a1] hover:text-[#414844] transition-colors cursor-pointer"
                 >
                   Acceso Administrativo
                 </button>
@@ -791,7 +951,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           {/* ================================================================= */}
           {/* VIEW: REGISTER ("Crear una cuenta")                              */}
           {/* ================================================================= */}
-          {viewMode === 'register' && (
+          {viewMode === 'register' && !showGoogleNotRegistered && (
             <div>
               <div className="mb-5">
                 <h3 className="text-lg font-bold text-[#1b1c19]">Crear una Cuenta</h3>
@@ -970,12 +1130,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
                   <span className="bg-white px-3 text-[#8e918f] font-medium tracking-wider">
-                    o regístrate con
+                    o continúa con
                   </span>
                 </div>
               </div>
 
-              {/* Google Button */}
+              {/* Continue with Google Button in Register */}
               <button
                 type="button"
                 onClick={handleGoogleClick}
@@ -1000,7 +1160,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
                   />
                 </svg>
-                <span>Continuar con Google</span>
+                <span>Registrarse con Google</span>
               </button>
 
               {/* Bottom Switch to Login */}
@@ -1014,7 +1174,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       setSuccessMsg('');
                       setViewMode('login');
                     }}
-                    className="font-semibold text-[#012d1d] hover:text-[#2b694d] hover:underline transition-colors"
+                    className="font-semibold text-[#012d1d] hover:text-[#2b694d] hover:underline transition-colors cursor-pointer"
                   >
                     Iniciar sesión
                   </button>
@@ -1169,7 +1329,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     <button
                       type="button"
                       onClick={() => setRecoveryStep('request')}
-                      className="hover:text-[#012d1d] transition-colors"
+                      className="hover:text-[#012d1d] transition-colors cursor-pointer"
                     >
                       Cambiar correo
                     </button>
@@ -1179,7 +1339,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       <button
                         type="button"
                         onClick={handleRequestRecoveryCode}
-                        className="font-semibold text-[#2b694d] hover:underline"
+                        className="font-semibold text-[#2b694d] hover:underline cursor-pointer"
                       >
                         Reenviar código
                       </button>
@@ -1283,111 +1443,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     setSuccessMsg('');
                     setViewMode('login');
                   }}
-                  className="text-xs font-semibold text-[#012d1d] hover:text-[#2b694d] hover:underline transition-colors flex items-center justify-center gap-1 mx-auto"
-                >
-                  <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-                  <span>Volver al inicio de sesión</span>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* ================================================================= */}
-          {/* VIEW: GOOGLE DIRECT PROMPT                                        */}
-          {/* ================================================================= */}
-          {viewMode === 'google_prompt' && (
-            <div>
-              <div className="flex flex-col items-center text-center mb-5">
-                <div className="w-12 h-12 rounded-2xl bg-[#faf9f4] border border-[#efeee9] flex items-center justify-center shadow-sm mb-2.5">
-                  <svg className="w-6 h-6" viewBox="0 0 24 24">
-                    <path
-                      fill="#4285F4"
-                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                    />
-                    <path
-                      fill="#34A853"
-                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                    />
-                    <path
-                      fill="#FBBC05"
-                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                    />
-                    <path
-                      fill="#EA4335"
-                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                    />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-bold text-[#1b1c19]">Continuar con Google</h3>
-                <p className="text-xs text-[#717973] max-w-xs mt-1">
-                  Acceso directo y seguro. Si es tu primera vez, crearemos tu cuenta automáticamente.
-                </p>
-              </div>
-
-              <form onSubmit={handleGoogleDirectSubmit} className="space-y-3.5">
-                <div>
-                  <label className="block text-xs font-semibold text-[#414844] mb-1">
-                    Tu correo de Google
-                  </label>
-                  <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#717973]">
-                      <span className="material-symbols-outlined text-[18px]">mail</span>
-                    </span>
-                    <input
-                      type="email"
-                      required
-                      value={googleEmailInput}
-                      onChange={(e) => setGoogleEmailInput(e.target.value)}
-                      placeholder="usuario@gmail.com"
-                      autoFocus
-                      className="w-full pl-10 pr-4 py-2.5 bg-[#faf9f4] border border-[#e2e0d8] focus:border-[#012d1d] focus:bg-white rounded-xl text-sm text-[#1b1c19] placeholder-[#a0a5a1] outline-none transition-all"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-[#414844] mb-1">
-                    Nombre (opcional si es cuenta nueva)
-                  </label>
-                  <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#717973]">
-                      <span className="material-symbols-outlined text-[18px]">badge</span>
-                    </span>
-                    <input
-                      type="text"
-                      value={googleNameInput}
-                      onChange={(e) => setGoogleNameInput(e.target.value)}
-                      placeholder="Tu nombre"
-                      className="w-full pl-10 pr-4 py-2.5 bg-[#faf9f4] border border-[#e2e0d8] focus:border-[#012d1d] focus:bg-white rounded-xl text-sm text-[#1b1c19] placeholder-[#a0a5a1] outline-none transition-all"
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full mt-2 py-3 px-4 bg-[#012d1d] hover:bg-[#0c3927] disabled:bg-[#a0a5a1] text-white font-semibold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  {isLoading ? (
-                    <>
-                      <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span>Conectando con Google...</span>
-                    </>
-                  ) : (
-                    <span>Entrar con cuenta de Google</span>
-                  )}
-                </button>
-              </form>
-
-              <div className="mt-5 pt-3.5 border-t border-[#f0efe9] text-center">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setErrorMsg('');
-                    setSuccessMsg('');
-                    setViewMode('login');
-                  }}
-                  className="text-xs font-semibold text-[#012d1d] hover:text-[#2b694d] hover:underline transition-colors flex items-center justify-center gap-1 mx-auto"
+                  className="text-xs font-semibold text-[#012d1d] hover:text-[#2b694d] hover:underline transition-colors flex items-center justify-center gap-1 mx-auto cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-[16px]">arrow_back</span>
                   <span>Volver al inicio de sesión</span>
@@ -1465,7 +1521,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     setSuccessMsg('');
                     setViewMode('login');
                   }}
-                  className="text-xs font-semibold text-[#012d1d] hover:text-[#2b694d] hover:underline transition-colors flex items-center justify-center gap-1 mx-auto"
+                  className="text-xs font-semibold text-[#012d1d] hover:text-[#2b694d] hover:underline transition-colors flex items-center justify-center gap-1 mx-auto cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-[16px]">arrow_back</span>
                   <span>Volver al inicio de sesión de usuario</span>
