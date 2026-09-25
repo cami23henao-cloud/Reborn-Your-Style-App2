@@ -1,0 +1,7 @@
+{
+  "name": "Reborn Your Style",
+  "description": "Plataforma de moda circular y suprareciclaje textil que conecta prendas con artesanos y diseñadores sostenibles.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+

@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,800;0,900;1,600&amp;family=Plus+Jakarta+Sans:wght@600;700;800&amp;display=swap');
+      .logo-serif {
+        font-family: 'Playfair Display', Didot, 'Bodoni MT', 'Cinzel', Georgia, serif;
+      }
+      .logo-sans {
+        font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
+    </style>
+  </defs>
+
+  <!-- Circular fashion upcycling loop (Olive green) -->
+  <g fill="none" stroke="#3d5635" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Clockwise circle arc -->
+    <path d="M 125 255 A 165 165 0 1 1 305 48" />
+    <!-- Clockwise arrowhead at top -->
+    <path d="M 288 38 L 308 48 L 292 60" fill="#3d5635" stroke-width="2" />
+  </g>
+
+  <!-- Botanical branch along bottom-left arc -->
+  <g fill="#3d5635" stroke="#3d5635" stroke-linejoin="round">
+    <!-- Curved branch stem -->
+    <path d="M 98 295 C 85 255 96 210 125 170" fill="none" stroke-width="4.2" stroke-linecap="round"/>
+    
+    <!-- Delicate natural leaves -->
+    <!-- Leaf 1 (top) -->
+    <path d="M 124 172 C 108 156 94 165 101 184 C 112 189 122 181 124 172 Z" stroke-width="1.5" />
+    <!-- Leaf 2 (outer upper) -->
+    <path d="M 104 208 C 84 200 75 214 86 229 C 97 230 105 219 104 208 Z" stroke-width="1.5" />
+    <!-- Leaf 3 (outer mid) -->
+    <path d="M 92 250 C 72 248 66 266 79 279 C 90 278 96 265 92 250 Z" stroke-width="1.5" />
+    <!-- Leaf 4 (inner upper) -->
+    <path d="M 116 200 C 131 188 141 200 137 214 C 125 218 118 209 116 200 Z" stroke-width="1.5" />
+    <!-- Leaf 5 (inner mid) -->
+    <path d="M 106 242 C 122 232 131 245 126 258 C 114 262 108 253 106 242 Z" stroke-width="1.5" />
+    <!-- Leaf 6 (lower terminal) -->
+    <path d="M 98 295 C 80 298 76 316 90 326 C 101 324 105 310 98 295 Z" stroke-width="1.5" />
+  </g>
+
+  <!-- Central Intertwined Monogram: R Y S -->
+  <g>
+    <!-- Letter R (Black Serif, Left) -->
+    <text x="135" y="278" font-size="162" font-weight="800" fill="#161715" class="logo-serif" letter-spacing="-4">R</text>
+
+    <!-- Letter Y (Olive Green Serif, Centered Intertwined) -->
+    <text x="246" y="328" font-size="142" font-weight="900" fill="#3d5635" class="logo-serif" text-anchor="middle">Y</text>
+
+    <!-- Letter S (Black Serif, Right) -->
+    <text x="272" y="320" font-size="166" font-weight="800" fill="#161715" class="logo-serif" letter-spacing="-4">S</text>
+  </g>
+
+  <!-- Wire Clothes Hanger (Fine Black Line, directly above Y) -->
+  <g fill="none" stroke="#161715" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Hook curling clockwise -->
+    <path d="M 252 82 C 252 68 266 60 274 72 C 280 81 271 96 261 103 L 261 116" />
+    <!-- Triangular Hanger Frame -->
+    <path d="M 261 116 L 208 140 L 314 140 Z" stroke-width="4.2" />
+  </g>
+
+  <!-- Organic Green Leaf resting on right side of hanger -->
+  <g fill="#3d5635" stroke="#3d5635" stroke-linejoin="round">
+    <path d="M 302 138 C 324 104 354 110 342 140 C 322 148 306 145 302 138 Z" stroke-width="1.5" />
+    <!-- Leaf inner pale vein -->
+    <path d="M 307 137 Q 324 125 338 123" stroke="#FAF7F2" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- Brand Typography -->
+  <!-- R E B O R N (Black Serif Capitals, Spaced) -->
+  <text x="250" y="398" font-size="46" font-weight="800" fill="#161715" class="logo-serif" text-anchor="middle" letter-spacing="14">REBORN</text>
+
+  <!-- — YOUR STYLE — (Olive Green Sans-Serif Capitals) -->
+  <g fill="#3d5635" class="logo-sans">
+    <!-- Left Dash -->
+    <line x1="120" y1="432" x2="185" y2="432" stroke="#3d5635" stroke-width="2.2" stroke-linecap="round"/>
+    <!-- Text -->
+    <text x="250" y="437" font-size="16.5" font-weight="700" fill="#3d5635" text-anchor="middle" letter-spacing="6">YOUR STYLE</text>
+    <!-- Right Dash -->
+    <line x1="315" y1="432" x2="380" y2="432" stroke="#3d5635" stroke-width="2.2" stroke-linecap="round"/>
+  </g>
+
+  <!-- Minimalist Outline Heart at bottom (Olive Green) -->
+  <g fill="none" stroke="#3d5635" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 250 466 C 250 466 242 459 238 454 C 234 449 236 444 241 444 C 245 444 248 447 250 450 C 252 447 255 444 259 444 C 264 444 266 449 262 454 C 258 459 250 466 250 466 Z" />
+  </g>
+</svg>
