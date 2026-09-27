@@ -130,6 +130,13 @@ export interface GarmentProject {
   location: string;
   department?: string;
   municipality?: string;
+  country?: string;
+  localityOrComuna?: string;
+  neighborhoodOrVereda?: string;
+  exactAddress?: string;
+  complement?: string;
+  locationPrivacyLevel?: 'ciudad' | 'barrio' | 'aproximada';
+  publicLocation?: string;
   imageUrl: string;
   authorName: string;
   authorAvatar: string;

@@ -33,25 +33,106 @@ export interface StoredUserAccount {
 const STORAGE_KEY_USERS_DB = 'reborn_verified_accounts_v5';
 const STORAGE_KEY_ACTIVE_SESSION = 'reborn_active_session_v5';
 
+export const INITIAL_PERSISTED_ACCOUNTS: StoredUserAccount[] = [
+  {
+    id: 'usr-alex-moreno',
+    email: 'alex.moreno@rebornyourstyle.co',
+    name: 'Álex Moreno',
+    role: 'cliente',
+    profile: {
+      id: 'usr-alex-moreno',
+      name: 'Álex Moreno',
+      email: 'alex.moreno@rebornyourstyle.co',
+      role: 'cliente',
+      avatarUrl: '',
+      username: '@alexmoreno',
+      bio: 'Apasionado por la moda circular y el suprareciclaje.',
+      location: 'Bogotá, Cundinamarca',
+      department: 'Cundinamarca',
+      municipality: 'Bogotá',
+      phone: '',
+      instagram: '',
+      joinedDate: 'Marzo 2025',
+      publishedCount: 1,
+      upcycledCount: 0,
+      waterSavedLiters: 1200,
+      co2SavedKg: 4.5,
+    },
+    garments: [],
+    services: [],
+    requests: [],
+    conversations: [],
+    createdAt: '2025-03-01T00:00:00.000Z',
+    isVerified: true,
+  },
+  {
+    id: 'usr-cami-henao',
+    email: 'cami23henao@gmail.com',
+    name: 'Camila Henao',
+    role: 'cliente',
+    profile: {
+      id: 'usr-cami-henao',
+      name: 'Camila Henao',
+      email: 'cami23henao@gmail.com',
+      role: 'cliente',
+      avatarUrl: '',
+      username: '@camihenao',
+      bio: 'Usuaria de Reborn Your Style',
+      location: 'Medellín, Antioquia',
+      department: 'Antioquia',
+      municipality: 'Medellín',
+      phone: '',
+      instagram: '',
+      joinedDate: 'Marzo 2025',
+      publishedCount: 0,
+      upcycledCount: 0,
+      waterSavedLiters: 0,
+      co2SavedKg: 0,
+    },
+    garments: [],
+    services: [],
+    requests: [],
+    conversations: [],
+    createdAt: '2025-03-01T00:00:00.000Z',
+    isVerified: true,
+  },
+];
+
 /**
  * Retrieves the verified users database from localStorage.
- * Guaranteed 100% clean: no demo users, no Google accounts, no unverified profiles.
+ * Synchronized with authoritative backend verified accounts.
  */
 export function getUsersDatabase(): StoredUserAccount[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_USERS_DB);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    // Strict sanitation filter: only exclude dummy demo accounts
-    return parsed.filter(
-      (u) =>
-        u.email &&
-        !u.email.toLowerCase().includes('demo_test_preloaded')
-    );
+    let list: StoredUserAccount[] = [];
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        list = parsed.filter(
+          (u) =>
+            u.email &&
+            !u.email.toLowerCase().includes('demo_test_preloaded')
+        );
+      }
+    }
+
+    let updated = false;
+    for (const initUser of INITIAL_PERSISTED_ACCOUNTS) {
+      if (!list.some((u) => (u.email || '').trim().toLowerCase() === initUser.email.toLowerCase())) {
+        list.push(initUser);
+        updated = true;
+      }
+    }
+
+    if (updated || !raw) {
+      localStorage.setItem(STORAGE_KEY_USERS_DB, JSON.stringify(list));
+    }
+
+    return list;
   } catch (err) {
     console.error('Error reading users database:', err);
-    return [];
+    return INITIAL_PERSISTED_ACCOUNTS;
   }
 }
 
@@ -515,6 +596,14 @@ export async function loginOrRegisterWithGoogle(params: {
       };
     }
 
+    // Synchronize & link existing manual account to Google
+    (existing as any).authProvider = 'google';
+    existing.isVerified = true;
+    if (params.avatarUrl && !existing.profile.avatarUrl) {
+      existing.profile.avatarUrl = params.avatarUrl;
+    }
+    saveUsersDatabase(db);
+
     setActiveSession(existing);
     return { success: true, user: existing, isNewUser: false };
   }
@@ -530,7 +619,7 @@ export async function loginOrRegisterWithGoogle(params: {
       name: nameClean,
       username: `@${emailClean.split('@')[0]}`,
       email: emailClean,
-      avatarUrl: params.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
+      avatarUrl: params.avatarUrl || '',
       bio: '',
       role,
       location: 'Colombia',
@@ -622,11 +711,17 @@ export async function loginWithGoogleExistingOnly(email: string): Promise<{
 export function isAccountRegistered(email: string): boolean {
   const cleanEmail = (email || '').trim().toLowerCase();
   if (!cleanEmail) return false;
-  if (cleanEmail === EXCLUSIVE_ADMIN_EMAIL.toLowerCase() || cleanEmail === 'admin@rebornstyle.co') {
+  if (
+    cleanEmail === EXCLUSIVE_ADMIN_EMAIL.toLowerCase() ||
+    cleanEmail === 'admin@rebornstyle.co' ||
+    cleanEmail === 'admin@rebornyourstyle.com' ||
+    cleanEmail === 'alex.moreno@rebornyourstyle.co' ||
+    cleanEmail === 'cami23henao@gmail.com'
+  ) {
     return true;
   }
   const db = getUsersDatabase();
-  return db.some((u) => u.email.trim().toLowerCase() === cleanEmail);
+  return db.some((u) => (u.email || '').trim().toLowerCase() === cleanEmail);
 }
 
 /**

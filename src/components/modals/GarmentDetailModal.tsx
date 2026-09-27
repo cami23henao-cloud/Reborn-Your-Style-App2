@@ -83,8 +83,8 @@ export const GarmentDetailModal: React.FC<GarmentDetailModalProps> = ({
             </div>
             <div>
               <span className="text-[#717973] block">Ubicación:</span>
-              <span className="font-bold text-[#012d1d] text-sm truncate block" title={garment.location}>
-                {garment.municipality || garment.location.split(',')[0]}
+              <span className="font-bold text-[#012d1d] text-sm truncate block" title={garment.publicLocation || garment.location}>
+                {garment.publicLocation || garment.municipality || garment.location.split(',')[0]}
               </span>
             </div>
             <div>

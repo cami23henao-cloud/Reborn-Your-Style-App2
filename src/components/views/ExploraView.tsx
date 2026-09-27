@@ -3,6 +3,7 @@ import { Professional, AppView, GarmentProject, UserProfile } from '../../types'
 import { EXPANDED_CATEGORIES } from '../../data/categoriesData';
 import { COLOMBIA_DEPARTMENTS } from '../../data/colombiaData';
 import { BrandLogo } from '../BrandLogo';
+import { UserAvatar } from '../common/UserAvatar';
 
 interface ExploraViewProps {
   professionals: Professional[];
@@ -443,10 +444,11 @@ export const ExploraView: React.FC<ExploraViewProps> = ({
                       {/* Author Profile Footer */}
                       <div className="pt-3 border-t border-[#efeee9] flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <img
+                          <UserAvatar
                             src={garment.authorAvatar || user.avatarUrl}
-                            alt={garment.authorName}
-                            className="w-7 h-7 rounded-full object-cover border border-[#b0f1cc]"
+                            name={garment.authorName}
+                            size="xs"
+                            borderClassName="border border-[#b0f1cc]"
                           />
                           <div className="text-left">
                             <span className="text-[11px] font-bold text-[#012d1d] block leading-tight truncate max-w-[90px]">

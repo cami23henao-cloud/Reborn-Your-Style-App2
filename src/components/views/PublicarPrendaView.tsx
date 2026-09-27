@@ -2,9 +2,9 @@ import React, { useState, useRef } from 'react';
 import { GarmentProject, AppView, UserProfile } from '../../types';
 import { EXPANDED_CATEGORIES } from '../../data/categoriesData';
 import { BrandLogo } from '../BrandLogo';
-import { GoogleMapsLocationPicker } from '../common/GoogleMapsLocationPicker';
+import { ContinuousColorWheel } from '../common/ContinuousColorWheel';
+import { SimpleLocationMapPicker, LocationResult } from '../common/SimpleLocationMapPicker';
 import { UserAvatar } from '../common/UserAvatar';
-import { WordColorPalettePicker } from '../common/WordColorPalettePicker';
 
 interface PublicarPrendaViewProps {
   onPublishProject: (project: GarmentProject) => void;
@@ -15,36 +15,15 @@ interface PublicarPrendaViewProps {
   initialDraft?: Partial<GarmentProject> | null;
 }
 
-const COLOR_OPTIONS = [
-  { name: 'Azul Índigo', hex: '#254a6e' },
-  { name: 'Negro Profundo', hex: '#1b1b1b' },
-  { name: 'Blanco Crudo', hex: '#f4f3ec' },
-  { name: 'Verde Oliva / Salvia', hex: '#587b6d' },
-  { name: 'Beige / Lino Natural', hex: '#d6cbb2' },
-  { name: 'Terracota / Ladrillo', hex: '#b35d38' },
-  { name: 'Mostaza / Ocre', hex: '#cca43b' },
-  { name: 'Rosa Palo', hex: '#d8a4a4' },
-  { name: 'Gris Jaspe', hex: '#7a8288' },
-  { name: 'Café / Marrón', hex: '#5c4033' },
-  { name: 'Vino Tinto / Burdeos', hex: '#671a2b' },
-  { name: 'Azul Cielo / Celeste', hex: '#87ceeb' },
-  { name: 'Multicolor / Estampado', hex: 'linear-gradient(135deg, #e57373, #81c784, #64b5f6)' }
-];
-
-const SIZE_OPTIONS = [
-  'Talla Única',
+const SIZE_PRESETS = [
   'XS',
   'S',
   'M',
   'L',
   'XL',
   'XXL',
-  '28',
-  '30',
-  '32',
-  '34',
-  '36',
-  '38'
+  'Talla única',
+  'Otra'
 ];
 
 const CONDITION_OPTIONS = [
@@ -63,17 +42,24 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
   onOpenEditProfile,
   initialDraft
 }) => {
-  // Form State - Starts clean and empty for new creations (Requirement: manual classification, no defaults)
+  // Form State - Starts completely clean and empty for new creations
+  // Requirement 3: Disable automatic detection, talla starts EMPTY, category manual
+  // Requirement 2: Ruleta de colores starts without color selected
   const [titulo, setTitulo] = useState(initialDraft?.title || '');
   const [categoria, setCategoria] = useState(initialDraft?.category || '');
   const [formError, setFormError] = useState<string>('');
   const [estado, setEstado] = useState(initialDraft?.condition || 'Como nuevo (1-2 usos)');
   const [descripcion, setDescripcion] = useState(initialDraft?.description || '');
   const [modificacion, setModificacion] = useState(initialDraft?.modifications || '');
-  const [talla, setTalla] = useState(initialDraft?.size || 'M');
-  const [colorSeleccionado, setColorSeleccionado] = useState(initialDraft?.color || 'Azul Índigo');
-  const [colorPaletteMode, setColorPaletteMode] = useState<'estandar' | 'personalizar'>('estandar');
-  const [customColorHex, setCustomColorHex] = useState(initialDraft?.colorHex || '#2b694d');
+  
+  // Talla starts completely empty (no 'S', 'M' or preselected value)
+  const [talla, setTalla] = useState(initialDraft?.size || '');
+  const [isCustomTalla, setIsCustomTalla] = useState(Boolean(initialDraft?.size && !SIZE_PRESETS.slice(0, -1).includes(initialDraft.size)));
+
+  // Color starts without any color selected automatically
+  const [colorSeleccionado, setColorSeleccionado] = useState(initialDraft?.color || '');
+  const [colorHex, setColorHex] = useState(initialDraft?.colorHex || '');
+
   const [listingType, setListingType] = useState<'Venta' | 'Intercambio' | 'Donación' | 'Transformación'>(
     initialDraft?.listingType || 'Transformación'
   );
@@ -84,8 +70,13 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
     initialDraft?.budget ? String(initialDraft.budget) : ''
   );
 
-  // Colombia Location
-  const [locationQuery, setLocationQuery] = useState(initialDraft?.location || user.location || '');
+  // Requirement 2: Single Address Search Bar + Interactive Map (Private exact address, public approximate zone/city)
+  const [locationResult, setLocationResult] = useState<LocationResult>({
+    exactAddress: initialDraft?.exactAddress || initialDraft?.location || user.location || '',
+    publicLocation: initialDraft?.publicLocation || initialDraft?.location || user.location || '',
+    department: initialDraft?.department || user.department || '',
+    municipality: initialDraft?.municipality || user.municipality || '',
+  });
   const [imageUrl, setImageUrl] = useState(initialDraft?.imageUrl || '');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -108,11 +99,21 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
       setFormError('Por favor selecciona una categoría para clasificar tu prenda manualmente.');
       return;
     }
+    if (!talla.trim()) {
+      setFormError('Por favor selecciona o escribe la talla de la prenda.');
+      return;
+    }
+    if (!colorSeleccionado.trim()) {
+      setFormError('Por favor selecciona el color de la prenda en el círculo de colores.');
+      return;
+    }
     if (!imageUrl) {
       setFormError('Por favor sube una fotografía de la prenda.');
       return;
     }
     setFormError('');
+
+    const finalPublicLocation = locationResult.publicLocation || user.location || 'Colombia';
 
     const newProject: GarmentProject = {
       id: `proj-${Date.now()}`,
@@ -124,10 +125,16 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
       modifications: modificacion,
       size: talla,
       color: colorSeleccionado,
+      colorHex,
       budget: presupuesto ? Number(presupuesto) : 0,
       listingType,
       allowExchange,
-      location: locationQuery || user.location,
+      location: finalPublicLocation,
+      department: locationResult.department,
+      municipality: locationResult.municipality,
+      country: 'Colombia',
+      exactAddress: locationResult.exactAddress, // Protected private address
+      publicLocation: finalPublicLocation,
       imageUrl,
       authorName: user.name,
       authorAvatar: user.avatarUrl,
@@ -150,10 +157,16 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
       modifications: modificacion,
       size: talla,
       color: colorSeleccionado,
+      colorHex,
       budget: Number(presupuesto) || 0,
       listingType,
       allowExchange,
-      location: locationQuery,
+      location: locationResult.publicLocation || 'Colombia',
+      department: locationResult.department,
+      municipality: locationResult.municipality,
+      country: 'Colombia',
+      exactAddress: locationResult.exactAddress,
+      publicLocation: locationResult.publicLocation,
       imageUrl,
     });
   };
@@ -322,26 +335,87 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
                 </select>
               </div>
 
+              {/* Requirement 3: Talla starts completely EMPTY (no 'S', 'M' or preselected value) */}
               <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-[#012d1d]">
-                  Talla *
-                </label>
-                <select
-                  value={talla}
-                  onChange={(e) => setTalla(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#c1c8c2] bg-white text-xs text-[#1b1c19] focus:border-[#012d1d] outline-none"
-                >
-                  {SIZE_OPTIONS.map((sz) => (
-                    <option key={sz} value={sz}>{sz}</option>
-                  ))}
-                </select>
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-[#012d1d]">
+                    Talla de la prenda *
+                  </label>
+                  {talla && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTalla('');
+                        setIsCustomTalla(false);
+                      }}
+                      className="text-[10px] text-[#717973] hover:text-[#ba1a1a] transition-colors"
+                    >
+                      Limpiar
+                    </button>
+                  )}
+                </div>
+
+                {/* Interactive Talla Chips */}
+                <div className="flex flex-wrap gap-1.5">
+                  {SIZE_PRESETS.map((sz) => {
+                    const isSelected = sz === 'Otra' ? isCustomTalla : talla === sz && !isCustomTalla;
+                    return (
+                      <button
+                        key={sz}
+                        type="button"
+                        onClick={() => {
+                          if (sz === 'Otra') {
+                            setIsCustomTalla(true);
+                            if (SIZE_PRESETS.slice(0, -1).includes(talla)) {
+                              setTalla('');
+                            }
+                          } else {
+                            setIsCustomTalla(false);
+                            setTalla(sz);
+                          }
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                          isSelected
+                            ? 'bg-[#012d1d] text-white border-[#012d1d] shadow-xs'
+                            : 'bg-[#faf9f4] text-[#414844] border-[#c1c8c2]/50 hover:bg-[#efeee9]'
+                        }`}
+                      >
+                        {sz}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Custom Talla Input if 'Otra' */}
+                {isCustomTalla && (
+                  <div className="pt-1.5 animate-in fade-in">
+                    <input
+                      type="text"
+                      autoFocus
+                      value={talla}
+                      onChange={(e) => setTalla(e.target.value)}
+                      placeholder="Escribe la talla personalizada (ej. 32, 14, Oversize, Niños...)"
+                      className="w-full px-3.5 py-2 rounded-xl border border-[#012d1d] bg-white text-xs text-[#1b1c19] outline-none shadow-2xs"
+                    />
+                  </div>
+                )}
+
+                {!talla && (
+                  <span className="text-[10px] text-[#717973] italic block">
+                    Ninguna talla seleccionada por defecto. Por favor elige una.
+                  </span>
+                )}
               </div>
             </div>
 
-            {/* Word-inspired Color Palette */}
-            <WordColorPalettePicker
-              selectedColor={colorSeleccionado}
-              onChange={(colorName) => setColorSeleccionado(colorName)}
+            {/* Requirement 3: Círculo Continuo e Interactivo de Colores (Paleta Completa) */}
+            <ContinuousColorWheel
+              selectedColorName={colorSeleccionado}
+              selectedColorHex={colorHex}
+              onChange={(cName, cHex) => {
+                setColorSeleccionado(cName);
+                setColorHex(cHex);
+              }}
             />
 
             {/* Description */}
@@ -432,14 +506,12 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
               </div>
             )}
 
-            {/* Google Maps Location (Requirement 6) */}
-            <GoogleMapsLocationPicker
-              value={locationQuery}
-              onChange={(newLoc) => setLocationQuery(newLoc)}
-              label="Ubicación de la prenda en Colombia (Google Maps)"
-              placeholder="Indica municipio, barrio o ciudad donde se encuentra la prenda"
+            {/* Requirement 2: Rediseño Total de Ubicación (Barra de búsqueda única + Mapa interactivo justo debajo) */}
+            <SimpleLocationMapPicker
+              initialAddress={locationResult.exactAddress}
+              initialPublicLocation={locationResult.publicLocation}
+              onChange={(res) => setLocationResult(res)}
               required={true}
-              showMapPreview={true}
             />
 
             {/* Option Exchange / Reuse Toggle */}
@@ -501,20 +573,38 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
 
               {/* Garment Image */}
               <div className="relative aspect-[4/3] rounded-2xl overflow-hidden shadow-inner bg-[#f5f4ef]">
-                <img
-                  src={imageUrl}
-                  alt={titulo}
-                  className="w-full h-full object-cover"
-                />
+                {imageUrl ? (
+                  <img
+                    src={imageUrl}
+                    alt={titulo || 'Prenda'}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center text-[#717973] p-4 text-center">
+                    <span className="material-symbols-outlined text-4xl mb-1 text-[#a3aca5]">photo_camera</span>
+                    <span className="text-xs font-medium">Sube una foto para ver la vista previa</span>
+                  </div>
+                )}
                 <div className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-lg bg-black/60 backdrop-blur-sm text-white text-[10px] font-bold flex items-center gap-1.5">
                   <span className="material-symbols-outlined text-xs">
                     {EXPANDED_CATEGORIES.find(c => c.name.toLowerCase() === categoria.toLowerCase())?.icon || 'apparel'}
                   </span>
-                  <span>{categoria}</span>
+                  <span>{categoria || 'Sin categoría'}</span>
                 </div>
-                <div className="absolute bottom-2.5 right-2.5 px-2.5 py-1 rounded-lg bg-white/90 backdrop-blur-sm text-[#012d1d] text-[10px] font-bold shadow-xs">
-                  Talla {talla}
-                </div>
+                {talla && (
+                  <div className="absolute bottom-2.5 right-2.5 px-2.5 py-1 rounded-lg bg-white/90 backdrop-blur-sm text-[#012d1d] text-[10px] font-bold shadow-xs">
+                    Talla {talla}
+                  </div>
+                )}
+                {colorSeleccionado && (
+                  <div className="absolute bottom-2.5 left-2.5 px-2 py-1 rounded-lg bg-white/90 backdrop-blur-sm text-[#012d1d] text-[10px] font-bold shadow-xs flex items-center gap-1.5">
+                    <span
+                      className="w-2.5 h-2.5 rounded-full border border-black/20"
+                      style={{ backgroundColor: colorHex || '#1b1b1b' }}
+                    />
+                    <span className="truncate max-w-[90px]">{colorSeleccionado}</span>
+                  </div>
+                )}
               </div>
 
               {/* Garment Details */}
@@ -529,7 +619,9 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
                 <div className="flex items-center justify-between text-xs pt-2 border-t border-[#efeee9]">
                   <div className="flex items-center gap-1.5 text-[#717973]">
                     <span className="material-symbols-outlined text-xs text-[#2b694d]">location_on</span>
-                    <span className="truncate max-w-[140px]">{locationQuery.split(',')[0]}</span>
+                    <span className="truncate max-w-[140px]">
+                      {locationResult.publicLocation || 'Colombia'}
+                    </span>
                   </div>
                   <span className="font-black text-[#012d1d]">
                     {listingType === 'Donación'

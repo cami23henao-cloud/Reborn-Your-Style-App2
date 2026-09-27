@@ -1,0 +1,40 @@
+[
+  {
+    "id": "usr-alex-moreno",
+    "name": "Álex Moreno",
+    "email": "alex.moreno@rebornyourstyle.co",
+    "password": "$2b$10$EGrDAPm5REFvSs3rZgcWcepV3C2WWdfhzqOLiLUYbnzMGiCG..2JG",
+    "role": "cliente",
+    "authProvider": "email",
+    "createdAt": "2025-03-01T00:00:00.000Z"
+  },
+  {
+    "id": "usr-cami-henao",
+    "name": "Camila Henao",
+    "email": "cami23henao@gmail.com",
+    "password": "$2b$10$kg.8tAj7DZ4m2cm1Gs1ikekWGJ/naibvsVAK1Jj3fTM3Q/MpaFCdS",
+    "role": "cliente",
+    "authProvider": "google",
+    "createdAt": "2025-03-01T00:00:00.000Z"
+  },
+  {
+    "id": "usr-admin",
+    "name": "Administrador Reborn",
+    "email": "admin@rebornyourstyle.com",
+    "password": "$2b$10$CGVzv8C/3ZvmWatwNMbSyeLqRHwvSnpQ1LSVqQUa2CGcnmPCC7eqy",
+    "role": "admin",
+    "authProvider": "email",
+    "createdAt": "2025-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "usr-g-1790549609943",
+    "name": "Sofía Diseñadora",
+    "email": "sofia.disenadora@gmail.com",
+    "role": "profesional",
+    "authProvider": "google",
+    "picture": null,
+    "avatarUrl": null,
+    "isVerified": true,
+    "createdAt": "2026-09-27T22:53:29.944Z"
+  }
+]

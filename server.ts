@@ -1,8 +1,11 @@
 import express from 'express';
 import path from 'path';
+import fs from 'fs';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
+import bcrypt from 'bcryptjs';
 import { GoogleGenAI } from '@google/genai';
+import { OAuth2Client } from 'google-auth-library';
 import dotenv from 'dotenv';
 import * as authController from './backend/controllers/authController';
 
@@ -106,7 +109,47 @@ async function startServer() {
         });
       }
 
-      // Generate real 6-digit numeric code
+      // Check real database (usersStore & backend/data/users.json)
+      let user = authController.usersStore.get(cleanEmail);
+      let exists = Boolean(user);
+      if (!exists) {
+        try {
+          const USERS_FILE_PATH = path.resolve(process.cwd(), 'backend/data/users.json');
+          if (fs.existsSync(USERS_FILE_PATH)) {
+            const list = JSON.parse(fs.readFileSync(USERS_FILE_PATH, 'utf-8'));
+            if (Array.isArray(list)) {
+              const found = list.find((u: any) => (u.email || '').trim().toLowerCase() === cleanEmail);
+              if (found) {
+                exists = true;
+                user = found;
+                authController.usersStore.set(cleanEmail, found);
+              }
+            }
+          }
+        } catch (e) {
+          console.error('Error reading users from disk:', e);
+        }
+      }
+
+      // Also support admin and pre-configured accounts
+      if (!exists && (
+        cleanEmail === 'admin@rebornyourstyle.com' ||
+        cleanEmail === 'admin@rebornstyle.co' ||
+        cleanEmail === 'alex.moreno@rebornyourstyle.co' ||
+        cleanEmail === 'cami23henao@gmail.com'
+      )) {
+        exists = true;
+      }
+
+      if (!exists) {
+        return res.status(200).json({
+          success: false,
+          exists: false,
+          error: 'No existe una cuenta asociada a este correo electrónico',
+        });
+      }
+
+      // Account exists! Generate real 6-digit numeric code
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = Date.now() + 15 * 60 * 1000; // 15 minutes validity
 
@@ -119,13 +162,12 @@ async function startServer() {
 
       const cfg = getSmtpConfig();
       if (!cfg.isConfigured) {
-        console.log(`[Security Notice] SMTP credentials not configured. Recovery code for ${cleanEmail}: ${code}`);
+        console.warn(`[SMTP Warning] SMTP credentials not configured on server for ${cleanEmail}.`);
         return res.status(200).json({
-          success: true,
+          success: false,
+          exists: true,
           configured: false,
-          code,
-          message: 'Hemos generado tu código de seguridad de 6 dígitos.',
-          expiresInMinutes: 15,
+          error: 'No se pudo enviar el correo de recuperación porque el servicio de correo no está configurado.',
         });
       }
 
@@ -175,19 +217,19 @@ async function startServer() {
         console.log(`[SMTP] Recovery code successfully delivered to ${cleanEmail}`);
         return res.status(200).json({
           success: true,
+          exists: true,
           configured: true,
           message: 'Código de recuperación enviado exitosamente a tu correo electrónico.',
           expiresInMinutes: 15,
         });
       } catch (smtpErr: any) {
         console.error(`[SMTP ERROR] Could not dispatch to ${cleanEmail}:`, smtpErr?.message || smtpErr);
-        console.log(`[Security Notice] Fallback recovery code for ${cleanEmail}: ${code}`);
+        authCodesStore.delete(cleanEmail);
         return res.status(200).json({
-          success: true,
-          configured: false,
-          code,
-          message: 'Hemos generado tu código de seguridad de 6 dígitos.',
-          expiresInMinutes: 15,
+          success: false,
+          exists: true,
+          configured: true,
+          error: `No se pudo enviar el correo de recuperación: ${smtpErr?.message || 'Error en el servicio de correo'}.`,
         });
       }
     } catch (err: any) {
@@ -222,17 +264,24 @@ async function startServer() {
       });
     }
 
-    if (record.attempts >= 5) {
+    if (record.attempts >= 3) {
       authCodesStore.delete(cleanEmail);
       return res.status(200).json({
         success: false,
-        error: 'Has superado el número máximo de intentos erróneos. Por seguridad solicita un nuevo código.',
+        error: 'Has superado el número máximo de 3 intentos permitidos. Por seguridad solicita un nuevo código.',
       });
     }
 
     if (record.code !== cleanCode) {
       record.attempts += 1;
-      const remaining = 5 - record.attempts;
+      const remaining = 3 - record.attempts;
+      if (remaining <= 0) {
+        authCodesStore.delete(cleanEmail);
+        return res.status(200).json({
+          success: false,
+          error: 'Has superado el número máximo de 3 intentos permitidos. Por seguridad solicita un nuevo código.',
+        });
+      }
       return res.status(200).json({
         success: false,
         error: `El código de 6 dígitos introducido es incorrecto (${remaining} intento${remaining === 1 ? '' : 's'} restante${remaining === 1 ? '' : 's'}).`,
@@ -253,7 +302,7 @@ async function startServer() {
   });
 
   // Reset Password using Single-Use Reset Token
-  app.post('/api/auth/reset-password', (req, res) => {
+  app.post('/api/auth/reset-password', async (req, res) => {
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
     const { email, resetToken, newPassword } = req.body;
     const cleanEmail = (email || '').trim().toLowerCase();
@@ -283,6 +332,30 @@ async function startServer() {
 
     // Invalidate and delete reset token completely
     authCodesStore.delete(cleanEmail);
+
+    // Hash new password and persist to real database
+    try {
+      let user = authController.usersStore.get(cleanEmail);
+      if (!user) {
+        const USERS_FILE_PATH = path.resolve(process.cwd(), 'backend/data/users.json');
+        if (fs.existsSync(USERS_FILE_PATH)) {
+          const list = JSON.parse(fs.readFileSync(USERS_FILE_PATH, 'utf-8'));
+          if (Array.isArray(list)) {
+            user = list.find((u: any) => (u.email || '').trim().toLowerCase() === cleanEmail);
+          }
+        }
+      }
+
+      if (user) {
+        const saltRounds = 10;
+        user.password = await bcrypt.hash(newPassword, saltRounds);
+        authController.usersStore.set(cleanEmail, user);
+        authController.savePersistedUsers();
+        console.log(`[Password Reset] Password updated and persisted to disk for ${cleanEmail}`);
+      }
+    } catch (saveErr) {
+      console.error('Error saving updated password to disk:', saveErr);
+    }
 
     return res.status(200).json({
       success: true,
@@ -316,12 +389,12 @@ async function startServer() {
 
       const cfg = getSmtpConfig();
       if (!cfg.isConfigured) {
-        console.log(`[SMTP Notice] SMTP not configured. Account activation code for ${cleanEmail}: ${code}`);
+        console.warn(`[SMTP Warning] SMTP not configured. Cannot dispatch verification code to ${cleanEmail}.`);
+        authCodesStore.delete(cleanEmail);
         return res.status(200).json({
-          success: true,
+          success: false,
           configured: false,
-          code,
-          message: 'Código de activación generado.',
+          error: 'El servicio de correo no está configurado en el servidor (requiere configuración SMTP). Contacta al administrador.',
         });
       }
 
@@ -342,16 +415,16 @@ async function startServer() {
                 </div>
                 <div style="padding: 32px;">
                   <p style="font-size: 15px; line-height: 1.6; color: #2d332f; margin-top: 0;">
-                    ¡Hola ${name || ''}! Gracias por unirte a la red de moda circular de Colombia.
+                    ¡Hola ${name ? escapeHtml(name) : ''}! Gracias por registrarte en Reborn Your Style.
                   </p>
                   <p style="font-size: 14px; color: #414844;">
-                    Tu código de verificación de 6 dígitos es:
+                    Para completar tu registro y verificar que este correo te pertenece, ingresa el siguiente código de 6 dígitos:
                   </p>
                   <div style="background-color: #f5f4ef; border: 1px dashed #2b694d; border-radius: 12px; padding: 18px 24px; text-align: center; margin: 24px 0;">
                     <span style="font-size: 34px; font-weight: 800; letter-spacing: 8px; color: #012d1d; font-family: monospace;">${code}</span>
                   </div>
                   <p style="font-size: 13px; color: #717973;">
-                    ⏱️ Este código expira en <strong>15 minutos</strong>.
+                    ⏱️ Este código expira en <strong>15 minutos</strong> y es de un solo uso.
                   </p>
                 </div>
               </div>
@@ -360,14 +433,15 @@ async function startServer() {
           text: `Tu código de verificación para Reborn Your Style es: ${code}`,
         });
 
+        console.log(`[SMTP] Verification code successfully delivered to ${cleanEmail}`);
         return res.status(200).json({ success: true, message: 'Código de activación enviado a tu correo.' });
       } catch (smtpErr: any) {
         console.error(`[SMTP ERROR] Could not dispatch to ${cleanEmail}:`, smtpErr?.message || smtpErr);
+        authCodesStore.delete(cleanEmail);
         return res.status(200).json({
-          success: true,
-          configured: false,
-          code,
-          message: 'Código de activación generado.',
+          success: false,
+          configured: true,
+          error: 'No fue posible entregar el código de verificación al correo ingresado. Verifica que el correo exista y pueda recibir mensajes.',
         });
       }
     } catch (err: any) {
@@ -498,26 +572,77 @@ async function startServer() {
     }
   });
 
-  // Direct Google Authentication fallback endpoint (clean JSON, guarantees zero HTML response)
+  // Direct Google Authentication endpoint (clean JSON, guarantees zero HTML response, creates or retrieves user)
   app.post(['/api/auth/google/direct', '/api/auth/google/direct/'], (req, res) => {
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
     try {
-      const { email, name, picture } = req.body;
+      const { email, name, picture, role } = req.body;
       const cleanEmail = (email || '').trim().toLowerCase();
-      if (!cleanEmail || !cleanEmail.includes('@') || !cleanEmail.includes('.')) {
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!cleanEmail || !emailRegex.test(cleanEmail)) {
         return res.status(200).json({
           success: false,
-          error: 'Por favor ingresa un correo electrónico de Google válido.',
+          error: 'Por favor ingresa un correo electrónico de Google válido y real.',
         });
       }
 
+      const domain = cleanEmail.split('@')[1];
+      if (
+        domain === 'test.com' ||
+        domain === 'test' ||
+        domain === 'fake.com' ||
+        cleanEmail.startsWith('test@') ||
+        cleanEmail.startsWith('fake@')
+      ) {
+        return res.status(200).json({
+          success: false,
+          error: 'No se permiten correos ficticios. Ingresa tu cuenta real de Google.',
+        });
+      }
+
+      let user = authController.usersStore.get(cleanEmail);
+      let isNew = false;
+      if (user) {
+        // Link existing manual account to Google
+        if (!user.authProvider) user.authProvider = 'google';
+        if (picture && !user.avatarUrl) {
+          user.avatarUrl = picture;
+          user.picture = picture;
+        }
+        user.isVerified = true;
+        authController.usersStore.set(cleanEmail, user);
+        authController.savePersistedUsers();
+      } else {
+        const defaultName = cleanEmail === 'cami23henao@gmail.com' ? 'Camila Henao' : cleanEmail.split('@')[0];
+        const userName = (name && name.trim()) ? name.trim() : defaultName;
+        user = {
+          id: `usr-g-${Date.now()}`,
+          name: userName,
+          email: cleanEmail,
+          role: role === 'profesional' ? 'profesional' : 'cliente',
+          authProvider: 'google',
+          picture: picture || null,
+          avatarUrl: picture || null,
+          isVerified: true,
+          createdAt: new Date().toISOString(),
+        };
+        authController.usersStore.set(cleanEmail, user);
+        authController.savePersistedUsers();
+        isNew = true;
+      }
+
+      const token = authController.generateToken(user);
+
       return res.status(200).json({
         success: true,
+        isNew,
+        token,
         user: {
-          id: `g_${cleanEmail.replace(/[^a-z0-9]/g, '_')}`,
+          id: user.id,
           email: cleanEmail,
-          name: name ? name.trim() : cleanEmail.split('@')[0],
-          picture: picture || null,
+          name: user.name,
+          role: user.role,
+          picture: user.picture || null,
           email_verified: true,
         },
       });

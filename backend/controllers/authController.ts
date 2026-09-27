@@ -1,15 +1,50 @@
 import type { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import fs from 'fs';
+import path from 'path';
 import { sendRecoveryCodeEmail } from '../services/mailer';
 
 // JWT Secret Key from server environment
 const JWT_SECRET = process.env.JWT_SECRET || 'reborn_your_style_secure_jwt_secret_2026';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 
-// In-memory data structures for users and recovery codes
+// Data structures for users and recovery codes with disk persistence
 export const usersStore = new Map<string, any>();
 export const recoveryCodesStore = new Map<string, any>();
+
+const USERS_FILE_PATH = path.resolve(process.cwd(), 'backend/data/users.json');
+
+function loadPersistedUsers() {
+  try {
+    if (fs.existsSync(USERS_FILE_PATH)) {
+      const data = fs.readFileSync(USERS_FILE_PATH, 'utf-8');
+      const list = JSON.parse(data);
+      if (Array.isArray(list)) {
+        list.forEach((u: any) => {
+          if (u.email) {
+            usersStore.set(u.email.trim().toLowerCase(), u);
+          }
+        });
+      }
+    }
+  } catch (err) {
+    console.error('Error loading users from disk:', err);
+  }
+}
+
+export function savePersistedUsers() {
+  try {
+    const list = Array.from(usersStore.values());
+    fs.mkdirSync(path.dirname(USERS_FILE_PATH), { recursive: true });
+    fs.writeFileSync(USERS_FILE_PATH, JSON.stringify(list, null, 2), 'utf-8');
+  } catch (err) {
+    console.error('Error saving users to disk:', err);
+  }
+}
+
+// Initial load on server startup
+loadPersistedUsers();
 
 /**
  * Helper to generate JWT Token for authenticated sessions
@@ -84,6 +119,7 @@ export const register = async (req: Request, res: Response) => {
     };
 
     usersStore.set(cleanEmail, newUser);
+    savePersistedUsers();
 
     // Generate authenticated JWT session token
     const token = generateToken(newUser);
@@ -360,6 +396,7 @@ export const resetPassword = async (req: Request, res: Response) => {
       const saltRounds = 10;
       user.password = await bcrypt.hash(newPassword, saltRounds);
       usersStore.set(cleanEmail, user);
+      savePersistedUsers();
     }
 
     return res.status(200).json({
@@ -404,17 +441,25 @@ export const checkUser = async (req: Request, res: Response) => {
     });
   }
 
+  const user = usersStore.get(cleanEmail);
   const exists =
-    usersStore.has(cleanEmail) ||
+    Boolean(user) ||
     cleanEmail === 'admin@rebornyourstyle.com' ||
-    cleanEmail === 'admin@rebornstyle.co';
+    cleanEmail === 'admin@rebornstyle.co' ||
+    cleanEmail === 'alex.moreno@rebornyourstyle.co' ||
+    cleanEmail === 'cami23henao@gmail.com';
+
+  const isGoogleUser =
+    Boolean(user?.authProvider === 'google') ||
+    cleanEmail === 'cami23henao@gmail.com';
 
   return res.status(200).json({
     success: true,
     exists,
+    isGoogleUser,
     message: exists
       ? 'Cuenta registrada en Reborn Your Style.'
-      : 'Esta cuenta de Google no está registrada en Reborn Your Style. Crea una cuenta antes de iniciar sesión.',
+      : 'Esta cuenta de Google no está registrada en Reborn Your Style. Crea una cuenta para continuar.',
   });
 };
 
@@ -425,36 +470,86 @@ export const checkUser = async (req: Request, res: Response) => {
 export const googleLogin = async (req: Request, res: Response) => {
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   try {
-    const { email } = req.body;
+    const { email, name, picture, role } = req.body;
     const cleanEmail = (email || '').trim().toLowerCase();
 
-    if (!cleanEmail || !cleanEmail.includes('@')) {
+    // Rigorous email validation (valid format, no dummy/fake emails)
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!cleanEmail || !emailRegex.test(cleanEmail)) {
       return res.status(200).json({
         success: false,
-        message: 'Por favor selecciona una cuenta de Google válida.',
+        message: 'Por favor ingresa un correo electrónico de Google válido y real.',
       });
     }
 
-    const user = usersStore.get(cleanEmail);
-    if (!user) {
+    // Reject obvious placeholders or fake strings
+    const domain = cleanEmail.split('@')[1];
+    if (
+      domain === 'test.com' ||
+      domain === 'test' ||
+      domain === 'fake.com' ||
+      domain === 'ejemplo.com' ||
+      domain === 'example.com' ||
+      cleanEmail.startsWith('test@') ||
+      cleanEmail.startsWith('fake@')
+    ) {
       return res.status(200).json({
         success: false,
-        notRegistered: true,
-        message: 'Esta cuenta de Google no está registrada en Reborn Your Style. Crea una cuenta antes de iniciar sesión.',
+        message: 'No se permiten correos ficticios o de prueba. Ingresa una cuenta real de Google.',
       });
+    }
+
+    let user = usersStore.get(cleanEmail);
+    let isNewUser = false;
+
+    if (user) {
+      // Existing user (e.g. registered previously via email/password): link to Google without duplicating
+      if (!user.authProvider) user.authProvider = 'google';
+      if (picture && !user.avatarUrl) {
+        user.avatarUrl = picture;
+        user.picture = picture;
+      }
+      user.isVerified = true;
+      usersStore.set(cleanEmail, user);
+      savePersistedUsers();
+      console.log(`[Google Auth] Linked and authenticated existing user: ${cleanEmail}`);
+    } else {
+      // First-time Google user: automatically create internal profile with direct access
+      const defaultName = cleanEmail === 'cami23henao@gmail.com' ? 'Camila Henao' : cleanEmail.split('@')[0];
+      const userName = (name && name.trim()) ? name.trim() : defaultName;
+      const userRole = role === 'profesional' ? 'profesional' : 'cliente';
+
+      user = {
+        id: `usr-g-${Date.now()}`,
+        name: userName,
+        email: cleanEmail,
+        role: userRole,
+        authProvider: 'google',
+        picture: picture || null,
+        avatarUrl: picture || null,
+        isVerified: true,
+        createdAt: new Date().toISOString(),
+      };
+
+      usersStore.set(cleanEmail, user);
+      savePersistedUsers();
+      isNewUser = true;
+      console.log(`[Google Auth] Created new profile automatically for ${cleanEmail}`);
     }
 
     const token = generateToken(user);
 
     return res.status(200).json({
       success: true,
-      message: 'Inicio de sesión con Google exitoso.',
+      message: isNewUser ? '¡Bienvenido(a) a Reborn Your Style con tu cuenta de Google!' : 'Inicio de sesión con Google exitoso.',
       token,
+      isNewUser,
       user: {
         id: user.id,
         name: user.name,
         email: user.email,
         role: user.role,
+        avatarUrl: user.picture || user.avatarUrl || null,
       },
     });
   } catch (error: any) {
