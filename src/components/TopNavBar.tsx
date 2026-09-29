@@ -13,6 +13,17 @@ interface TopNavBarProps {
   onLogout: () => void;
   user: UserProfile;
   onOpenEditProfile: () => void;
+  onOpenInfoModal?: (
+    type:
+      | 'privacidad'
+      | 'terminos'
+      | 'contacto'
+      | 'sostenibilidad'
+      | 'quienes-somos'
+      | 'mision'
+      | 'vision'
+      | 'tutoriales'
+  ) => void;
 }
 
 export const TopNavBar: React.FC<TopNavBarProps> = ({
@@ -24,11 +35,13 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
   isLoggedIn,
   onLogout,
   user,
-  onOpenEditProfile
+  onOpenEditProfile,
+  onOpenInfoModal,
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchInput, setSearchInput] = useState('');
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isMoreDropdownOpen, setIsMoreDropdownOpen] = useState(false);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,90 +50,168 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
     }
   };
 
-  const navItems: { label: string; view: AppView; isAi?: boolean }[] =
+  // Requested Navigation Items: Quiénes somos, Misión, Visión, Catálogo, Servicios, Tutoriales, Impacto, Contacto
+  interface NavItem {
+    id: string;
+    label: string;
+    icon: string;
+    onClick: () => void;
+    isActive?: boolean;
+    priority?: boolean;
+  }
+
+  const navItems: NavItem[] =
     userRole === 'admin'
       ? []
       : [
-          { label: 'Inicio', view: 'inicio' },
-          { label: 'Catálogos', view: 'catalogos' },
-          { label: 'Costureros', view: 'costureros' },
-          { label: 'Servicios', view: 'servicios' },
-          { label: 'Inspiración', view: 'inspiracion' },
-          { label: 'Cómo funciona', view: 'como-funciona' },
+          {
+            id: 'quienes-somos',
+            label: 'Quiénes somos',
+            icon: 'groups',
+            onClick: () => onOpenInfoModal?.('quienes-somos'),
+          },
+          {
+            id: 'mision',
+            label: 'Misión',
+            icon: 'target',
+            onClick: () => onOpenInfoModal?.('mision'),
+          },
+          {
+            id: 'vision',
+            label: 'Visión',
+            icon: 'visibility',
+            onClick: () => onOpenInfoModal?.('vision'),
+          },
+          {
+            id: 'catalogo',
+            label: 'Catálogo',
+            icon: 'inventory_2',
+            priority: true,
+            isActive: currentView === 'catalogos' || currentView === 'categoria',
+            onClick: () => onNavigate('catalogos'),
+          },
+          {
+            id: 'servicios',
+            label: 'Servicios',
+            icon: 'content_cut',
+            priority: true,
+            isActive: currentView === 'servicios',
+            onClick: () => onNavigate('servicios'),
+          },
+          {
+            id: 'tutoriales',
+            label: 'Tutoriales',
+            icon: 'school',
+            priority: true,
+            onClick: () => onOpenInfoModal?.('tutoriales'),
+          },
+          {
+            id: 'impacto',
+            label: 'Impacto',
+            icon: 'nature_people',
+            priority: true,
+            onClick: () => onOpenInfoModal?.('sostenibilidad'),
+          },
+          {
+            id: 'contacto',
+            label: 'Contacto',
+            icon: 'mail',
+            priority: true,
+            onClick: () => onOpenInfoModal?.('contacto'),
+          },
         ];
 
-  const isItemActive = (view: AppView) => {
-    if (view === 'catalogos') {
-      return currentView === 'catalogos' || currentView === 'categoria';
-    }
-    if (view === 'costureros') {
-      return currentView === 'costureros' || currentView === 'perfil-profesional';
-    }
-    return currentView === view;
-  };
-
   return (
-    <nav className="fixed top-0 left-0 w-full z-50 px-4 md:px-12 h-20 bg-[#faf9f4]/95 backdrop-blur-md shadow-[0_4px_16px_rgba(1,45,29,0.05)] border-b border-[#c1c8c2]/30 flex items-center">
-      <div className="max-w-7xl mx-auto w-full flex justify-between items-center">
-        {/* Brand Logo */}
-        <div className="flex items-center gap-3 md:gap-8">
-        <button
-          onClick={() => onNavigate(userRole === 'admin' ? 'admin' : 'inicio')}
-          className="hover:opacity-90 transition-opacity tracking-tight text-left flex items-center gap-2"
-          aria-label={userRole === 'admin' ? 'Panel de Administración' : 'Ir a Inicio'}
-        >
-          <BrandLogo size="sm" variant="horizontal" />
-        </button>
+    <nav className="fixed top-0 left-0 w-full z-50 px-3 sm:px-6 lg:px-8 h-20 bg-[#faf9f4]/95 backdrop-blur-md shadow-[0_2px_12px_rgba(1,45,29,0.05)] border-b border-[#c1c8c2]/30 flex items-center">
+      <div className="max-w-7xl mx-auto w-full flex justify-between items-center gap-2 sm:gap-4">
+        {/* Brand Logo - Aligned, sharp, with clean margins */}
+        <div className="flex items-center shrink-0">
+          <button
+            onClick={() => onNavigate(userRole === 'admin' ? 'admin' : 'inicio')}
+            className="hover:opacity-90 transition-opacity text-left flex items-center shrink-0 cursor-pointer focus:outline-none"
+            aria-label={userRole === 'admin' ? 'Panel de Administración' : 'Ir a Inicio'}
+          >
+            <BrandLogo size="sm" variant="horizontal" />
+          </button>
 
-        {userRole === 'admin' && (
-          <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#012d1d] text-[#b0f1cc] text-xs font-bold shadow-xs">
-            <span className="material-symbols-outlined text-sm">admin_panel_settings</span>
-            <span>Panel de Administración Central</span>
-          </span>
-        )}
+          {userRole === 'admin' && (
+            <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#012d1d] text-[#b0f1cc] text-xs font-bold shadow-xs ml-3">
+              <span className="material-symbols-outlined text-sm">admin_panel_settings</span>
+              <span>Panel Admin Central</span>
+            </span>
+          )}
+        </div>
 
-        {/* Desktop Navigation Links */}
-        <div className="hidden lg:flex items-center gap-1.5 xl:gap-2 ml-4">
-          {navItems.map((item) => {
-            const isActive = isItemActive(item.view);
-            if (item.isAi) {
-              return (
-                <button
-                  key={item.view}
-                  onClick={() => onNavigate(item.view)}
-                  className={`text-xs font-bold px-3 py-1.5 rounded-full transition-all duration-150 flex items-center gap-1.5 ${
-                    isActive
-                      ? 'bg-[#012d1d] text-white shadow-sm'
-                      : 'bg-[#b0f1cc]/40 text-[#012d1d] hover:bg-[#b0f1cc] border border-[#2b694d]/20'
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-sm">auto_awesome</span>
-                  <span>{item.label}</span>
-                </button>
-              );
-            }
-
-            return (
+        {/* Desktop Navigation Links (Quiénes somos, Misión, Visión, Catálogo, Servicios, Tutoriales, Impacto, Contacto) */}
+        {userRole !== 'admin' && (
+          <div className="hidden xl:flex items-center gap-1 2xl:gap-1.5 px-2">
+            {navItems.map((item) => (
               <button
-                key={item.view}
-                onClick={() => onNavigate(item.view)}
-                className={`text-xs font-bold px-3 py-2 rounded-lg transition-all duration-150 ${
-                  isActive
-                    ? 'text-[#012d1d] border-b-2 border-[#012d1d] bg-[#faf9f4]'
+                key={item.id}
+                onClick={item.onClick}
+                className={`text-xs 2xl:text-[13px] font-semibold px-2.5 2xl:px-3 py-1.5 rounded-lg transition-all duration-150 whitespace-nowrap cursor-pointer ${
+                  item.isActive
+                    ? 'text-[#012d1d] font-bold bg-[#efeee9] shadow-xs'
                     : 'text-[#414844] hover:text-[#012d1d] hover:bg-[#efeee9]'
                 }`}
               >
                 {item.label}
               </button>
-            );
-          })}
-        </div>
-      </div>
+            ))}
+          </div>
+        )}
 
-      {/* Right Side Actions */}
-      <div className="flex items-center gap-2 sm:gap-3">
-        {/* Quick Search */}
-        <form onSubmit={handleSearchSubmit} className="relative hidden md:block">
+        {/* Compact Navigation for medium screens (lg to xl) */}
+        {userRole !== 'admin' && (
+          <div className="hidden lg:flex xl:hidden items-center gap-1 px-1">
+            {navItems.filter((i) => i.priority).map((item) => (
+              <button
+                key={item.id}
+                onClick={item.onClick}
+                className={`text-xs font-semibold px-2 py-1.5 rounded-lg transition-all whitespace-nowrap cursor-pointer ${
+                  item.isActive
+                    ? 'text-[#012d1d] font-bold bg-[#efeee9]'
+                    : 'text-[#414844] hover:text-[#012d1d] hover:bg-[#efeee9]'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+
+            <div className="relative">
+              <button
+                onClick={() => setIsMoreDropdownOpen(!isMoreDropdownOpen)}
+                className="text-xs font-semibold px-2 py-1.5 rounded-lg text-[#414844] hover:text-[#012d1d] hover:bg-[#efeee9] flex items-center gap-0.5 cursor-pointer"
+              >
+                <span>Más</span>
+                <span className="material-symbols-outlined text-sm">expand_more</span>
+              </button>
+
+              {isMoreDropdownOpen && (
+                <div className="absolute left-0 mt-1 w-44 bg-white rounded-xl shadow-lg border border-[#c1c8c2]/50 py-1.5 z-50 text-xs animate-in fade-in">
+                  {navItems.filter((i) => !i.priority).map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        item.onClick();
+                        setIsMoreDropdownOpen(false);
+                      }}
+                      className="w-full text-left px-3 py-2 text-[#414844] hover:text-[#012d1d] hover:bg-[#f5f4ef] flex items-center gap-2 cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-sm text-[#2b694d]">{item.icon}</span>
+                      <span>{item.label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Right Side Actions (Search, Login Button, Role CTA, Mobile Toggle) */}
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          {/* Quick Search */}
+          <form onSubmit={handleSearchSubmit} className="relative hidden md:block">
           <button
             type="button"
             onClick={onOpenSearch}
@@ -327,25 +418,25 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
 
       {/* Mobile Drawer */}
       {isMobileMenuOpen && (
-        <div className="lg:hidden fixed top-20 left-0 w-full bg-[#faf9f4] border-b border-[#c1c8c2]/50 shadow-2xl p-4 flex flex-col gap-2 z-40 animate-in slide-in-from-top-4 max-h-[85vh] overflow-y-auto">
+        <div className="lg:hidden fixed top-20 left-0 w-full bg-[#faf9f4] border-b border-[#c1c8c2]/50 shadow-2xl p-4 flex flex-col gap-1.5 z-40 animate-in slide-in-from-top-4 max-h-[85vh] overflow-y-auto">
           {navItems.map((item) => (
             <button
-              key={item.view}
+              key={item.id}
               onClick={() => {
-                onNavigate(item.view);
+                item.onClick();
                 setIsMobileMenuOpen(false);
               }}
               className={`text-left text-sm font-semibold px-4 py-3 rounded-xl transition-colors flex items-center justify-between ${
-                isItemActive(item.view)
+                item.isActive
                   ? 'bg-[#b0f1cc] text-[#002113] font-bold'
                   : 'text-[#1b1c19] hover:bg-[#efeee9]'
               }`}
             >
-              <div className="flex items-center gap-2">
-                {item.isAi && <span className="material-symbols-outlined text-base text-[#2b694d]">auto_awesome</span>}
+              <div className="flex items-center gap-3">
+                <span className="material-symbols-outlined text-base text-[#2b694d]">{item.icon}</span>
                 <span>{item.label}</span>
               </div>
-              <span className="material-symbols-outlined text-sm">chevron_right</span>
+              <span className="material-symbols-outlined text-sm text-[#717973]">chevron_right</span>
             </button>
           ))}
           <div className="pt-2 border-t border-[#c1c8c2]/40 flex flex-col gap-2">

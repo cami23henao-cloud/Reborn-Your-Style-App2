@@ -9,15 +9,6 @@
     "createdAt": "2025-03-01T00:00:00.000Z"
   },
   {
-    "id": "usr-cami-henao",
-    "name": "Camila Henao",
-    "email": "cami23henao@gmail.com",
-    "password": "$2b$10$kg.8tAj7DZ4m2cm1Gs1ikekWGJ/naibvsVAK1Jj3fTM3Q/MpaFCdS",
-    "role": "cliente",
-    "authProvider": "google",
-    "createdAt": "2025-03-01T00:00:00.000Z"
-  },
-  {
     "id": "usr-admin",
     "name": "Administrador Reborn",
     "email": "admin@rebornyourstyle.com",
@@ -36,5 +27,38 @@
     "avatarUrl": null,
     "isVerified": true,
     "createdAt": "2026-09-27T22:53:29.944Z"
+  },
+  {
+    "id": "usr-g-1790690335006",
+    "name": "Test User",
+    "email": "test.user@gmail.com",
+    "role": "cliente",
+    "authProvider": "google",
+    "picture": null,
+    "avatarUrl": null,
+    "isVerified": true,
+    "createdAt": "2026-09-29T13:58:55.006Z"
+  },
+  {
+    "id": "usr-g-1790691054250",
+    "name": "Usuario Libre",
+    "email": "usuario.libre@gmail.com",
+    "role": "cliente",
+    "authProvider": "google",
+    "picture": null,
+    "avatarUrl": null,
+    "isVerified": true,
+    "createdAt": "2026-09-29T14:10:54.250Z"
+  },
+  {
+    "id": "usr-g-1790691534296",
+    "name": "Nueva Cuenta Google",
+    "email": "nueva.cuenta@gmail.com",
+    "role": "cliente",
+    "authProvider": "google",
+    "picture": null,
+    "avatarUrl": null,
+    "isVerified": true,
+    "createdAt": "2026-09-29T14:18:54.296Z"
   }
 ]

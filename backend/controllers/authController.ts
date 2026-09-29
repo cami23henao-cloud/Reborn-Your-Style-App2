@@ -446,12 +446,9 @@ export const checkUser = async (req: Request, res: Response) => {
     Boolean(user) ||
     cleanEmail === 'admin@rebornyourstyle.com' ||
     cleanEmail === 'admin@rebornstyle.co' ||
-    cleanEmail === 'alex.moreno@rebornyourstyle.co' ||
-    cleanEmail === 'cami23henao@gmail.com';
+    cleanEmail === 'alex.moreno@rebornyourstyle.co';
 
-  const isGoogleUser =
-    Boolean(user?.authProvider === 'google') ||
-    cleanEmail === 'cami23henao@gmail.com';
+  const isGoogleUser = Boolean(user?.authProvider === 'google');
 
   return res.status(200).json({
     success: true,
@@ -515,8 +512,8 @@ export const googleLogin = async (req: Request, res: Response) => {
       console.log(`[Google Auth] Linked and authenticated existing user: ${cleanEmail}`);
     } else {
       // First-time Google user: automatically create internal profile with direct access
-      const defaultName = cleanEmail === 'cami23henao@gmail.com' ? 'Camila Henao' : cleanEmail.split('@')[0];
-      const userName = (name && name.trim()) ? name.trim() : defaultName;
+      const derivedName = cleanEmail.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+      const userName = (name && name.trim()) ? name.trim() : derivedName;
       const userRole = role === 'profesional' ? 'profesional' : 'cliente';
 
       user = {

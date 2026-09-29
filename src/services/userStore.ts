@@ -65,37 +65,6 @@ export const INITIAL_PERSISTED_ACCOUNTS: StoredUserAccount[] = [
     createdAt: '2025-03-01T00:00:00.000Z',
     isVerified: true,
   },
-  {
-    id: 'usr-cami-henao',
-    email: 'cami23henao@gmail.com',
-    name: 'Camila Henao',
-    role: 'cliente',
-    profile: {
-      id: 'usr-cami-henao',
-      name: 'Camila Henao',
-      email: 'cami23henao@gmail.com',
-      role: 'cliente',
-      avatarUrl: '',
-      username: '@camihenao',
-      bio: 'Usuaria de Reborn Your Style',
-      location: 'Medellín, Antioquia',
-      department: 'Antioquia',
-      municipality: 'Medellín',
-      phone: '',
-      instagram: '',
-      joinedDate: 'Marzo 2025',
-      publishedCount: 0,
-      upcycledCount: 0,
-      waterSavedLiters: 0,
-      co2SavedKg: 0,
-    },
-    garments: [],
-    services: [],
-    requests: [],
-    conversations: [],
-    createdAt: '2025-03-01T00:00:00.000Z',
-    isVerified: true,
-  },
 ];
 
 /**
@@ -654,54 +623,19 @@ export async function loginOrRegisterWithGoogle(params: {
  * Strictly checks that the account already exists in Reborn Your Style database.
  * NEVER creates automatic accounts, profiles, or dummy data.
  */
-export async function loginWithGoogleExistingOnly(email: string): Promise<{
+export async function loginWithGoogleExistingOnly(email: string, name?: string, avatarUrl?: string): Promise<{
   success: boolean;
   notRegistered?: boolean;
   error?: string;
   user?: StoredUserAccount;
 }> {
-  const emailClean = (email || '').trim().toLowerCase();
-  if (!emailClean) {
-    return {
-      success: false,
-      error: 'Por favor selecciona una cuenta de Google válida.',
-    };
-  }
-
-  const check = validateEmailFormat(emailClean);
-  if (!check.isValid) {
-    return {
-      success: false,
-      error: 'El formato de correo de Google no es válido.',
-    };
-  }
-
-  const db = getUsersDatabase();
-  const existing = db.find((u) => u.email.trim().toLowerCase() === emailClean);
-
-  if (!existing) {
-    return {
-      success: false,
-      notRegistered: true,
-      error: 'Esta cuenta de Google no está registrada en Reborn Your Style.',
-    };
-  }
-
-  if (existing.profile.accountStatus === 'bloqueado') {
-    return {
-      success: false,
-      error: `Esta cuenta ha sido bloqueada. Motivo: ${existing.profile.blockReason || 'Incumplimiento de normas'}.`,
-    };
-  }
-  if (existing.profile.accountStatus === 'suspendido') {
-    return {
-      success: false,
-      error: `Esta cuenta se encuentra temporalmente suspendida. Motivo: ${existing.profile.suspensionReason || 'En revisión'}.`,
-    };
-  }
-
-  setActiveSession(existing);
-  return { success: true, user: existing };
+  // Never block or restrict to pre-registered accounts: allow automatic login/registration for any Google account
+  return loginOrRegisterWithGoogle({
+    email,
+    name,
+    avatarUrl,
+    role: 'cliente',
+  });
 }
 
 /**
@@ -715,8 +649,7 @@ export function isAccountRegistered(email: string): boolean {
     cleanEmail === EXCLUSIVE_ADMIN_EMAIL.toLowerCase() ||
     cleanEmail === 'admin@rebornstyle.co' ||
     cleanEmail === 'admin@rebornyourstyle.com' ||
-    cleanEmail === 'alex.moreno@rebornyourstyle.co' ||
-    cleanEmail === 'cami23henao@gmail.com'
+    cleanEmail === 'alex.moreno@rebornyourstyle.co'
   ) {
     return true;
   }
@@ -767,5 +700,74 @@ export async function updateUserPassword(
   saveUsersDatabase(db);
 
   return { success: true };
+}
+
+/**
+ * Manage Google accounts detected/used on this device/browser.
+ */
+export interface DeviceGoogleAccount {
+  email: string;
+  name: string;
+  avatarUrl?: string;
+  lastUsed?: string;
+}
+
+const STORAGE_KEY_GOOGLE_ACCOUNTS = 'reborn_device_google_accounts_v1';
+
+export function getDeviceGoogleAccounts(): DeviceGoogleAccount[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_GOOGLE_ACCOUNTS);
+    let list: DeviceGoogleAccount[] = raw ? JSON.parse(raw) : [];
+
+    // Also include any users in local database who authenticated via Google or with gmail
+    const db = getUsersDatabase();
+    for (const u of db) {
+      if ((u as any).authProvider === 'google' || (u.email && u.email.endsWith('@gmail.com'))) {
+        if (!list.some((a) => a.email.toLowerCase() === u.email.toLowerCase())) {
+          list.push({
+            email: u.email,
+            name: u.name || u.profile?.name || u.email.split('@')[0],
+            avatarUrl: u.profile?.avatarUrl || '',
+            lastUsed: u.createdAt || new Date().toISOString(),
+          });
+        }
+      }
+    }
+    return list;
+  } catch {
+    return [];
+  }
+}
+
+export function saveDeviceGoogleAccount(account: DeviceGoogleAccount): void {
+  try {
+    const list = getDeviceGoogleAccounts();
+    const cleanEmail = account.email.trim().toLowerCase();
+    const existingIdx = list.findIndex((a) => a.email.toLowerCase() === cleanEmail);
+    const item: DeviceGoogleAccount = {
+      email: cleanEmail,
+      name: account.name || cleanEmail.split('@')[0],
+      avatarUrl: account.avatarUrl || '',
+      lastUsed: new Date().toISOString(),
+    };
+    if (existingIdx >= 0) {
+      list[existingIdx] = { ...list[existingIdx], ...item };
+    } else {
+      list.unshift(item);
+    }
+    localStorage.setItem(STORAGE_KEY_GOOGLE_ACCOUNTS, JSON.stringify(list));
+  } catch (err) {
+    console.error('Error saving device Google account:', err);
+  }
+}
+
+export function removeDeviceGoogleAccount(email: string): void {
+  try {
+    const cleanEmail = email.trim().toLowerCase();
+    const list = getDeviceGoogleAccounts().filter((a) => a.email.toLowerCase() !== cleanEmail);
+    localStorage.setItem(STORAGE_KEY_GOOGLE_ACCOUNTS, JSON.stringify(list));
+  } catch (err) {
+    console.error('Error removing device Google account:', err);
+  }
 }
 

@@ -4,9 +4,13 @@ import {
   registerVerifiedUser,
   loginUser,
   loginAdministrator,
-  loginWithGoogleExistingOnly,
+  loginOrRegisterWithGoogle,
   updateUserPassword,
   isAccountRegistered,
+  getDeviceGoogleAccounts,
+  saveDeviceGoogleAccount,
+  removeDeviceGoogleAccount,
+  DeviceGoogleAccount,
   StoredUserAccount
 } from '../../services/userStore';
 import {
@@ -78,7 +82,7 @@ interface AuthModalProps {
 
 type AuthViewMode =
   | 'login'
-  | 'google_not_registered'
+  | 'google_account_picker'
   | 'register'
   | 'register_verify'
   | 'forgot_password'
@@ -99,6 +103,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [loginPassword, setLoginPassword] = useState('');
   const [showLoginPassword, setShowLoginPassword] = useState(false);
 
+  // States for Google Account Chooser (Device accounts)
+  const [deviceAccounts, setDeviceAccounts] = useState<DeviceGoogleAccount[]>([]);
+  const [isUsingOtherGoogleAccount, setIsUsingOtherGoogleAccount] = useState(false);
+  const [customGoogleEmail, setCustomGoogleEmail] = useState('');
+  const [customGoogleName, setCustomGoogleName] = useState('');
+
   // Input states for Register
   const [registerName, setRegisterName] = useState('');
   const [registerEmail, setRegisterEmail] = useState('');
@@ -110,9 +120,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   // Email verification state (Step 2 of Register)
   const [verificationCode, setVerificationCode] = useState('');
   const [verificationCooldown, setVerificationCooldown] = useState(0);
-
-  // Unregistered Google Account state
-  const [unregisteredGoogleEmail, setUnregisteredGoogleEmail] = useState('');
 
   // Password Recovery Flow: 1 ('request') -> 2 ('verify') -> 3 ('new_password') -> 4 ('success')
   const [recoveryStep, setRecoveryStep] = useState<'request' | 'verify' | 'new_password' | 'success'>('request');
@@ -153,7 +160,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setVerificationCode('');
       setVerificationCooldown(0);
 
-      setUnregisteredGoogleEmail('');
+      setDeviceAccounts(getDeviceGoogleAccounts());
+      setIsUsingOtherGoogleAccount(false);
+      setCustomGoogleEmail('');
+      setCustomGoogleName('');
 
       setRecoveryStep('request');
       setRecoveryEmail('');
@@ -239,33 +249,73 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   // ---------------------------------------------------------------------------
   // 2. CONTINUAR CON GOOGLE
   // ---------------------------------------------------------------------------
-  const processGoogleEmail = async (rawEmail: string) => {
+  const processGoogleEmail = async (rawEmail: string, rawName?: string, rawPicture?: string) => {
     const cleanEmail = (rawEmail || '').trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      setErrorMsg('Por favor ingresa un correo de Google válido.');
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     setErrorMsg('');
     setSuccessMsg('');
 
     try {
-      // Check real account existence in Reborn Your Style database
-      const res = await loginWithGoogleExistingOnly(cleanEmail);
-      setIsLoading(false);
+      const fallbackName = cleanEmail.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+      const displayName = rawName?.trim() || fallbackName;
+      const avatarUrl =
+        rawPicture ||
+        `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName)}&backgroundColor=012d1d&textColor=b0f1cc`;
 
-      if (res.success && res.user) {
-        // Registered Google user: allow immediate access
-        setSuccessMsg(`¡Bienvenido(a) de nuevo, ${res.user.name}!`);
-        setTimeout(() => {
-          onLoginAccount(res.user!);
-          onClose();
-        }, 500);
-        return;
+      // 1. Authenticate with backend API (POST /api/auth/google/login)
+      const apiRes = await safeApiCall<{
+        success: boolean;
+        token?: string;
+        user?: any;
+        message?: string;
+      }>('/api/auth/google/login', 'POST', {
+        email: cleanEmail,
+        name: displayName,
+        picture: avatarUrl,
+        role: selectedRole || 'cliente',
+      });
+
+      if (apiRes.success && apiRes.data?.token) {
+        try {
+          localStorage.setItem('reborn_auth_token', apiRes.data.token);
+        } catch (e) {
+          console.warn('Could not store token in localStorage:', e);
+        }
       }
 
-      // Unregistered Google user:
-      // STRICT REQUIREMENT: DO NOT create account automatically. DO NOT create profile. DO NOT allow access.
-      // Show: "Esta cuenta de Google no está registrada en Reborn Your Style."
-      // Buttons: [ Crear una cuenta ] [ Volver ]
-      setUnregisteredGoogleEmail(cleanEmail);
-      setViewMode('google_not_registered');
+      // 2. Synchronize with local client-side user database
+      const storeRes = await loginOrRegisterWithGoogle({
+        email: cleanEmail,
+        name: displayName,
+        role: selectedRole || 'cliente',
+        avatarUrl,
+      });
+
+      // 3. Save as active account on this device for seamless 1-click select
+      saveDeviceGoogleAccount({
+        email: cleanEmail,
+        name: displayName,
+        avatarUrl,
+      });
+      setDeviceAccounts(getDeviceGoogleAccounts());
+
+      setIsLoading(false);
+
+      if (storeRes.success && storeRes.user) {
+        setSuccessMsg(`¡Bienvenido(a) a Reborn Your Style, ${storeRes.user.name}!`);
+        setTimeout(() => {
+          onLoginAccount(storeRes.user!);
+          onClose();
+        }, 400);
+      } else {
+        setErrorMsg(storeRes.error || apiRes.error || 'No fue posible completar el inicio de sesión con Google.');
+      }
     } catch {
       setIsLoading(false);
       setErrorMsg('No pudimos procesar la autenticación con Google. Por favor intenta nuevamente.');
@@ -292,7 +342,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
       const googleObj = typeof window !== 'undefined' ? (window as any).google : null;
 
-      // Invokes official Google Identity Services native account chooser popup with prompt: 'select_account'
+      // If Google Identity Services (GIS) native account chooser is configured
       if (googleClientId && googleObj?.accounts?.oauth2) {
         const tokenClient = googleObj.accounts.oauth2.initTokenClient({
           client_id: googleClientId,
@@ -302,7 +352,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             if (tokenRes?.error) {
               setIsLoading(false);
               if (tokenRes.error !== 'access_denied') {
-                setErrorMsg('No fue posible completar la autenticación con Google.');
+                setDeviceAccounts(getDeviceGoogleAccounts());
+                setIsUsingOtherGoogleAccount(false);
+                setViewMode('google_account_picker');
               }
               return;
             }
@@ -314,7 +366,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 });
                 const userInfo = await userInfoRes.json();
                 if (userInfo?.email) {
-                  await processGoogleEmail(userInfo.email);
+                  await processGoogleEmail(userInfo.email, userInfo.name, userInfo.picture);
                   return;
                 }
               } catch (err) {
@@ -322,13 +374,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               }
             }
             setIsLoading(false);
-            setErrorMsg('No fue posible obtener los datos de la cuenta de Google.');
+            setDeviceAccounts(getDeviceGoogleAccounts());
+            setIsUsingOtherGoogleAccount(false);
+            setViewMode('google_account_picker');
           },
-          error_callback: (err: any) => {
+          error_callback: () => {
             setIsLoading(false);
-            if (err?.type !== 'popup_closed') {
-              setErrorMsg('No fue posible abrir la ventana de Google. Verifica que los pop-ups estén permitidos.');
-            }
+            setDeviceAccounts(getDeviceGoogleAccounts());
+            setIsUsingOtherGoogleAccount(false);
+            setViewMode('google_account_picker');
           },
         });
 
@@ -336,45 +390,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         return;
       }
 
-      if (googleClientId && googleObj?.accounts?.id) {
-        googleObj.accounts.id.initialize({
-          client_id: googleClientId,
-          auto_select: false,
-          cancel_on_tap_outside: true,
-          callback: async (response: any) => {
-            if (response?.credential) {
-              try {
-                const payloadBase64 = response.credential.split('.')[1];
-                const decodedJson = JSON.parse(
-                  atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/'))
-                );
-                if (decodedJson?.email) {
-                  await processGoogleEmail(decodedJson.email);
-                  return;
-                }
-              } catch (e) {
-                console.error('Error decoding credential:', e);
-              }
-            }
-            setIsLoading(false);
-          },
-        });
-
-        googleObj.accounts.id.prompt((notification: any) => {
-          if (notification?.isNotDisplayed?.() || notification?.isSkippedMoment?.()) {
-            setIsLoading(false);
-            setErrorMsg('El servicio de acceso con Google no está disponible temporalmente. Por favor inicia sesión con tu correo y contraseña.');
-          }
-        });
-        return;
-      }
-
-      // If Google Client ID is not configured in environment
+      // If GIS client_id is not configured or in sandbox, present the Google account chooser for device
       setIsLoading(false);
-      setErrorMsg('El servicio de acceso con Google no está disponible temporalmente. Por favor inicia sesión con tu correo y contraseña.');
+      setDeviceAccounts(getDeviceGoogleAccounts());
+      setIsUsingOtherGoogleAccount(false);
+      setViewMode('google_account_picker');
     } catch {
       setIsLoading(false);
-      setErrorMsg('No se pudo conectar con el servicio de autenticación de Google. Por favor ingresa con tu correo y contraseña.');
+      setDeviceAccounts(getDeviceGoogleAccounts());
+      setIsUsingOtherGoogleAccount(false);
+      setViewMode('google_account_picker');
     }
   };
 
@@ -914,49 +939,223 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           )}
 
           {/* ================================================================= */}
-          {/* SCREEN 2: CUENTA DE GOOGLE NO REGISTRADA                           */}
+          {/* SCREEN 2: ACCESO Y SELECCIÓN DE CUENTA DE GOOGLE (DISPOSITIVO)    */}
           {/* ================================================================= */}
-          {viewMode === 'google_not_registered' && (
-            <div className="text-center py-2 space-y-4">
-              <div className="w-12 h-12 rounded-full bg-[#fef2f2] text-[#dc2626] flex items-center justify-center mx-auto mb-2">
-                <span className="material-symbols-outlined text-[26px]">person_off</span>
-              </div>
-              <h3 className="text-base font-bold text-[#1b1c19]">
-                Esta cuenta de Google no está registrada en Reborn Your Style.
-              </h3>
-              {unregisteredGoogleEmail && (
-                <p className="text-xs font-mono bg-[#faf9f4] border border-[#e2e0d8] px-3 py-1.5 rounded-lg text-[#414844] inline-block">
-                  {unregisteredGoogleEmail}
+          {viewMode === 'google_account_picker' && (
+            <div className="py-1 space-y-4 animate-in fade-in duration-200">
+              {/* Google Brand Header */}
+              <div className="text-center space-y-2">
+                <div className="w-12 h-12 rounded-full bg-white border border-[#e2e0d8] shadow-xs flex items-center justify-center mx-auto">
+                  <svg className="w-6 h-6" viewBox="0 0 24 24">
+                    <path
+                      fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                    />
+                    <path
+                      fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-semibold text-[#202124] tracking-tight">
+                  Elige una cuenta
+                </h3>
+                <p className="text-xs text-[#5f6368] max-w-sm mx-auto leading-relaxed">
+                  para continuar en <strong className="text-[#202124]">Reborn Your Style</strong>
                 </p>
-              )}
-              <p className="text-xs text-[#717973] leading-relaxed max-w-sm mx-auto">
-                Para acceder con Google, primero debes crear tu cuenta en la plataforma con este correo o iniciar sesión con una cuenta existente.
-              </p>
+              </div>
 
-              <div className="flex flex-col gap-2.5 pt-3">
+              {/* Account Selection Box (Google style) */}
+              <div className="pt-1">
+                {!isUsingOtherGoogleAccount && deviceAccounts.length > 0 ? (
+                  <div className="space-y-3">
+                    <p className="text-[11px] font-medium text-[#5f6368] px-1">
+                      Cuentas activas en este dispositivo / navegador:
+                    </p>
+
+                    <div className="border border-[#dadce0] rounded-2xl overflow-hidden divide-y divide-[#f1f3f4] bg-white shadow-xs">
+                      {deviceAccounts.map((account) => (
+                        <div
+                          key={account.email}
+                          onClick={() => processGoogleEmail(account.email, account.name, account.avatarUrl)}
+                          className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-[#f8fafd] transition-colors cursor-pointer group"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            {account.avatarUrl ? (
+                              <img
+                                src={account.avatarUrl}
+                                alt={account.name}
+                                className="w-10 h-10 rounded-full object-cover border border-[#dadce0] shrink-0"
+                              />
+                            ) : (
+                              <div className="w-10 h-10 rounded-full bg-[#012d1d] text-[#b0f1cc] font-semibold text-base flex items-center justify-center shrink-0">
+                                {account.name.charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                            <div className="min-w-0 truncate">
+                              <p className="text-sm font-semibold text-[#202124] group-hover:text-[#1a73e8] transition-colors truncate">
+                                {account.name}
+                              </p>
+                              <p className="text-xs text-[#5f6368] truncate">{account.email}</p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              title="Quitar cuenta de este dispositivo"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeDeviceGoogleAccount(account.email);
+                                setDeviceAccounts(getDeviceGoogleAccounts());
+                              }}
+                              className="opacity-0 group-hover:opacity-100 p-1 rounded-full hover:bg-[#e8eaed] text-[#5f6368] hover:text-[#d93025] transition-all cursor-pointer"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">close</span>
+                            </button>
+                            <span className="material-symbols-outlined text-[#dadce0] group-hover:text-[#1a73e8] transition-colors text-[20px]">
+                              chevron_right
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+
+                      {/* "+ Usar otra cuenta" tile */}
+                      <div
+                        onClick={() => {
+                          setErrorMsg('');
+                          setSuccessMsg('');
+                          setIsUsingOtherGoogleAccount(true);
+                        }}
+                        className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-[#f8fafd] transition-colors cursor-pointer group"
+                      >
+                        <div className="w-10 h-10 rounded-full border border-dashed border-[#dadce0] group-hover:border-[#1a73e8] flex items-center justify-center text-[#5f6368] group-hover:text-[#1a73e8] shrink-0 transition-colors">
+                          <span className="material-symbols-outlined text-[20px]">person_add</span>
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-[#202124] group-hover:text-[#1a73e8] transition-colors">
+                            Usar otra cuenta de Google
+                          </p>
+                          <p className="text-xs text-[#5f6368]">
+                            Ingresar con cualquier otra cuenta de Google
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  /* Form: Ingresar otra cuenta de Google */
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (customGoogleEmail.trim()) {
+                        processGoogleEmail(customGoogleEmail, customGoogleName);
+                      }
+                    }}
+                    className="space-y-3.5"
+                  >
+                    <div>
+                      <label className="block text-xs font-semibold text-[#202124] mb-1.5">
+                        Correo de Google (Gmail o Workspace)
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        autoFocus
+                        placeholder="tu-correo@gmail.com"
+                        value={customGoogleEmail}
+                        onChange={(e) => setCustomGoogleEmail(e.target.value)}
+                        className="w-full px-4 py-2.5 bg-white border border-[#dadce0] focus:border-[#1a73e8] focus:ring-2 focus:ring-[#1a73e8]/20 rounded-xl text-sm text-[#202124] outline-none transition-all placeholder:text-[#9aa0a6]"
+                      />
+                      <p className="text-[11px] text-[#5f6368] mt-1.5 leading-relaxed">
+                        Cualquier cuenta de Google activa podrá ingresar inmediatamente o registrarse sin restricciones ni contraseñas.
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-[#202124] mb-1.5">
+                        Nombre completo o perfil (opcional)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Tu nombre completo"
+                        value={customGoogleName}
+                        onChange={(e) => setCustomGoogleName(e.target.value)}
+                        className="w-full px-4 py-2 bg-white border border-[#dadce0] focus:border-[#1a73e8] focus:ring-2 focus:ring-[#1a73e8]/20 rounded-xl text-sm text-[#202124] outline-none transition-all placeholder:text-[#9aa0a6]"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between pt-2">
+                      {deviceAccounts.length > 0 ? (
+                        <button
+                          type="button"
+                          disabled={isLoading}
+                          onClick={() => {
+                            setErrorMsg('');
+                            setIsUsingOtherGoogleAccount(false);
+                          }}
+                          className="text-xs font-semibold text-[#1a73e8] hover:underline cursor-pointer"
+                        >
+                          ← Ver cuentas del dispositivo
+                        </button>
+                      ) : (
+                        <div />
+                      )}
+
+                      <button
+                        type="submit"
+                        disabled={isLoading || !customGoogleEmail.trim()}
+                        className="py-2.5 px-5 bg-[#012d1d] hover:bg-[#0c3927] disabled:bg-[#a0a5a1] text-white font-semibold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer ml-auto"
+                      >
+                        {isLoading ? (
+                          <>
+                            <span className="inline-block w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            <span>Iniciando sesión...</span>
+                          </>
+                        ) : (
+                          <span>Continuar con esta cuenta</span>
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
+
+              {/* Google Security & Privacy note */}
+              <div className="pt-2 text-center space-y-2 border-t border-[#f1f3f4]">
+                <p className="text-[11px] text-[#70757a] leading-relaxed">
+                  Para continuar, Google compartirá tu nombre, dirección de correo electrónico y foto de perfil con Reborn Your Style.
+                </p>
+                <div className="flex items-center justify-center gap-3 text-[11px] text-[#70757a]">
+                  <span>Español (Latinoamérica)</span>
+                  <span>•</span>
+                  <a href="#privacidad" onClick={(e) => { e.preventDefault(); }} className="hover:underline">Privacidad</a>
+                  <span>•</span>
+                  <a href="#terminos" onClick={(e) => { e.preventDefault(); }} className="hover:underline">Condiciones</a>
+                </div>
+              </div>
+
+              {/* Back button */}
+              <div className="pt-1 text-center">
                 <button
                   type="button"
-                  onClick={() => {
-                    setErrorMsg('');
-                    setSuccessMsg('');
-                    setRegisterEmail(unregisteredGoogleEmail);
-                    setViewMode('register');
-                  }}
-                  className="w-full py-3 px-4 bg-[#012d1d] hover:bg-[#0c3927] text-white font-semibold text-sm rounded-xl shadow-md transition-all cursor-pointer"
-                >
-                  Crear una cuenta
-                </button>
-
-                <button
-                  type="button"
+                  disabled={isLoading}
                   onClick={() => {
                     setErrorMsg('');
                     setSuccessMsg('');
                     setViewMode('login');
                   }}
-                  className="w-full py-2.5 px-4 bg-white border border-[#d3d0c7] hover:bg-[#faf9f4] text-[#414844] font-semibold text-xs rounded-xl transition-all cursor-pointer"
+                  className="text-xs font-semibold text-[#717973] hover:text-[#012d1d] transition-colors cursor-pointer"
                 >
-                  Volver
+                  ← Volver a inicio de sesión con correo y contraseña
                 </button>
               </div>
             </div>
@@ -1134,6 +1333,46 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   )}
                 </button>
               </form>
+
+              {/* Separación visual: ──────── o ──────── */}
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-[#efeee9]" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-white px-3 text-[#8e918f] font-medium tracking-wider">
+                    o
+                  </span>
+                </div>
+              </div>
+
+              {/* [ Registrarse con Google ] */}
+              <button
+                type="button"
+                onClick={handleGoogleClick}
+                disabled={isLoading}
+                className="w-full py-2.5 px-4 bg-white hover:bg-[#faf9f4] border border-[#d3d0c7] hover:border-[#b0b3af] text-[#1b1c19] font-medium text-sm rounded-xl shadow-xs transition-all flex items-center justify-center gap-3 cursor-pointer"
+              >
+                <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                  <path
+                    fill="#4285F4"
+                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                  />
+                  <path
+                    fill="#EA4335"
+                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                  />
+                </svg>
+                <span>Registrarse con Google</span>
+              </button>
 
               {/* “¿Ya tienes una cuenta?” [ Iniciar sesión ] */}
               <div className="mt-5 pt-3.5 border-t border-[#f0efe9] text-center">

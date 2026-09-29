@@ -139,7 +139,17 @@ export function App() {
   // Modals & Overlays
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
-  const [infoModalType, setInfoModalType] = useState<'privacidad' | 'terminos' | 'contacto' | 'sostenibilidad' | null>(null);
+  const [infoModalType, setInfoModalType] = useState<
+    | 'privacidad'
+    | 'terminos'
+    | 'contacto'
+    | 'sostenibilidad'
+    | 'quienes-somos'
+    | 'mision'
+    | 'vision'
+    | 'tutoriales'
+    | null
+  >(null);
 
   const handleOpenAuth = (mode: 'login' | 'register' = 'login') => {
     setAuthModalMode(mode);
@@ -703,6 +713,7 @@ export function App() {
         onLogout={handleLogout}
         user={userProfile}
         onOpenEditProfile={() => setIsEditProfileModalOpen(true)}
+        onOpenInfoModal={(type) => setInfoModalType(type)}
       />
 
       {/* Main Content Area */}

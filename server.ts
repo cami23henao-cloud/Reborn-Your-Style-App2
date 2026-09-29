@@ -135,8 +135,7 @@ async function startServer() {
       if (!exists && (
         cleanEmail === 'admin@rebornyourstyle.com' ||
         cleanEmail === 'admin@rebornstyle.co' ||
-        cleanEmail === 'alex.moreno@rebornyourstyle.co' ||
-        cleanEmail === 'cami23henao@gmail.com'
+        cleanEmail === 'alex.moreno@rebornyourstyle.co'
       )) {
         exists = true;
       }

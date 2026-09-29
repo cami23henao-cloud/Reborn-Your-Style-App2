@@ -1,7 +1,16 @@
 import React, { useState } from 'react';
 
 interface InfoModalProps {
-  type: 'privacidad' | 'terminos' | 'contacto' | 'sostenibilidad' | null;
+  type:
+    | 'privacidad'
+    | 'terminos'
+    | 'contacto'
+    | 'sostenibilidad'
+    | 'quienes-somos'
+    | 'mision'
+    | 'vision'
+    | 'tutoriales'
+    | null;
   onClose: () => void;
   onSendMessage?: (name: string, email: string, message: string) => void;
 }
@@ -58,6 +67,30 @@ export const InfoModals: React.FC<InfoModalProps> = ({
               <>
                 <span className="material-symbols-outlined text-[#2b694d]">nature_people</span>
                 <span>Impacto y Sostenibilidad</span>
+              </>
+            )}
+            {type === 'quienes-somos' && (
+              <>
+                <span className="material-symbols-outlined text-[#2b694d]">groups</span>
+                <span>Quiénes Somos - Reborn Your Style</span>
+              </>
+            )}
+            {type === 'mision' && (
+              <>
+                <span className="material-symbols-outlined text-[#2b694d]">target</span>
+                <span>Nuestra Misión Circular</span>
+              </>
+            )}
+            {type === 'vision' && (
+              <>
+                <span className="material-symbols-outlined text-[#2b694d]">visibility</span>
+                <span>Nuestra Visión Sostenible</span>
+              </>
+            )}
+            {type === 'tutoriales' && (
+              <>
+                <span className="material-symbols-outlined text-[#2b694d]">school</span>
+                <span>Tutoriales y Técnicas de Suprareciclaje</span>
               </>
             )}
           </h2>
@@ -158,6 +191,143 @@ export const InfoModals: React.FC<InfoModalProps> = ({
               <p>
                 La industria textil global es una de las más contaminantes del planeta. A través del upcycling, transformamos desechos textiles en piezas de diseño de alto impacto estético y mínimo impacto ambiental.
               </p>
+            </>
+          )}
+
+          {type === 'quienes-somos' && (
+            <>
+              <div className="bg-[#b0f1cc]/30 p-4 rounded-xl border border-[#2b694d]/20 mb-3 space-y-1">
+                <h4 className="font-headline font-bold text-[#012d1d] text-base">
+                  Reborn Your Style: Moda Circular y Talento Colombiano
+                </h4>
+                <p className="text-xs text-[#1b1c19] leading-relaxed">
+                  Somos una comunidad colaborativa nacida en Colombia para redefinir nuestra relación con la ropa. Conectamos prendas en desuso con talentosos modistas, artesanos y sastres locales.
+                </p>
+              </div>
+
+              <div className="space-y-3 text-sm">
+                <p>
+                  En Colombia se desechan anualmente toneladas de textiles en perfecto estado. Nuestra plataforma ofrece una alternativa consciente al <em>fast fashion</em>, promoviendo el suprareciclaje (upcycling) como una forma de arte, expresión personal y economía justa.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                  <div className="bg-[#f5f4ef] p-3.5 rounded-xl border border-[#c1c8c2]/40">
+                    <p className="font-bold text-[#012d1d] text-xs flex items-center gap-1.5 mb-1">
+                      <span className="material-symbols-outlined text-sm text-[#2b694d]">handshake</span>
+                      <span>Dignificación Artesanal</span>
+                    </p>
+                    <p className="text-xs text-[#414844]">
+                      Visibilizamos el oficio de modistas y costureros de barrio, conectándolos directamente con clientes sin comisiones abusivas.
+                    </p>
+                  </div>
+                  <div className="bg-[#f5f4ef] p-3.5 rounded-xl border border-[#c1c8c2]/40">
+                    <p className="font-bold text-[#012d1d] text-xs flex items-center gap-1.5 mb-1">
+                      <span className="material-symbols-outlined text-sm text-[#2b694d]">eco</span>
+                      <span>Huella Regenerativa</span>
+                    </p>
+                    <p className="text-xs text-[#414844]">
+                      Extendemos la vida útil de cada prenda, reduciendo drásticamente el consumo de agua dulce y las emisiones de gases de efecto invernadero.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {type === 'mision' && (
+            <>
+              <div className="bg-[#b0f1cc]/30 p-4 rounded-xl border border-[#2b694d]/20 mb-3">
+                <h4 className="font-headline font-bold text-[#012d1d] text-base mb-1">
+                  Nuestra Misión
+                </h4>
+                <p className="text-xs text-[#1b1c19] leading-relaxed">
+                  Transformar la industria textil en Colombia impulsando la moda circular y el suprareciclaje colaborativo, dignificando el talento de costureros y artesanos locales mientras reducimos el impacto ambiental del desperdicio textil.
+                </p>
+              </div>
+
+              <div className="space-y-3 text-sm">
+                <h5 className="font-bold text-[#012d1d] text-sm pt-1">Pilares de Nuestra Misión:</h5>
+                <ul className="space-y-2 text-xs text-[#414844]">
+                  <li className="flex items-start gap-2">
+                    <span className="material-symbols-outlined text-base text-[#2b694d] shrink-0">check_circle</span>
+                    <span><strong>Conexión directa:</strong> Facilitar un canal ágil, seguro y transparente entre quienes tienen prendas en su clóset y quienes tienen el talento de coser y rediseñar.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="material-symbols-outlined text-base text-[#2b694d] shrink-0">check_circle</span>
+                    <span><strong>Sostenibilidad real:</strong> Evitar que prendas terminadas lleguen a rellenos sanitarios o fuentes hídricas.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="material-symbols-outlined text-base text-[#2b694d] shrink-0">check_circle</span>
+                    <span><strong>Comercio justo:</strong> Remuneración equitativa y reconocimiento al valor creativo del patronaje, bordado y confección.</span>
+                  </li>
+                </ul>
+              </div>
+            </>
+          )}
+
+          {type === 'vision' && (
+            <>
+              <div className="bg-[#b0f1cc]/30 p-4 rounded-xl border border-[#2b694d]/20 mb-3">
+                <h4 className="font-headline font-bold text-[#012d1d] text-base mb-1">
+                  Nuestra Visión
+                </h4>
+                <p className="text-xs text-[#1b1c19] leading-relaxed">
+                  Ser la plataforma líder y referente de suprareciclaje textil en América Latina, logrando que el rescate y personalización de prendas sea la primera opción de vestuario para las nuevas generaciones.
+                </p>
+              </div>
+
+              <div className="space-y-3 text-sm">
+                <p className="text-xs text-[#414844] leading-relaxed">
+                  Visualizamos un futuro donde ningún guardarropa sea desechable, donde cada ciudad de Colombia cuente con una red viva de talleres de confección circular, y donde cada prenda cuente una historia de diseño regenerativo y orgullo local.
+                </p>
+                <div className="bg-[#faf9f4] p-3.5 rounded-xl border border-[#efeee9] text-xs text-[#012d1d] font-medium">
+                  🌱 <em>"El mejor residuo textil es aquel que se convierte en tu prenda favorita."</em>
+                </div>
+              </div>
+            </>
+          )}
+
+          {type === 'tutoriales' && (
+            <>
+              <div className="bg-[#b0f1cc]/30 p-4 rounded-xl border border-[#2b694d]/20 mb-3">
+                <h4 className="font-headline font-bold text-[#012d1d] text-base mb-1">
+                  Guías y Tutoriales de Suprareciclaje
+                </h4>
+                <p className="text-xs text-[#1b1c19]">
+                  Aprende técnicas sencillas y profesionales para intervenir, reparar y transformar tus prendas.
+                </p>
+              </div>
+
+              <div className="space-y-3 text-xs">
+                <div className="p-3 bg-[#f5f4ef] rounded-xl border border-[#c1c8c2]/40 flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-[#012d1d] text-[#b0f1cc] flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined text-lg">content_cut</span>
+                  </div>
+                  <div>
+                    <h5 className="font-bold text-[#012d1d] text-sm">Sashiko y Zurcido Visible</h5>
+                    <p className="text-[#717973] mt-0.5">Técnica japonesa para reparar desgarros en denim con puntadas geométricas decorativas que refuerzan la tela.</p>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-[#f5f4ef] rounded-xl border border-[#c1c8c2]/40 flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-[#012d1d] text-[#b0f1cc] flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined text-lg">palette</span>
+                  </div>
+                  <div>
+                    <h5 className="font-bold text-[#012d1d] text-sm">Teñido Botánico y Natural</h5>
+                    <p className="text-[#717973] mt-0.5">Cómo devolver color y vida a camisas de algodón y lino usando huesos de aguacate, cáscaras de cebolla y cúrcuma.</p>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-[#f5f4ef] rounded-xl border border-[#c1c8c2]/40 flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-[#012d1d] text-[#b0f1cc] flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined text-lg">style</span>
+                  </div>
+                  <div>
+                    <h5 className="font-bold text-[#012d1d] text-sm">Patchwork Upcycling</h5>
+                    <p className="text-[#717973] mt-0.5">Unión de retazos y piezas de distintas prendas para crear chaquetas, chalecos o bolsos de alta resistencia y diseño único.</p>
+                  </div>
+                </div>
+              </div>
             </>
           )}
 
