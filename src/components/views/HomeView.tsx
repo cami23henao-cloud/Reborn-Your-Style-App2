@@ -34,18 +34,18 @@ export const HomeView: React.FC<HomeViewProps> = ({
             </div>
           </div>
 
-          <h1 className="font-headline text-3xl sm:text-5xl lg:text-6xl font-black text-[#012d1d] leading-[1.12] tracking-tight">
+          <h1 className="font-headline text-3xl sm:text-5xl lg:text-6xl font-black text-[#012d1d] leading-[1.12] tracking-tight animate-title-entry">
             Dale una nueva vida a tu ropa con <span className="text-[#2b694d]">estilo y talento local</span>
           </h1>
 
-          <p className="text-sm sm:text-base text-[#414844] leading-relaxed max-w-xl">
+          <p className="text-sm sm:text-base text-[#414844] leading-relaxed max-w-xl animate-fade-up">
             Transforma, intercambia y rediseña tus prendas olvidadas. Conecta con modistas, artesanos y diseñadores de suprareciclaje textil en toda Colombia.
           </p>
 
           <div className="flex flex-wrap gap-3 mt-2">
             <button
               onClick={() => onNavigate('costureros')}
-              className="bg-[#012d1d] hover:bg-[#2b694d] text-white active:scale-95 font-bold text-xs md:text-sm px-6 py-3.5 rounded-full transition-all shadow-md flex items-center gap-2"
+              className="btn-interactive bg-[#012d1d] hover:bg-[#2b694d] text-white active:scale-95 font-bold text-xs md:text-sm px-6 py-3.5 rounded-full shadow-md flex items-center gap-2"
             >
               <span className="material-symbols-outlined text-lg">handyman</span>
               <span>Encuentra tu costurero</span>
@@ -53,7 +53,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
             <button
               onClick={() => onNavigate('publicar-prenda')}
-              className="bg-white text-[#012d1d] hover:bg-[#efeee9] border border-[#c1c8c2] font-bold text-xs md:text-sm px-6 py-3.5 rounded-full transition-all flex items-center gap-2 shadow-xs"
+              className="btn-interactive bg-white text-[#012d1d] hover:bg-[#efeee9] border border-[#c1c8c2] font-bold text-xs md:text-sm px-6 py-3.5 rounded-full flex items-center gap-2 shadow-xs"
             >
               <span className="material-symbols-outlined text-lg">add_circle</span>
               <span>Publicar prenda</span>
@@ -61,7 +61,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
             <button
               onClick={() => onNavigate('catalogos')}
-              className="text-[#2b694d] hover:text-[#012d1d] font-bold text-xs md:text-sm px-4 py-3.5 rounded-full transition-colors flex items-center gap-1.5"
+              className="link-animated text-[#2b694d] hover:text-[#012d1d] font-bold text-xs md:text-sm px-4 py-3.5 rounded-full flex items-center gap-1.5"
             >
               <span>Explorar catálogos</span>
               <span className="material-symbols-outlined text-sm">arrow_forward</span>
@@ -105,7 +105,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
       </section>
 
       {/* 16 Expanded Categories Carousel / Grid */}
-      <section className="w-full max-w-7xl mx-auto px-4 md:px-12 py-12">
+      <section className="scroll-reveal w-full max-w-7xl mx-auto px-4 md:px-12 py-12">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
           <div>
             <span className="text-xs font-bold uppercase tracking-wider text-[#2b694d]">
@@ -129,7 +129,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
             <button
               key={cat.id}
               onClick={() => onSelectCategory ? onSelectCategory(cat.name) : onNavigate('catalogos')}
-              className="group p-3.5 rounded-2xl bg-white border border-[#c1c8c2]/50 hover:border-[#012d1d] hover:shadow-md transition-all text-center flex flex-col items-center gap-2 cursor-pointer"
+              className="group hover-elevate p-3.5 rounded-2xl bg-white border border-[#c1c8c2]/50 hover:border-[#012d1d] hover:shadow-md transition-all text-center flex flex-col items-center gap-2 cursor-pointer"
             >
               <div className="w-9 h-9 rounded-xl bg-[#faf9f4] group-hover:bg-[#012d1d] flex items-center justify-center transition-colors">
                 <span className="material-symbols-outlined text-lg text-[#012d1d] group-hover:text-[#b0f1cc] transition-colors">
@@ -145,7 +145,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
       </section>
 
       {/* Private Upcycling Studio & Circular Wardrobe Section */}
-      <section className="w-full bg-[#fcfbf9] py-16 border-y border-[#c1c8c2]/30">
+      <section className="scroll-reveal w-full bg-[#fcfbf9] py-16 border-y border-[#c1c8c2]/30">
         <div className="max-w-7xl mx-auto px-4 md:px-12">
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
             <div>
@@ -166,7 +166,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white rounded-3xl p-6 border border-[#c1c8c2]/40 shadow-xs flex flex-col justify-between space-y-4">
+            <div className="hover-elevate bg-white rounded-3xl p-6 border border-[#c1c8c2]/40 shadow-xs flex flex-col justify-between space-y-4">
               <div className="space-y-3">
                 <div className="w-12 h-12 rounded-2xl bg-[#f5f4ef] flex items-center justify-center text-[#012d1d]">
                   <span className="material-symbols-outlined text-2xl">inventory_2</span>
@@ -186,7 +186,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
               </button>
             </div>
 
-            <div className="bg-white rounded-3xl p-6 border border-[#c1c8c2]/40 shadow-xs flex flex-col justify-between space-y-4">
+            <div className="hover-elevate bg-white rounded-3xl p-6 border border-[#c1c8c2]/40 shadow-xs flex flex-col justify-between space-y-4">
               <div className="space-y-3">
                 <div className="w-12 h-12 rounded-2xl bg-[#f5f4ef] flex items-center justify-center text-[#012d1d]">
                   <span className="material-symbols-outlined text-2xl">chat_bubble</span>
@@ -206,7 +206,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
               </button>
             </div>
 
-            <div className="bg-white rounded-3xl p-6 border border-[#c1c8c2]/40 shadow-xs flex flex-col justify-between space-y-4">
+            <div className="hover-elevate bg-white rounded-3xl p-6 border border-[#c1c8c2]/40 shadow-xs flex flex-col justify-between space-y-4">
               <div className="space-y-3">
                 <div className="w-12 h-12 rounded-2xl bg-[#f5f4ef] flex items-center justify-center text-[#012d1d]">
                   <span className="material-symbols-outlined text-2xl">eco</span>
@@ -230,7 +230,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
       </section>
 
       {/* 4 Steps Section */}
-      <section className="w-full max-w-7xl mx-auto px-4 md:px-12 py-16">
+      <section className="scroll-reveal w-full max-w-7xl mx-auto px-4 md:px-12 py-16">
         <div className="text-center max-w-xl mx-auto mb-12 space-y-2">
           <span className="text-xs font-bold uppercase tracking-wider text-[#2b694d]">
             Proceso Circular
@@ -274,7 +274,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
             <div
               key={idx}
               onClick={item.action}
-              className="p-6 rounded-3xl bg-white border border-[#c1c8c2]/50 hover:shadow-xl hover:border-[#012d1d] transition-all cursor-pointer flex flex-col justify-between space-y-4 group"
+              className="hover-elevate p-6 rounded-3xl bg-white border border-[#c1c8c2]/50 hover:shadow-xl hover:border-[#012d1d] transition-all cursor-pointer flex flex-col justify-between space-y-4 group"
             >
               <div className="space-y-3">
                 <div className="w-12 h-12 rounded-2xl bg-[#faf9f4] group-hover:bg-[#b0f1cc] text-[#012d1d] flex items-center justify-center transition-colors">

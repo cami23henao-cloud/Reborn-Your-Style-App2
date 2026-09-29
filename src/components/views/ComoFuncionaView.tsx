@@ -39,10 +39,10 @@ export const ComoFuncionaView: React.FC<ComoFuncionaViewProps> = ({
       {/* Header */}
       <div className="text-center max-w-3xl mx-auto mb-12">
         <span className="text-xs font-bold uppercase tracking-wider text-[#2b694d]">Guía Paso a Paso</span>
-        <h1 className="font-headline text-3xl md:text-5xl font-bold text-[#012d1d] mt-2 mb-4">
+        <h1 className="font-headline text-3xl md:text-5xl font-bold text-[#012d1d] mt-2 mb-4 animate-title-entry">
           Cómo Funciona Reborn Your Style
         </h1>
-        <p className="text-sm md:text-base text-[#414844] leading-relaxed">
+        <p className="text-sm md:text-base text-[#414844] leading-relaxed animate-fade-up">
           Nuestra misión es hacer del suprareciclaje textil un proceso fácil, seguro y gratificante para todos.
         </p>
 
@@ -72,7 +72,7 @@ export const ComoFuncionaView: React.FC<ComoFuncionaViewProps> = ({
       </div>
 
       {/* Steps List */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-16">
+      <div className="scroll-reveal grid grid-cols-1 md:grid-cols-4 gap-6 mb-16">
         {activeTab === 'clientes' ? (
           <>
             <div className="bg-white p-6 rounded-2xl border border-[#efeee9] shadow-[0_4px_16px_rgba(1,45,29,0.05)] flex flex-col items-center text-center">

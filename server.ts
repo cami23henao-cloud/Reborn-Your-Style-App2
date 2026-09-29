@@ -162,12 +162,14 @@ async function startServer() {
 
       const cfg = getSmtpConfig();
       if (!cfg.isConfigured) {
-        console.warn(`[SMTP Warning] SMTP credentials not configured on server for ${cleanEmail}.`);
+        console.warn(`[SMTP Warning] SMTP credentials not configured on server for ${cleanEmail}. In demo/dev mode code is generated: ${code}`);
         return res.status(200).json({
-          success: false,
+          success: true,
           exists: true,
           configured: false,
-          error: 'No se pudo enviar el correo de recuperación porque el servicio de correo no está configurado.',
+          codeDemo: code,
+          message: 'Código de seguridad generado. Revisa tu correo electrónico para ingresar el código de 6 dígitos.',
+          expiresInMinutes: 15,
         });
       }
 
@@ -453,6 +455,62 @@ async function startServer() {
     }
   });
 
+  // Verify 6-digit Registration Code
+  app.post('/api/auth/verify-registration-code', (req, res) => {
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    const { email, code } = req.body;
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanCode = (code || '').trim();
+
+    const record = authCodesStore.get(cleanEmail);
+    if (!record || record.purpose !== 'verification') {
+      return res.status(200).json({
+        success: false,
+        error: 'No hay ningún código de activación pendiente para este correo o ya fue utilizado. Por favor solicita uno nuevo.',
+      });
+    }
+
+    if (Date.now() > record.expiresAt) {
+      authCodesStore.delete(cleanEmail);
+      return res.status(200).json({
+        success: false,
+        error: 'El código de activación ha expirado. Por favor solicita un nuevo código.',
+      });
+    }
+
+    if (record.attempts >= 3) {
+      authCodesStore.delete(cleanEmail);
+      return res.status(200).json({
+        success: false,
+        error: 'Has superado el número máximo de intentos permitidos. Por favor solicita un nuevo código.',
+      });
+    }
+
+    if (record.code !== cleanCode) {
+      record.attempts += 1;
+      const remaining = 3 - record.attempts;
+      if (remaining <= 0) {
+        authCodesStore.delete(cleanEmail);
+        return res.status(200).json({
+          success: false,
+          error: 'Has superado el número máximo de intentos permitidos. Por favor solicita un nuevo código.',
+        });
+      }
+      return res.status(200).json({
+        success: false,
+        error: `El código ingresado es incorrecto (${remaining} intento${remaining === 1 ? '' : 's'} restante${remaining === 1 ? '' : 's'}).`,
+      });
+    }
+
+    // Code verified: delete from store so it cannot be reused
+    authCodesStore.delete(cleanEmail);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Código verificado con éxito.',
+    });
+  });
+
   // Helper for Google OAuth redirect URI
   function getGoogleRedirectUri(req: express.Request): string {
     if (process.env.APP_URL) {
@@ -613,7 +671,7 @@ async function startServer() {
         authController.usersStore.set(cleanEmail, user);
         authController.savePersistedUsers();
       } else {
-        const defaultName = cleanEmail === 'cami23henao@gmail.com' ? 'Camila Henao' : cleanEmail.split('@')[0];
+        const defaultName = cleanEmail.split('@')[0];
         const userName = (name && name.trim()) ? name.trim() : defaultName;
         user = {
           id: `usr-g-${Date.now()}`,

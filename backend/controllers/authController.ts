@@ -166,7 +166,7 @@ export const login = async (req: Request, res: Response) => {
     if (!user) {
       return res.status(200).json({
         success: false,
-        message: 'Correo o contraseña incorrectos.',
+        message: 'No encontramos una cuenta con este correo. Puedes crear una cuenta nueva.',
       });
     }
 
@@ -175,7 +175,7 @@ export const login = async (req: Request, res: Response) => {
     if (!isMatch) {
       return res.status(200).json({
         success: false,
-        message: 'Correo o contraseña incorrectos.',
+        message: 'La contraseña no es correcta. Inténtalo nuevamente o recupera tu contraseña.',
       });
     }
 

@@ -15,17 +15,19 @@ interface BrandLogoProps {
  */
 export const BrandLogo: React.FC<BrandLogoProps> = ({
   size = 'md',
+  showText = true,
+  variant = 'full',
   className = '',
   onClick,
 }) => {
   const sizeClasses = {
-    xs: 'h-8 w-8',
-    sm: 'h-12 w-12',
-    md: 'h-14 w-14',
-    lg: 'h-20 w-20',
-    xl: 'h-28 w-28',
-    hero: 'h-44 w-44',
-  }[size] || 'h-14 w-14';
+    xs: 'w-9 h-9',
+    sm: 'w-13 h-13',
+    md: 'w-20 h-20',
+    lg: 'w-32 h-32',
+    xl: 'w-40 h-40',
+    hero: 'w-52 h-52',
+  }[size] || 'w-20 h-20';
 
   return (
     <div
@@ -35,7 +37,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
       <img
         src="/logo.svg"
         alt="Reborn Your Style"
-        className={`${sizeClasses} object-contain transition-transform`}
+        className={`${sizeClasses} object-contain transition-transform duration-200 hover:scale-105`}
         loading="eager"
       />
     </div>

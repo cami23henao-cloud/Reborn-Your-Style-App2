@@ -60,9 +60,10 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
   };
 
   return (
-    <nav className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-4 md:px-12 h-20 bg-[#faf9f4]/95 backdrop-blur-md shadow-[0_4px_16px_rgba(1,45,29,0.05)] border-b border-[#c1c8c2]/30">
-      {/* Brand Logo */}
-      <div className="flex items-center gap-3 md:gap-8">
+    <nav className="fixed top-0 left-0 w-full z-50 px-4 md:px-12 h-20 bg-[#faf9f4]/95 backdrop-blur-md shadow-[0_4px_16px_rgba(1,45,29,0.05)] border-b border-[#c1c8c2]/30 flex items-center">
+      <div className="max-w-7xl mx-auto w-full flex justify-between items-center">
+        {/* Brand Logo */}
+        <div className="flex items-center gap-3 md:gap-8">
         <button
           onClick={() => onNavigate(userRole === 'admin' ? 'admin' : 'inicio')}
           className="hover:opacity-90 transition-opacity tracking-tight text-left flex items-center gap-2"
@@ -321,6 +322,7 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
             {isMobileMenuOpen ? 'close' : 'menu'}
           </span>
         </button>
+      </div>
       </div>
 
       {/* Mobile Drawer */}

@@ -140,7 +140,7 @@ export const ExploraView: React.FC<ExploraViewProps> = ({
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <BrandLogo size="xs" variant="emblem" />
-            <h1 className="font-headline text-2xl md:text-3xl font-bold text-[#012d1d]">
+            <h1 className="font-headline text-2xl md:text-3xl font-bold text-[#012d1d] animate-title-entry">
               Explorar Catálogo y Diseñadores
             </h1>
           </div>
@@ -404,18 +404,18 @@ export const ExploraView: React.FC<ExploraViewProps> = ({
           {activeTab === 'prendas' && (
             <div>
               {filteredGarments.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="scroll-reveal grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredGarments.map((garment) => (
                     <div
                       key={garment.id}
-                      className="bg-white rounded-3xl p-4 border border-[#c1c8c2]/50 hover:shadow-xl transition-all duration-300 flex flex-col justify-between space-y-3 group"
+                      className="hover-elevate bg-white rounded-3xl p-4 border border-[#c1c8c2]/50 hover:border-[#012d1d] hover:shadow-lg transition-all duration-300 flex flex-col justify-between space-y-3 group cursor-pointer"
                     >
                       {/* Image & Badges */}
                       <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-[#f5f4ef]">
                         <img
                           src={garment.imageUrl}
                           alt={garment.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                         <div className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-lg bg-black/60 backdrop-blur-sm text-white text-[10px] font-bold flex items-center gap-1.5">
                           <span className="material-symbols-outlined text-xs">apparel</span>

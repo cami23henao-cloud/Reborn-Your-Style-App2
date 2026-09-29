@@ -401,7 +401,7 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
               {garments.map((garment) => (
                 <div
                   key={garment.id}
-                  className="bg-white rounded-2xl overflow-hidden shadow-[0_4px_16px_rgba(1,45,29,0.05)] border border-[#efeee9] flex flex-col justify-between"
+                  className="bg-white rounded-2xl overflow-hidden shadow-[0_4px_16px_rgba(1,45,29,0.05)] border border-[#efeee9] hover:shadow-[0_8px_24px_rgba(1,45,29,0.08)] transition-all flex flex-col justify-between"
                 >
                   <div className="h-44 w-full relative bg-[#e3e3de]">
                     <img

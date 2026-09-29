@@ -177,10 +177,10 @@ export const CategoriaView: React.FC<CategoriaViewProps> = ({
                 {categoryGarments.length} {categoryGarments.length === 1 ? 'producto' : 'productos'}
               </span>
             </div>
-            <h1 className="font-headline text-2xl sm:text-3xl md:text-4xl font-black text-[#012d1d]">
+            <h1 className="font-headline text-2xl sm:text-3xl md:text-4xl font-black text-[#012d1d] animate-title-entry">
               Catálogo de {categoryMeta.name}
             </h1>
-            <p className="text-xs sm:text-sm text-[#414844] max-w-2xl leading-relaxed">
+            <p className="text-xs sm:text-sm text-[#414844] max-w-2xl leading-relaxed animate-fade-up">
               {categoryMeta.description}
             </p>
           </div>
@@ -317,12 +317,12 @@ export const CategoriaView: React.FC<CategoriaViewProps> = ({
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="scroll-reveal grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {displayedGarments.map((garment) => (
             <div
               key={garment.id}
               onClick={() => onSelectGarment(garment)}
-              className="bg-white rounded-3xl overflow-hidden border border-[#c1c8c2]/40 hover:shadow-xl hover:border-[#012d1d] transition-all cursor-pointer flex flex-col justify-between group"
+              className="hover-elevate bg-white rounded-3xl overflow-hidden border border-[#c1c8c2]/40 hover:border-[#012d1d] transition-all hover:shadow-lg cursor-pointer flex flex-col justify-between group"
             >
               {/* Product Image & Badges */}
               <div className="relative aspect-4/3 w-full bg-[#102b1e] overflow-hidden">

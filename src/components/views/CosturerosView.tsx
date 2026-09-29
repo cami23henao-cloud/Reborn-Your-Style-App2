@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from 'react';
-import { motion } from 'motion/react';
 import { Professional, AppView } from '../../types';
 import { UserAvatar } from '../common/UserAvatar';
 
@@ -92,7 +91,7 @@ export const CosturerosView: React.FC<CosturerosViewProps> = ({
             <span>Directorio Oficial de Modistas y Confeccionistas</span>
           </div>
 
-          <h1 className="font-headline text-3xl sm:text-4xl md:text-5xl font-black text-[#012d1d] tracking-tight">
+          <h1 className="font-headline text-3xl sm:text-4xl md:text-5xl font-black text-[#012d1d] tracking-tight animate-title-entry">
             Encuentra tu costurero
           </h1>
 
@@ -209,14 +208,11 @@ export const CosturerosView: React.FC<CosturerosViewProps> = ({
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="scroll-reveal grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredProfessionals.map((pro) => (
-            <motion.div
+            <div
               key={pro.id}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.25 }}
-              className="bg-white rounded-3xl p-6 border border-[#c1c8c2]/50 hover:border-[#012d1d] hover:shadow-xl transition-all flex flex-col justify-between space-y-5"
+              className="hover-elevate bg-white rounded-3xl p-6 border border-[#c1c8c2]/50 hover:border-[#012d1d] hover:shadow-xl transition-all flex flex-col justify-between space-y-5"
             >
               <div className="space-y-4">
                 {/* Header: Avatar, Name, Specialty, Rating */}
@@ -310,7 +306,7 @@ export const CosturerosView: React.FC<CosturerosViewProps> = ({
                   <span>Contactar</span>
                 </button>
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
       )}

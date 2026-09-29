@@ -39,7 +39,6 @@ import { TopNavBar } from './components/TopNavBar';
 import { Footer } from './components/Footer';
 import { Toast } from './components/Toast';
 import { FloatingChatWindow } from './components/common/FloatingChatWindow';
-import { motion, AnimatePresence } from 'motion/react';
 import { AuthModal } from './components/modals/AuthModal';
 import { InfoModals } from './components/modals/InfoModals';
 import { SearchModal } from './components/modals/SearchModal';
@@ -61,6 +60,7 @@ import { MiEstudioView } from './components/views/MiEstudioView';
 import { MensajesView } from './components/views/MensajesView';
 import { SolicitudResumenView } from './components/views/SolicitudResumenView';
 import { AdminPanelView } from './components/views/AdminPanelView';
+import { useScrollReveal } from './hooks/useScrollReveal';
 
 export function App() {
   // Navigation State
@@ -68,6 +68,9 @@ export function App() {
   const [userRole, setUserRole] = useState<UserRole>('cliente');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUserAccount, setCurrentUserAccount] = useState<StoredUserAccount | null>(null);
+
+  // Initialize Scroll Reveal on view change
+  useScrollReveal(currentView);
 
   // Dedicated Category & Item states
   const [selectedCategory, setSelectedCategory] = useState<string>('Ropa');
@@ -212,6 +215,45 @@ export function App() {
       setUserProfile(GUEST_USER_PROFILE);
     }
   }, []);
+
+  // Section Reveal & Image Reveal Observer for smooth page motion
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('IntersectionObserver' in window)) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      {
+        threshold: 0.12,
+        rootMargin: '0px 0px -30px 0px',
+      }
+    );
+
+    const elements = document.querySelectorAll('.reveal:not(.visible), .image-reveal:not(.visible)');
+    elements.forEach((el) => observer.observe(el));
+
+    // Initial check for elements already in viewport
+    const timer = setTimeout(() => {
+      document.querySelectorAll('.reveal:not(.visible), .image-reveal:not(.visible)').forEach((el) => {
+        const rect = el.getBoundingClientRect();
+        if (rect.top < window.innerHeight) {
+          el.classList.add('visible');
+          observer.unobserve(el);
+        }
+      });
+    }, 100);
+
+    return () => {
+      clearTimeout(timer);
+      observer.disconnect();
+    };
+  }, [currentView]);
 
   // Scroll to top on navigation
   const handleNavigate = (view: AppView) => {
@@ -646,7 +688,7 @@ export function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#faf9f4] text-[#1b1c19] font-sans antialiased selection:bg-[#b0f1cc] selection:text-[#002113]">
+    <div className="min-h-screen flex flex-col bg-[#faf9f4] text-[#1b1c19] font-sans antialiased selection:bg-[#b0f1cc] selection:text-[#002113] w-full overflow-x-hidden">
       {/* Toast Notifications */}
       <Toast toasts={toasts} onDismiss={handleDismissToast} />
 
@@ -664,17 +706,8 @@ export function App() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 pt-20 flex flex-col">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentView}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.2 }}
-            className="flex-1 flex flex-col"
-          >
-            {currentView === 'inicio' && (
+      <main className="flex-1 pt-20 flex flex-col w-full overflow-x-hidden">
+        {currentView === 'inicio' && (
           <HomeView
             onNavigate={handleNavigate}
             featuredProfessionals={professionals}
@@ -898,8 +931,6 @@ export function App() {
             />
           )
         )}
-          </motion.div>
-        </AnimatePresence>
       </main>
 
       {/* Footer */}

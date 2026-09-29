@@ -320,7 +320,7 @@ export async function loginUser(
   if (!user) {
     return {
       success: false,
-      error: 'Correo o contraseña incorrectos.',
+      error: 'No encontramos una cuenta con este correo. Puedes crear una cuenta nueva.',
     };
   }
 
@@ -335,7 +335,7 @@ export async function loginUser(
   if (!isPasswordValid) {
     return {
       success: false,
-      error: 'Correo o contraseña incorrectos.',
+      error: 'La contraseña no es correcta. Inténtalo nuevamente o recupera tu contraseña.',
     };
   }
 
@@ -683,7 +683,7 @@ export async function loginWithGoogleExistingOnly(email: string): Promise<{
     return {
       success: false,
       notRegistered: true,
-      error: 'Esta cuenta de Google no está registrada en Reborn Your Style. Crea una cuenta antes de iniciar sesión.',
+      error: 'Esta cuenta de Google no está registrada en Reborn Your Style.',
     };
   }
 

@@ -70,7 +70,7 @@ export const CatalogosView: React.FC<CatalogosViewProps> = ({
             <span className="material-symbols-outlined text-sm">category</span>
             <span>Clasificación Textil por Tipo de Prenda</span>
           </div>
-          <h1 className="font-headline text-3xl sm:text-4xl md:text-5xl font-black text-[#012d1d] tracking-tight">
+          <h1 className="font-headline text-3xl sm:text-4xl md:text-5xl font-black text-[#012d1d] tracking-tight animate-title-entry">
             Catálogos por Categoría
           </h1>
           <p className="text-sm sm:text-base text-[#414844] leading-relaxed">
@@ -136,7 +136,7 @@ export const CatalogosView: React.FC<CatalogosViewProps> = ({
       </div>
 
       {/* Categories Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="scroll-reveal grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredCategories.map((cat) => {
           const count = getItemCount(cat);
           const previews = getPreviewGarments(cat);
@@ -145,7 +145,7 @@ export const CatalogosView: React.FC<CatalogosViewProps> = ({
             <div
               key={cat.id}
               onClick={() => onSelectCategory(cat.name)}
-              className="group bg-white rounded-3xl p-6 border border-[#c1c8c2]/50 hover:border-[#012d1d] hover:shadow-xl transition-all cursor-pointer flex flex-col justify-between space-y-5"
+              className="group hover-elevate bg-white rounded-3xl p-6 border border-[#c1c8c2]/50 hover:border-[#012d1d] hover:shadow-xl transition-all cursor-pointer flex flex-col justify-between space-y-5"
             >
               <div className="space-y-3">
                 {/* Header with Minimalist Icon & Badge */}
