@@ -288,3 +288,87 @@ body,
     scroll-behavior: auto !important;
   }
 }
+
+/* ==========================================================================
+   6. MODO OSCURO (DARK MODE) REAL Y PERSISTENTE
+   ========================================================================== */
+.dark body {
+  background-color: #071510;
+  color: #e8f2ec;
+}
+
+.dark nav {
+  background-color: rgba(7, 21, 16, 0.95) !important;
+  border-color: rgba(43, 105, 77, 0.3) !important;
+}
+
+.dark .bg-\[\#faf9f4\] {
+  background-color: #071510 !important;
+}
+
+.dark .bg-\[\#fcfbf9\] {
+  background-color: #0b1e17 !important;
+}
+
+.dark .bg-\[\#f5f4ef\] {
+  background-color: #11281f !important;
+}
+
+.dark .bg-\[\#efeee9\] {
+  background-color: #173328 !important;
+}
+
+.dark .bg-white {
+  background-color: #0e241c !important;
+  color: #e8f2ec;
+}
+
+.dark .text-\[\#1b1c19\] {
+  color: #f2f7f4 !important;
+}
+
+.dark .text-\[\#012d1d\] {
+  color: #d1fae5 !important;
+}
+
+.dark .text-\[\#414844\] {
+  color: #a7b8ae !important;
+}
+
+.dark .text-\[\#717973\] {
+  color: #8fa397 !important;
+}
+
+.dark .border-\[\#c1c8c2\]\/30,
+.dark .border-\[\#c1c8c2\]\/40,
+.dark .border-\[\#c1c8c2\]\/50,
+.dark .border-\[\#c1c8c2\] {
+  border-color: rgba(43, 105, 77, 0.35) !important;
+}
+
+.dark .border-\[\#efeee9\] {
+  border-color: rgba(43, 105, 77, 0.25) !important;
+}
+
+.dark input:not([type="checkbox"]):not([type="radio"]),
+.dark textarea,
+.dark select {
+  background-color: #112920 !important;
+  color: #f2f7f4 !important;
+  border-color: #23523e !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #7b9487 !important;
+}
+
+.dark .shadow-xs,
+.dark .shadow-sm,
+.dark .shadow-md,
+.dark .shadow-lg,
+.dark .shadow-xl,
+.dark .shadow-2xl {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+}
+

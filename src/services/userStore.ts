@@ -27,6 +27,7 @@ export interface StoredUserAccount {
   requests: ServiceRequest[];
   conversations: ChatConversation[];
   createdAt?: string;
+  lastLoginAt?: string;
   isVerified?: boolean;
 }
 
@@ -239,6 +240,7 @@ export async function registerVerifiedUser(params: {
     co2SavedKg: 0,
   };
 
+  const nowIso = new Date().toISOString();
   const newAccount: StoredUserAccount = {
     id: userId,
     email: emailClean,
@@ -250,7 +252,8 @@ export async function registerVerifiedUser(params: {
     services: [],
     requests: [],
     conversations: [],
-    createdAt: new Date().toISOString(),
+    createdAt: nowIso,
+    lastLoginAt: nowIso,
     isVerified: true,
   };
 
@@ -289,7 +292,7 @@ export async function loginUser(
   if (!user) {
     return {
       success: false,
-      error: 'No encontramos una cuenta con este correo. Puedes crear una cuenta nueva.',
+      error: 'No encontramos una cuenta registrada con este correo.',
     };
   }
 
@@ -304,7 +307,7 @@ export async function loginUser(
   if (!isPasswordValid) {
     return {
       success: false,
-      error: 'La contraseña no es correcta. Inténtalo nuevamente o recupera tu contraseña.',
+      error: 'El correo o la contraseña no son correctos.',
     };
   }
 
@@ -322,6 +325,8 @@ export async function loginUser(
     };
   }
 
+  user.lastLoginAt = new Date().toISOString();
+  saveUsersDatabase(db);
   setActiveSession(user);
   return { success: true, user };
 }
@@ -619,9 +624,9 @@ export async function loginOrRegisterWithGoogle(params: {
 }
 
 /**
- * Strict Google Login for Existing Accounts Only:
- * Strictly checks that the account already exists in Reborn Your Style database.
- * NEVER creates automatic accounts, profiles, or dummy data.
+ * Google Login for Existing Accounts Only:
+ * Requirement 3: "Si una cuenta Google ya está registrada en Reborn Your Style: permitir acceso.
+ * Si no está registrada: no crear automáticamente una cuenta; mostrar la opción de crear una cuenta."
  */
 export async function loginWithGoogleExistingOnly(email: string, name?: string, avatarUrl?: string): Promise<{
   success: boolean;
@@ -629,14 +634,40 @@ export async function loginWithGoogleExistingOnly(email: string, name?: string, 
   error?: string;
   user?: StoredUserAccount;
 }> {
-  // Never block or restrict to pre-registered accounts: allow automatic login/registration for any Google account
-  return loginOrRegisterWithGoogle({
-    email,
-    name,
-    avatarUrl,
-    role: 'cliente',
-  });
+  const cleanEmail = (email || '').trim().toLowerCase();
+  const db = getUsersDatabase();
+  const existingUser = db.find((u) => u.email.trim().toLowerCase() === cleanEmail);
+
+  if (existingUser) {
+    if (avatarUrl && !existingUser.profile.avatarUrl) {
+      existingUser.profile.avatarUrl = avatarUrl;
+    }
+    setActiveSession(existingUser);
+    return { success: true, user: existingUser };
+  }
+
+  // Check backend server store
+  try {
+    const res = await fetch('/api/auth/check-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: cleanEmail }),
+    });
+    const data = await res.json();
+    if (data.success && data.exists) {
+      return loginOrRegisterWithGoogle({ email: cleanEmail, name, avatarUrl, role: 'cliente' });
+    }
+  } catch (e) {
+    console.warn('Backend check-user error:', e);
+  }
+
+  return {
+    success: false,
+    notRegistered: true,
+    error: 'Esta cuenta de Google no está registrada en Reborn Your Style.',
+  };
 }
+
 
 /**
  * Verifies if an email corresponds to an existing, valid registered account.

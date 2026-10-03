@@ -8,25 +8,18 @@ export interface GarmentCategoryItem {
 
 export const EXPANDED_CATEGORIES: GarmentCategoryItem[] = [
   {
-    id: 'ropa',
-    name: 'Ropa',
-    icon: 'checkroom',
-    description: 'Prendas de vestir generales, chaquetas, abrigos y conjuntos textiles completos.',
-    popularUpcyclingIdeas: ['Chaqueta Bomber Reversible', 'Conjunto de 2 Piezas', 'Chaleco Patchwork']
+    id: 'camisas',
+    name: 'Camisas',
+    icon: 'apparel',
+    description: 'Camisas formales, casuales, de rayas, lino y prendas camiseras para caballero y dama.',
+    popularUpcyclingIdeas: ['Crop Top Estructurado', 'Camisa Desestructurada', 'Corset con Botones']
   },
   {
-    id: 'calzones',
-    name: 'Calzones',
-    icon: 'spa',
-    description: 'Calzones, panties, bralettes, culottes y prendas íntimas sostenibles de algodón orgánico.',
-    popularUpcyclingIdeas: ['Calzones en Algodón Pima', 'Bralette y Panty de Encaje', 'Culotte Anatómico']
-  },
-  {
-    id: 'bolsos',
-    name: 'Bolsos',
-    icon: 'shopping_bag',
-    description: 'Tote bags, carteras, bandoleras y bolsos de mano hechos con mezclilla y lonas recicladas.',
-    popularUpcyclingIdeas: ['Tote Bag Denim Resistente', 'Bandolera Bohemio Patchwork', 'Bolso Playero de Lona']
+    id: 'blusas',
+    name: 'Blusas',
+    icon: 'styler',
+    description: 'Blusas campesinas, tops de lino, blusas con vuelos, encajes y prendas superiores delicadas.',
+    popularUpcyclingIdeas: ['Blusa Campesina con Vuelos', 'Top Halter de Lino', 'Bordado Botánico']
   },
   {
     id: 'pantalones',
@@ -43,11 +36,11 @@ export const EXPANDED_CATEGORIES: GarmentCategoryItem[] = [
     popularUpcyclingIdeas: ['Conjunto de Falda y Top', 'Vestido Midi Upcycled', 'Kimono Fluido']
   },
   {
-    id: 'camisas-blusas',
-    name: 'Camisas y Blusas',
-    icon: 'apparel',
-    description: 'Camisas formales, casuales, blusas campesinas, tops de lino y prendas superiores.',
-    popularUpcyclingIdeas: ['Crop Top Estructurado', 'Blusa Campesina con Vuelos', 'Corset con Lazos']
+    id: 'bolsos',
+    name: 'Bolsos',
+    icon: 'shopping_bag',
+    description: 'Tote bags, carteras, bandoleras y bolsos de mano hechos con mezclilla y lonas recicladas.',
+    popularUpcyclingIdeas: ['Tote Bag Denim Resistente', 'Bandolera Bohemio Patchwork', 'Bolso Playero de Lona']
   },
   {
     id: 'chaquetas',
@@ -72,7 +65,7 @@ export const EXPANDED_CATEGORIES: GarmentCategoryItem[] = [
   },
   {
     id: 'gorras',
-    name: 'Gorras y Sombreros',
+    name: 'Gorras',
     icon: 'wb_sunny',
     description: 'Gorras snapback, viseras, sombreros, pavas y boinas.',
     popularUpcyclingIdeas: ['Gorra denim con parches', 'Pintura textil artística', 'Visera bordada a mano']
@@ -83,6 +76,13 @@ export const EXPANDED_CATEGORIES: GarmentCategoryItem[] = [
     icon: 'backpack',
     description: 'Morrales urbanos, mochilas de lona militar y tulas deportivas.',
     popularUpcyclingIdeas: ['Compartimento para portátil', 'Bolsillos modulares cargo', 'Refuerzo de lona']
+  },
+  {
+    id: 'calzones',
+    name: 'Calzones',
+    icon: 'spa',
+    description: 'Calzones, panties, bralettes, culottes y prendas íntimas sostenibles de algodón orgánico.',
+    popularUpcyclingIdeas: ['Calzones en Algodón Pima', 'Bralette y Panty de Encaje', 'Culotte Anatómico']
   },
   {
     id: 'accesorios',
@@ -100,10 +100,17 @@ export const EXPANDED_CATEGORIES: GarmentCategoryItem[] = [
   },
   {
     id: 'medias',
-    name: 'Medias y Calentadores',
+    name: 'Medias',
     icon: 'interests',
     description: 'Calcetines de algodón, calentadores de punto rústico y medias térmicas.',
     popularUpcyclingIdeas: ['Calentadores de punto', 'Muñecos artesanales', 'Protectores térmicos']
+  },
+  {
+    id: 'ropa',
+    name: 'Ropa',
+    icon: 'checkroom',
+    description: 'Prendas de vestir compuestas, conjuntos textiles coordinados y trajes de dos piezas.',
+    popularUpcyclingIdeas: ['Chaqueta Bomber Reversible', 'Conjunto de 2 Piezas', 'Chaleco Patchwork']
   },
   {
     id: 'otras-prendas',

@@ -3,7 +3,7 @@ import { GarmentProject, AppView, UserProfile } from '../../types';
 import { EXPANDED_CATEGORIES } from '../../data/categoriesData';
 import { BrandLogo } from '../BrandLogo';
 import { ContinuousColorWheel } from '../common/ContinuousColorWheel';
-import { SimpleLocationMapPicker, LocationResult } from '../common/SimpleLocationMapPicker';
+import { ColombianLocationSelector, ComprehensiveLocation } from '../common/ColombianLocationSelector';
 import { UserAvatar } from '../common/UserAvatar';
 
 interface PublicarPrendaViewProps {
@@ -66,16 +66,31 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
   const [allowExchange, setAllowExchange] = useState<boolean>(
     initialDraft?.allowExchange !== undefined ? initialDraft.allowExchange : true
   );
+  // Requirement 8: Formatear automáticamente el número con separadores de miles con puntos colombianos (1.000, 10.000, 1.000.000)
   const [presupuesto, setPresupuesto] = useState<string>(
-    initialDraft?.budget ? String(initialDraft.budget) : ''
+    initialDraft?.budget ? Number(initialDraft.budget).toLocaleString('es-CO') : ''
   );
 
-  // Requirement 2: Single Address Search Bar + Interactive Map (Private exact address, public approximate zone/city)
-  const [locationResult, setLocationResult] = useState<LocationResult>({
-    exactAddress: initialDraft?.exactAddress || initialDraft?.location || user.location || '',
-    publicLocation: initialDraft?.publicLocation || initialDraft?.location || user.location || '',
-    department: initialDraft?.department || user.department || '',
-    municipality: initialDraft?.municipality || user.municipality || '',
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawDigits = e.target.value.replace(/\D/g, '');
+    if (!rawDigits) {
+      setPresupuesto('');
+      return;
+    }
+    const formatted = Number(rawDigits).toLocaleString('es-CO');
+    setPresupuesto(formatted);
+  };
+
+  // Requirement 9: Sistema de ubicación comprensible y estructurado en Colombia (sin coordenadas técnicas)
+  const [colombianLocation, setColombianLocation] = useState<ComprehensiveLocation>({
+    country: 'Colombia',
+    department: initialDraft?.department || user.department || 'Antioquia',
+    municipality: initialDraft?.municipality || user.municipality || 'Medellín',
+    localityOrComuna: '',
+    neighborhoodOrVereda: '',
+    exactAddress: initialDraft?.exactAddress || '',
+    displayLocation: initialDraft?.location || user.location || 'Medellín, Antioquia, Colombia',
+    publicLocation: initialDraft?.publicLocation || user.location || 'Medellín, Antioquia'
   });
   const [imageUrl, setImageUrl] = useState(initialDraft?.imageUrl || '');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -113,7 +128,8 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
     }
     setFormError('');
 
-    const finalPublicLocation = locationResult.publicLocation || user.location || 'Colombia';
+    const numericBudget = presupuesto ? parseInt(presupuesto.replace(/\D/g, ''), 10) : 0;
+    const finalPublicLocation = colombianLocation.publicLocation || 'Medellín, Antioquia, Colombia';
 
     const newProject: GarmentProject = {
       id: `proj-${Date.now()}`,
@@ -126,14 +142,16 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
       size: talla,
       color: colorSeleccionado,
       colorHex,
-      budget: presupuesto ? Number(presupuesto) : 0,
+      budget: numericBudget,
       listingType,
       allowExchange,
-      location: finalPublicLocation,
-      department: locationResult.department,
-      municipality: locationResult.municipality,
-      country: 'Colombia',
-      exactAddress: locationResult.exactAddress, // Protected private address
+      location: colombianLocation.displayLocation,
+      department: colombianLocation.department,
+      municipality: colombianLocation.municipality,
+      country: colombianLocation.country,
+      localityOrComuna: colombianLocation.localityOrComuna,
+      neighborhoodOrVereda: colombianLocation.neighborhoodOrVereda,
+      exactAddress: colombianLocation.exactAddress,
       publicLocation: finalPublicLocation,
       imageUrl,
       authorName: user.name,
@@ -149,6 +167,7 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
   };
 
   const handleSaveDraftClick = () => {
+    const numericBudget = presupuesto ? parseInt(presupuesto.replace(/\D/g, ''), 10) : 0;
     onSaveDraft({
       title: titulo,
       category: categoria,
@@ -158,15 +177,17 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
       size: talla,
       color: colorSeleccionado,
       colorHex,
-      budget: Number(presupuesto) || 0,
+      budget: numericBudget,
       listingType,
       allowExchange,
-      location: locationResult.publicLocation || 'Colombia',
-      department: locationResult.department,
-      municipality: locationResult.municipality,
-      country: 'Colombia',
-      exactAddress: locationResult.exactAddress,
-      publicLocation: locationResult.publicLocation,
+      location: colombianLocation.displayLocation,
+      department: colombianLocation.department,
+      municipality: colombianLocation.municipality,
+      country: colombianLocation.country,
+      localityOrComuna: colombianLocation.localityOrComuna,
+      neighborhoodOrVereda: colombianLocation.neighborhoodOrVereda,
+      exactAddress: colombianLocation.exactAddress,
+      publicLocation: colombianLocation.publicLocation,
       imageUrl,
     });
   };
@@ -498,19 +519,18 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
                     type="text"
                     inputMode="numeric"
                     value={presupuesto}
-                    onChange={(e) => setPresupuesto(e.target.value.replace(/[^0-9]/g, ''))}
-                    placeholder="Escribe el valor (ej. 45000)"
+                    onChange={handlePriceChange}
+                    placeholder="Escribe el valor (ej. 45.000 ó 1.000.000)"
                     className="w-full pl-16 pr-4 py-2.5 rounded-xl border border-[#c1c8c2] bg-white text-sm text-[#1b1c19] focus:border-[#012d1d] focus:ring-1 focus:ring-[#012d1d] outline-none"
                   />
                 </div>
               </div>
             )}
 
-            {/* Requirement 2: Rediseño Total de Ubicación (Barra de búsqueda única + Mapa interactivo justo debajo) */}
-            <SimpleLocationMapPicker
-              initialAddress={locationResult.exactAddress}
-              initialPublicLocation={locationResult.publicLocation}
-              onChange={(res) => setLocationResult(res)}
+            {/* Requirement 9: Sistema de Ubicación Comprensible y Familiar en Colombia */}
+            <ColombianLocationSelector
+              initialLocation={colombianLocation}
+              onChange={(loc) => setColombianLocation(loc)}
               required={true}
             />
 
@@ -620,7 +640,7 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
                   <div className="flex items-center gap-1.5 text-[#717973]">
                     <span className="material-symbols-outlined text-xs text-[#2b694d]">location_on</span>
                     <span className="truncate max-w-[140px]">
-                      {locationResult.publicLocation || 'Colombia'}
+                      {colombianLocation.publicLocation || 'Colombia'}
                     </span>
                   </div>
                   <span className="font-black text-[#012d1d]">

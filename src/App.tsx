@@ -966,9 +966,36 @@ export function App() {
         garment={selectedGarment}
         onClose={() => setSelectedGarment(null)}
         onStartChat={handleStartChatWithUser}
+        professionals={professionals}
         onFindCosturero={(g) => {
           setSelectedGarment(null);
-          handleNavigate('costureros');
+          // Requirement 7: Redirect directly to the SPECIFIC tailor related to the publication
+          let matchedPro = professionals.find(
+            (p) => p.id === g.assignedTailorId || p.name.toLowerCase() === g.assignedTailorName?.toLowerCase()
+          );
+
+          if (!matchedPro) {
+            // Match corresponding specialist tailor by garment category
+            const cat = (g.category || '').toLowerCase();
+            if (cat.includes('chaqueta') || cat.includes('accesorio') || cat.includes('calzon') || cat.includes('blusa')) {
+              matchedPro = professionals.find((p) => p.id === 'dona-marta') || professionals[0];
+            } else if (cat.includes('pantalon') || cat.includes('short') || cat.includes('baño')) {
+              matchedPro = professionals.find((p) => p.id === 'sofia-m') || professionals[1];
+            } else if (cat.includes('vestido') || cat.includes('media')) {
+              matchedPro = professionals.find((p) => p.id === 'studio-alba') || professionals[4];
+            } else if (cat.includes('bolso') || cat.includes('gorra')) {
+              matchedPro = professionals.find((p) => p.id === 'carlos-r') || professionals[2];
+            } else {
+              matchedPro = professionals.find((p) => p.id === 'taller-verde') || professionals[3];
+            }
+          }
+
+          if (matchedPro) {
+            setSelectedProfessional(matchedPro);
+            handleNavigate('perfil-profesional');
+          } else {
+            handleNavigate('costureros');
+          }
         }}
       />
       <EditProfileModal

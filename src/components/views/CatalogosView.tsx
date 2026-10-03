@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AppView, GarmentProject } from '../../types';
 import { EXPANDED_CATEGORIES, GarmentCategoryItem } from '../../data/categoriesData';
+import { isGarmentInCategory } from './CategoriaView';
 
 interface CatalogosViewProps {
   onNavigate: (view: AppView) => void;
@@ -15,40 +16,14 @@ export const CatalogosView: React.FC<CatalogosViewProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Helper to count items per category
+  // Helper to count items per category strictly
   const getItemCount = (category: GarmentCategoryItem) => {
-    return garments.filter(g => {
-      const catLower = category.name.toLowerCase();
-      const gCat = g.category.toLowerCase();
-      if (category.id === 'calzones') {
-        return gCat.includes('calzon') || gCat.includes('ropa interior') || gCat.includes('íntima');
-      }
-      if (category.id === 'ropa') {
-        return gCat.includes('ropa') || gCat.includes('chaqueta') || gCat.includes('suéter') || gCat.includes('conjunto');
-      }
-      if (category.id === 'camisas-blusas') {
-        return gCat.includes('camisa') || gCat.includes('blusa');
-      }
-      return gCat.includes(catLower) || catLower.includes(gCat);
-    }).length;
+    return garments.filter(g => isGarmentInCategory(g.category, category.name)).length;
   };
 
   // Helper to get preview images
   const getPreviewGarments = (category: GarmentCategoryItem) => {
-    return garments.filter(g => {
-      const catLower = category.name.toLowerCase();
-      const gCat = g.category.toLowerCase();
-      if (category.id === 'calzones') {
-        return gCat.includes('calzon') || gCat.includes('ropa interior') || gCat.includes('íntima');
-      }
-      if (category.id === 'ropa') {
-        return gCat.includes('ropa') || gCat.includes('chaqueta') || gCat.includes('suéter') || gCat.includes('conjunto');
-      }
-      if (category.id === 'camisas-blusas') {
-        return gCat.includes('camisa') || gCat.includes('blusa');
-      }
-      return gCat.includes(catLower) || catLower.includes(gCat);
-    }).slice(0, 3);
+    return garments.filter(g => isGarmentInCategory(g.category, category.name)).slice(0, 3);
   };
 
   const filteredCategories = EXPANDED_CATEGORIES.filter(cat => {

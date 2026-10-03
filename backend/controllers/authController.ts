@@ -109,13 +109,16 @@ export const register = async (req: Request, res: Response) => {
     const passwordHash = await bcrypt.hash(password, saltRounds);
 
     const userId = `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const nowIso = new Date().toISOString();
     const newUser = {
       id: userId,
       name: cleanName,
       email: cleanEmail,
       password: passwordHash,
       role: userRole,
-      createdAt: new Date().toISOString(),
+      isVerified: true,
+      createdAt: nowIso,
+      lastLoginAt: nowIso,
     };
 
     usersStore.set(cleanEmail, newUser);
@@ -126,13 +129,16 @@ export const register = async (req: Request, res: Response) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Usuario registrado exitosamente.',
+      message: 'Cuenta creada y verificada exitosamente.',
       token,
       user: {
         id: newUser.id,
         name: newUser.name,
         email: newUser.email,
         role: newUser.role,
+        isVerified: true,
+        createdAt: newUser.createdAt,
+        lastLoginAt: newUser.lastLoginAt,
       },
     });
   } catch (error: any) {
@@ -166,7 +172,7 @@ export const login = async (req: Request, res: Response) => {
     if (!user) {
       return res.status(200).json({
         success: false,
-        message: 'No encontramos una cuenta con este correo. Puedes crear una cuenta nueva.',
+        message: 'No encontramos una cuenta registrada con este correo.',
       });
     }
 
@@ -175,9 +181,14 @@ export const login = async (req: Request, res: Response) => {
     if (!isMatch) {
       return res.status(200).json({
         success: false,
-        message: 'La contraseña no es correcta. Inténtalo nuevamente o recupera tu contraseña.',
+        message: 'El correo o la contraseña no son correctos.',
       });
     }
+
+    // Update last access timestamp
+    user.lastLoginAt = new Date().toISOString();
+    usersStore.set(cleanEmail, user);
+    savePersistedUsers();
 
     // Generate JWT Session Token
     const token = generateToken(user);
@@ -191,6 +202,10 @@ export const login = async (req: Request, res: Response) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        isVerified: user.isVerified !== false,
+        createdAt: user.createdAt,
+        lastLoginAt: user.lastLoginAt,
+        avatarUrl: user.picture || user.avatarUrl || null,
       },
     });
   } catch (error: any) {
@@ -511,11 +526,25 @@ export const googleLogin = async (req: Request, res: Response) => {
       savePersistedUsers();
       console.log(`[Google Auth] Linked and authenticated existing user: ${cleanEmail}`);
     } else {
-      // First-time Google user: automatically create internal profile with direct access
+      // If user is not registered and request did not explicitly confirm account creation:
+      // Requirement 3: "Si no está registrada: no crear automáticamente una cuenta; mostrar la opción de crear una cuenta."
+      const { createAccount } = req.body;
       const derivedName = cleanEmail.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
       const userName = (name && name.trim()) ? name.trim() : derivedName;
-      const userRole = role === 'profesional' ? 'profesional' : 'cliente';
 
+      if (!createAccount) {
+        return res.status(200).json({
+          success: false,
+          notRegistered: true,
+          email: cleanEmail,
+          name: userName,
+          picture: picture || null,
+          message: 'Esta cuenta de Google no está registrada en Reborn Your Style.',
+        });
+      }
+
+      // User confirmed creation: create profile
+      const userRole = role === 'profesional' ? 'profesional' : 'cliente';
       user = {
         id: `usr-g-${Date.now()}`,
         name: userName,
@@ -528,11 +557,16 @@ export const googleLogin = async (req: Request, res: Response) => {
         createdAt: new Date().toISOString(),
       };
 
+      isNewUser = true;
       usersStore.set(cleanEmail, user);
       savePersistedUsers();
-      isNewUser = true;
-      console.log(`[Google Auth] Created new profile automatically for ${cleanEmail}`);
+      console.log(`[Google Auth] Created new profile upon user confirmation for ${cleanEmail}`);
     }
+
+    // Update last access timestamp
+    user.lastLoginAt = new Date().toISOString();
+    usersStore.set(cleanEmail, user);
+    savePersistedUsers();
 
     const token = generateToken(user);
 
@@ -546,6 +580,9 @@ export const googleLogin = async (req: Request, res: Response) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        isVerified: user.isVerified !== false,
+        createdAt: user.createdAt || new Date().toISOString(),
+        lastLoginAt: user.lastLoginAt,
         avatarUrl: user.picture || user.avatarUrl || null,
       },
     });

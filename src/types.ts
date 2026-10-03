@@ -141,6 +141,8 @@ export interface GarmentProject {
   authorName: string;
   authorAvatar: string;
   authorRole?: UserRole;
+  assignedTailorId?: string;
+  assignedTailorName?: string;
   status: 'Publicada' | 'En revisión' | 'En Proceso' | 'Completado' | 'Oculta';
   createdAt: string;
   views?: number;

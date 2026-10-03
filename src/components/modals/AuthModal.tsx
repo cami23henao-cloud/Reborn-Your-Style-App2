@@ -5,6 +5,7 @@ import {
   loginUser,
   loginAdministrator,
   loginOrRegisterWithGoogle,
+  loginWithGoogleExistingOnly,
   updateUserPassword,
   isAccountRegistered,
   getDeviceGoogleAccounts,
@@ -249,10 +250,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   // ---------------------------------------------------------------------------
   // 2. CONTINUAR CON GOOGLE
   // ---------------------------------------------------------------------------
-  const processGoogleEmail = async (rawEmail: string, rawName?: string, rawPicture?: string) => {
+  const processGoogleEmail = async (rawEmail: string, rawName?: string, rawPicture?: string, isExplicitRegister = false) => {
     const cleanEmail = (rawEmail || '').trim().toLowerCase();
     if (!cleanEmail || !cleanEmail.includes('@')) {
-      setErrorMsg('Por favor ingresa un correo de Google válido.');
+      setErrorMsg('El correo electrónico no es válido.');
       setIsLoading(false);
       return;
     }
@@ -268,6 +269,37 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         rawPicture ||
         `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName)}&backgroundColor=012d1d&textColor=b0f1cc`;
 
+      // Requirement 3:
+      // "Si una cuenta Google ya está registrada en Reborn Your Style: permitir acceso.
+      // Si no está registrada: no crear automáticamente una cuenta; mostrar la opción de crear una cuenta."
+      if (!isExplicitRegister && viewMode !== 'register') {
+        const verifyRes = await loginWithGoogleExistingOnly(cleanEmail, displayName, avatarUrl);
+        if (verifyRes.notRegistered) {
+          setIsLoading(false);
+          setRegisterEmail(cleanEmail);
+          setRegisterName(displayName);
+          setErrorMsg('Esta cuenta de Google no está registrada en Reborn Your Style. Por favor crea tu cuenta para continuar.');
+          return;
+        }
+
+        if (verifyRes.success && verifyRes.user) {
+          saveDeviceGoogleAccount({
+            email: cleanEmail,
+            name: displayName,
+            avatarUrl,
+          });
+          setDeviceAccounts(getDeviceGoogleAccounts());
+          setIsLoading(false);
+          setSuccessMsg(`¡Bienvenido(a) a Reborn Your Style, ${verifyRes.user.name}!`);
+          setTimeout(() => {
+            onLoginAccount(verifyRes.user!);
+            onClose();
+          }, 400);
+          return;
+        }
+      }
+
+      // If user is explicitly in register mode or confirmed creation:
       // 1. Authenticate with backend API (POST /api/auth/google/login)
       const apiRes = await safeApiCall<{
         success: boolean;
@@ -289,7 +321,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         }
       }
 
-      // 2. Synchronize with local client-side user database
+      // 2. Synchronize with client-side user database
       const storeRes = await loginOrRegisterWithGoogle({
         email: cleanEmail,
         name: displayName,
@@ -297,7 +329,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         avatarUrl,
       });
 
-      // 3. Save as active account on this device for seamless 1-click select
+      // 3. Save as active account on this device
       saveDeviceGoogleAccount({
         email: cleanEmail,
         name: displayName,
@@ -314,7 +346,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           onClose();
         }, 400);
       } else {
-        setErrorMsg(storeRes.error || apiRes.error || 'No fue posible completar el inicio de sesión con Google.');
+        setErrorMsg(storeRes.error || apiRes.error || 'Los datos ingresados no son correctos.');
       }
     } catch {
       setIsLoading(false);

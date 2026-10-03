@@ -11,6 +11,95 @@ interface CategoriaViewProps {
   onNavigate: (view: AppView) => void;
 }
 
+// Strict category filtering matching function
+export function isGarmentInCategory(garmentCategory: string, targetCategory: string): boolean {
+  if (!garmentCategory || !targetCategory) return false;
+  const g = garmentCategory.trim().toLowerCase();
+  const target = targetCategory.trim().toLowerCase();
+
+  // 1. Camisas strictly
+  if (target === 'camisas' || target === 'camisa') {
+    return g === 'camisas' || g === 'camisa' || g.startsWith('camisa ');
+  }
+
+  // 2. Blusas strictly
+  if (target === 'blusas' || target === 'blusa') {
+    return g === 'blusas' || g === 'blusa' || g.startsWith('blusa ');
+  }
+
+  // 3. Pantalones strictly
+  if (target === 'pantalones' || target === 'pantalon' || target === 'pantalón') {
+    return g.includes('pantalon') || g.includes('pantalón') || g.includes('jeans');
+  }
+
+  // 4. Vestidos strictly
+  if (target === 'vestidos' || target === 'vestido') {
+    return g.includes('vestido');
+  }
+
+  // 5. Bolsos strictly (do NOT include mochilas)
+  if (target === 'bolsos' || target === 'bolso') {
+    return (g.includes('bolso') || g.includes('cartera') || g.includes('tote')) && !g.includes('mochila');
+  }
+
+  // 6. Chaquetas strictly
+  if (target === 'chaquetas' || target === 'chaqueta') {
+    return g.includes('chaqueta') || g.includes('blazer') || g.includes('abrigo') || g.includes('cazadora');
+  }
+
+  // 7. Shorts strictly
+  if (target === 'shorts' || target === 'short') {
+    return g.includes('short') || g.includes('bermuda');
+  }
+
+  // 8. Suéteres strictly
+  if (target.includes('sueter') || target.includes('suéter')) {
+    return g.includes('suéter') || g.includes('sueter') || g.includes('buzo') || g.includes('saco') || g.includes('cárdigan');
+  }
+
+  // 9. Gorras y sombreros
+  if (target.includes('gorra') || target.includes('sombrero')) {
+    return g.includes('gorra') || g.includes('sombrero') || g.includes('visera');
+  }
+
+  // 10. Mochilas strictly
+  if (target.includes('mochila') || target.includes('morral')) {
+    return g.includes('mochila') || g.includes('morral') || g.includes('tula');
+  }
+
+  // 11. Calzones y ropa íntima
+  if (target === 'calzones' || target.includes('calzon') || target.includes('calzón')) {
+    return g.includes('calzon') || g.includes('calzón') || g.includes('panty') || g.includes('íntima') || g.includes('intima') || g.includes('bralette');
+  }
+
+  // 12. Accesorios
+  if (target === 'accesorios' || target === 'accesorio') {
+    return g.includes('accesorio') || g.includes('cinturón') || g.includes('cinturon') || g.includes('pañuelo') || g.includes('scrunchie');
+  }
+
+  // 13. Trajes de baño
+  if (target.includes('baño') || target.includes('bano') || target.includes('bikini')) {
+    return g.includes('baño') || g.includes('bano') || g.includes('bikini') || g.includes('playa');
+  }
+
+  // 14. Medias
+  if (target.includes('media') || target.includes('calentador')) {
+    return g.includes('media') || g.includes('calentador') || g.includes('calcetines');
+  }
+
+  // 15. Ropa (conjuntos o piezas compuestas)
+  if (target === 'ropa') {
+    return g === 'ropa' || g === 'conjunto';
+  }
+
+  // 16. Otras prendas
+  if (target.includes('otra')) {
+    return g.includes('otra') || g.includes('delantal');
+  }
+
+  return g === target;
+}
+
 export const CategoriaView: React.FC<CategoriaViewProps> = ({
   categoryName,
   garments,
@@ -32,67 +121,18 @@ export const CategoriaView: React.FC<CategoriaViewProps> = ({
     );
     if (found) return found;
 
-    // Fallback if not exact match
     return {
       id: categoryName.toLowerCase().replace(/\s+/g, '-'),
       name: categoryName,
       icon: 'category',
-      description: `Catálogo exclusivo de prendas y proyectos de ${categoryName}.`,
+      description: `Catálogo exclusivo de prendas pertenecientes únicamente a ${categoryName}.`,
       popularUpcyclingIdeas: ['Transformación Textil', 'Arreglo a Medida']
     };
   }, [categoryName]);
 
-  // Filter garments to ONLY this category
+  // Filter garments to ONLY this category - NO mixing, NO all platform items
   const categoryGarments = useMemo(() => {
-    return garments.filter(g => {
-      const catLower = categoryMeta.name.toLowerCase();
-      const gCat = g.category.toLowerCase();
-
-      if (categoryMeta.id === 'calzones' || catLower.includes('calzon')) {
-        return gCat.includes('calzon') || gCat.includes('ropa interior') || gCat.includes('íntima');
-      }
-      if (categoryMeta.id === 'ropa' || catLower === 'ropa') {
-        return gCat.includes('ropa') || gCat.includes('chaqueta') || gCat.includes('suéter') || gCat.includes('conjunto');
-      }
-      if (categoryMeta.id === 'camisas-blusas' || catLower.includes('camisa') || catLower.includes('blusa')) {
-        return gCat.includes('camisa') || gCat.includes('blusa');
-      }
-      if (categoryMeta.id === 'bolsos' || catLower.includes('bolso')) {
-        return gCat.includes('bolso');
-      }
-      if (categoryMeta.id === 'pantalones' || catLower.includes('pantalon')) {
-        return gCat.includes('pantalon');
-      }
-      if (categoryMeta.id === 'vestidos' || catLower.includes('vestido')) {
-        return gCat.includes('vestido');
-      }
-      if (categoryMeta.id === 'chaquetas' || catLower.includes('chaqueta')) {
-        return gCat.includes('chaqueta');
-      }
-      if (categoryMeta.id === 'shorts' || catLower.includes('short')) {
-        return gCat.includes('short');
-      }
-      if (categoryMeta.id === 'sueteres' || catLower.includes('suéter')) {
-        return gCat.includes('suéter') || gCat.includes('sueter');
-      }
-      if (categoryMeta.id === 'gorras' || catLower.includes('gorra')) {
-        return gCat.includes('gorra');
-      }
-      if (categoryMeta.id === 'mochilas' || catLower.includes('mochila')) {
-        return gCat.includes('mochila');
-      }
-      if (categoryMeta.id === 'accesorios' || catLower.includes('accesorio')) {
-        return gCat.includes('accesorio');
-      }
-      if (categoryMeta.id === 'trajes-de-bano' || catLower.includes('traje')) {
-        return gCat.includes('traje') || gCat.includes('baño') || gCat.includes('playa');
-      }
-      if (categoryMeta.id === 'medias' || catLower.includes('media')) {
-        return gCat.includes('media') || gCat.includes('calentador');
-      }
-
-      return gCat.includes(catLower) || catLower.includes(gCat);
-    });
+    return garments.filter(g => isGarmentInCategory(g.category, categoryMeta.name));
   }, [garments, categoryMeta]);
 
   // Available departments in this category
@@ -111,24 +151,22 @@ export const CategoriaView: React.FC<CategoriaViewProps> = ({
   // Filter and sort items
   const displayedGarments = useMemo(() => {
     return categoryGarments.filter(g => {
-      // Search
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
         const matches = (
           g.title.toLowerCase().includes(q) ||
           g.description.toLowerCase().includes(q) ||
           g.authorName.toLowerCase().includes(q) ||
+          (g.municipality && g.municipality.toLowerCase().includes(q)) ||
           g.location.toLowerCase().includes(q)
         );
         if (!matches) return false;
       }
 
-      // Listing Type
       if (selectedType !== 'todos' && g.listingType.toLowerCase() !== selectedType.toLowerCase()) {
         return false;
       }
 
-      // Department
       if (selectedDept !== 'todos') {
         const loc = (g.department || g.location || '').toLowerCase();
         if (!loc.includes(selectedDept.toLowerCase())) return false;
@@ -142,7 +180,7 @@ export const CategoriaView: React.FC<CategoriaViewProps> = ({
       if (sortBy === 'precio-alto') {
         return (b.budget || 0) - (a.budget || 0);
       }
-      return 0; // Default recent
+      return 0;
     });
   }, [categoryGarments, searchQuery, selectedType, selectedDept, sortBy]);
 
@@ -152,7 +190,7 @@ export const CategoriaView: React.FC<CategoriaViewProps> = ({
       <div className="flex items-center gap-2 text-xs font-semibold text-[#717973] mb-6">
         <button
           onClick={onBackToCatalogos}
-          className="hover:text-[#012d1d] transition-colors flex items-center gap-1"
+          className="hover:text-[#012d1d] transition-colors flex items-center gap-1 cursor-pointer"
         >
           <span className="material-symbols-outlined text-sm">arrow_back</span>
           <span>Catálogos</span>
@@ -174,7 +212,7 @@ export const CategoriaView: React.FC<CategoriaViewProps> = ({
                 Catálogo Exclusivo
               </span>
               <span className="px-2.5 py-0.5 rounded-full bg-[#b0f1cc]/50 text-[#002113] text-[11px] font-bold">
-                {categoryGarments.length} {categoryGarments.length === 1 ? 'producto' : 'productos'}
+                {categoryGarments.length} {categoryGarments.length === 1 ? 'prenda' : 'prendas'}
               </span>
             </div>
             <h1 className="font-headline text-2xl sm:text-3xl md:text-4xl font-black text-[#012d1d] animate-title-entry">
@@ -190,14 +228,14 @@ export const CategoriaView: React.FC<CategoriaViewProps> = ({
         <div className="flex flex-wrap gap-2.5 shrink-0">
           <button
             onClick={() => onNavigate('publicar-prenda')}
-            className="bg-[#012d1d] hover:bg-[#2b694d] text-white text-xs sm:text-sm font-bold px-5 py-2.5 rounded-full transition-all shadow-sm flex items-center gap-2 active:scale-95"
+            className="bg-[#012d1d] hover:bg-[#2b694d] text-white text-xs sm:text-sm font-bold px-5 py-2.5 rounded-full transition-all shadow-sm flex items-center gap-2 active:scale-95 cursor-pointer"
           >
             <span className="material-symbols-outlined text-base">add_circle</span>
-            <span>Publicar {categoryMeta.name.toLowerCase()}</span>
+            <span>Publicar en {categoryMeta.name.toLowerCase()}</span>
           </button>
           <button
             onClick={() => onNavigate('costureros')}
-            className="bg-[#faf9f4] hover:bg-[#efeee9] text-[#012d1d] border border-[#c1c8c2] text-xs sm:text-sm font-bold px-4 py-2.5 rounded-full transition-all flex items-center gap-2"
+            className="bg-[#faf9f4] hover:bg-[#efeee9] text-[#012d1d] border border-[#c1c8c2] text-xs sm:text-sm font-bold px-4 py-2.5 rounded-full transition-all flex items-center gap-2 cursor-pointer"
           >
             <span className="material-symbols-outlined text-base">person_search</span>
             <span>Costureros recomendados</span>
@@ -207,14 +245,14 @@ export const CategoriaView: React.FC<CategoriaViewProps> = ({
 
       {/* Fast Category Switcher Tabs */}
       <div className="mb-6 flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-        <span className="text-xs font-bold text-[#717973] whitespace-nowrap">Cambiar a otra categoría:</span>
+        <span className="text-xs font-bold text-[#717973] whitespace-nowrap">Cambiar de catálogo:</span>
         {EXPANDED_CATEGORIES.map((cat) => {
           const isActive = cat.name.toLowerCase() === categoryMeta.name.toLowerCase();
           return (
             <button
               key={cat.id}
               onClick={() => onSelectCategory(cat.name)}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+              className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
                 isActive
                   ? 'bg-[#012d1d] text-[#b0f1cc] shadow-xs'
                   : 'bg-white text-[#012d1d] border border-[#c1c8c2]/60 hover:bg-[#efeee9]'
@@ -249,12 +287,13 @@ export const CategoriaView: React.FC<CategoriaViewProps> = ({
           <select
             value={selectedType}
             onChange={(e) => setSelectedType(e.target.value)}
-            className="px-3 py-2 bg-white border border-[#c1c8c2] rounded-xl text-xs font-semibold text-[#012d1d] focus:outline-none"
+            className="px-3 py-2 bg-white border border-[#c1c8c2] rounded-xl text-xs font-semibold text-[#012d1d] focus:outline-none cursor-pointer"
           >
-            <option value="todos">Todos los tipos</option>
-            <option value="Venta">En Venta</option>
-            <option value="Transformación">Para Transformar</option>
+            <option value="todos">Todas las modalidades</option>
+            <option value="Venta">Venta</option>
+            <option value="Transformación">Transformación</option>
             <option value="Intercambio">Intercambio</option>
+            <option value="Donación">Donación</option>
           </select>
 
           {/* Department */}
@@ -262,9 +301,9 @@ export const CategoriaView: React.FC<CategoriaViewProps> = ({
             <select
               value={selectedDept}
               onChange={(e) => setSelectedDept(e.target.value)}
-              className="px-3 py-2 bg-white border border-[#c1c8c2] rounded-xl text-xs font-semibold text-[#012d1d] focus:outline-none"
+              className="px-3 py-2 bg-white border border-[#c1c8c2] rounded-xl text-xs font-semibold text-[#012d1d] focus:outline-none cursor-pointer"
             >
-              <option value="todos">Todas las ciudades</option>
+              <option value="todos">Todos los departamentos</option>
               {availableDepartments.map((dept) => (
                 <option key={dept} value={dept}>{dept}</option>
               ))}
@@ -275,7 +314,7 @@ export const CategoriaView: React.FC<CategoriaViewProps> = ({
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as any)}
-            className="px-3 py-2 bg-white border border-[#c1c8c2] rounded-xl text-xs font-semibold text-[#012d1d] focus:outline-none"
+            className="px-3 py-2 bg-white border border-[#c1c8c2] rounded-xl text-xs font-semibold text-[#012d1d] focus:outline-none cursor-pointer"
           >
             <option value="recientes">Más recientes</option>
             <option value="precio-bajo">Menor presupuesto</option>
@@ -289,7 +328,7 @@ export const CategoriaView: React.FC<CategoriaViewProps> = ({
                 setSelectedType('todos');
                 setSelectedDept('todos');
               }}
-              className="text-xs text-[#2b694d] hover:underline font-bold px-2 py-1"
+              className="text-xs text-[#2b694d] hover:underline font-bold px-2 py-1 cursor-pointer"
             >
               Limpiar filtros
             </button>
@@ -304,14 +343,14 @@ export const CategoriaView: React.FC<CategoriaViewProps> = ({
             <span className="material-symbols-outlined text-2xl text-[#717973]">{categoryMeta.icon}</span>
           </div>
           <h3 className="font-headline text-lg font-bold text-[#012d1d]">
-            No se encontraron prendas con estos filtros
+            No hay prendas publicadas en esta categoría actualmente
           </h3>
           <p className="text-xs text-[#414844] leading-relaxed">
-            Prueba cambiando los términos de búsqueda o publica la primera prenda en la categoría <strong>{categoryMeta.name}</strong>.
+            Sé el primero en compartir o solicitar un suprareciclaje para <strong>{categoryMeta.name}</strong>.
           </p>
           <button
             onClick={() => onNavigate('publicar-prenda')}
-            className="px-6 py-2.5 bg-[#012d1d] text-white text-xs font-bold rounded-xl hover:bg-[#2b694d] transition-colors"
+            className="px-6 py-2.5 bg-[#012d1d] text-white text-xs font-bold rounded-xl hover:bg-[#2b694d] transition-colors cursor-pointer"
           >
             Publicar prenda ahora
           </button>
@@ -327,9 +366,13 @@ export const CategoriaView: React.FC<CategoriaViewProps> = ({
               {/* Product Image & Badges */}
               <div className="relative aspect-4/3 w-full bg-[#102b1e] overflow-hidden">
                 <img
-                  src={garment.imageUrl}
+                  src={garment.imageUrl || 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=600&auto=format&fit=crop&q=80'}
                   alt={garment.title}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  onError={(e) => {
+                    // Fallback to avoid broken image display
+                    (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=600&auto=format&fit=crop&q=80';
+                  }}
                 />
                 <div className="absolute top-2.5 left-2.5 flex flex-wrap gap-1.5">
                   <span className="px-2.5 py-0.5 rounded-full bg-[#012d1d]/85 backdrop-blur-xs text-[#b0f1cc] text-[10px] font-bold">
@@ -339,21 +382,21 @@ export const CategoriaView: React.FC<CategoriaViewProps> = ({
                     {garment.condition}
                   </span>
                 </div>
-                {garment.budget && (
+                {garment.budget ? (
                   <div className="absolute bottom-2.5 right-2.5 px-2.5 py-1 rounded-xl bg-white/95 backdrop-blur-sm text-[#012d1d] text-xs font-extrabold shadow-sm">
-                    ${garment.budget.toLocaleString()} COP
+                    ${garment.budget.toLocaleString('es-CO')} COP
                   </div>
-                )}
+                ) : null}
               </div>
 
               {/* Card Body */}
               <div className="p-5 flex flex-col justify-between flex-1 gap-3">
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between text-[11px] text-[#717973]">
-                    <span>Talla {garment.size || 'Única'}</span>
+                    <span>Talla: {garment.size || 'Única'}</span>
                     <span className="flex items-center gap-1">
                       <span className="material-symbols-outlined text-xs text-[#2b694d]">location_on</span>
-                      <span>{garment.municipality || garment.location.split(',')[0]}</span>
+                      <span>{garment.municipality || garment.department || garment.location.split(',')[0]}</span>
                     </span>
                   </div>
 
