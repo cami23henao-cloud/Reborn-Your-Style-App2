@@ -22,22 +22,143 @@ export const InfoModals: React.FC<InfoModalProps> = ({
 }) => {
   const [contactName, setContactName] = useState('');
   const [contactEmail, setContactEmail] = useState('');
+  const [contactSubject, setContactSubject] = useState('Consulta general sobre suprareciclaje');
   const [contactMsg, setContactMsg] = useState('');
+  const [isSubmittingContact, setIsSubmittingContact] = useState(false);
   const [sentSuccess, setSentSuccess] = useState(false);
+  const [contactError, setContactError] = useState('');
+
+  // Interactive Tutorials state
+  const [tutorialCategory, setTutorialCategory] = useState<string>('todos');
+  const [expandedTutorialId, setExpandedTutorialId] = useState<string | null>('tut-1');
 
   if (!type) return null;
 
-  const handleContactSubmit = (e: React.FormEvent) => {
+  const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (onSendMessage) {
-      onSendMessage(contactName, contactEmail, contactMsg);
+    setContactError('');
+    setIsSubmittingContact(true);
+
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: contactName.trim(),
+          email: contactEmail.trim(),
+          subject: contactSubject,
+          message: contactMsg.trim(),
+        }),
+      });
+
+      const data = await res.json();
+      setIsSubmittingContact(false);
+
+      if (data.success) {
+        if (onSendMessage) {
+          onSendMessage(contactName, contactEmail, contactMsg);
+        }
+        setSentSuccess(true);
+        setTimeout(() => {
+          setSentSuccess(false);
+          onClose();
+        }, 2500);
+      } else {
+        setContactError(data.error || 'No fue posible enviar tu mensaje. Por favor intenta nuevamente.');
+      }
+    } catch {
+      setIsSubmittingContact(false);
+      setContactError('No pudimos conectar con el servidor de soporte. Por favor verifica tu conexión.');
     }
-    setSentSuccess(true);
-    setTimeout(() => {
-      setSentSuccess(false);
-      onClose();
-    }, 1800);
   };
+
+  // Structured tutorials catalog
+  const TUTORIALS_DATA = [
+    {
+      id: 'tut-1',
+      title: 'De Jean Desgastado a Bolso Tote Bag',
+      category: 'bolsos',
+      categoryLabel: 'Bolsos y Accesorios',
+      duration: '45 min',
+      difficulty: 'Principiante',
+      image: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=800&auto=format&fit=crop&q=80',
+      description: 'Aprende a transformar la parte superior de unos pantalones de mezclilla en desuso en una práctica y resistente bolsa tote ecológica.',
+      materials: ['1 pantalón jean usado', 'Tijeras de tela', 'Hilo grueso de mezclilla', 'Aguja #16 o máquina de coser', 'Alfileres y cinta métrica'],
+      steps: [
+        { num: 1, title: 'Corte de la base', text: 'Extiende el pantalón plano y corta horizontalmente justo debajo de la entrepierna, conservando la pretina y los bolsillos traseros intactos.' },
+        { num: 2, title: 'Costura del fondo', text: 'Voltea la pieza al revés y cose una costura recta reforzada a 1.5 cm del borde inferior cortado. Remata con puntada en zigzag.' },
+        { num: 3, title: 'Creación y fijación de manijas', text: 'Corta dos tiras de 60x6 cm de las perneras restantes, dóblalas en cuatro y cóselas a los lados de la pretina para las asas.' },
+      ],
+    },
+    {
+      id: 'tut-2',
+      title: 'Técnica Sashiko: Zurcido Visible y Refuerzo Textil',
+      category: 'costura',
+      categoryLabel: 'Costura Básica',
+      duration: '30 min',
+      difficulty: 'Principiante',
+      image: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=800&auto=format&fit=crop&q=80',
+      description: 'Método tradicional japonés para reparar rasgaduras en chaquetas y pantalones con patrones geométricos visibles que embellecen la prenda.',
+      materials: ['Prenda con desgaste', 'Retazo de tela para parche interior', 'Hilo de bordar o hilo Sashiko blanco', 'Aguja de ojo largo', 'Tiza para tela'],
+      steps: [
+        { num: 1, title: 'Colocación del parche de refuerzo', text: 'Ubica el retazo de tela debajo de la rasgadura por el revés de la prenda y sujétalo firmemente con alfileres.' },
+        { num: 2, title: 'Trazado de la cuadrícula guía', text: 'Dibuja líneas paralelas espaciadas a 5 mm con tiza sobre el área a reparar formando una cruz o líneas continuas.' },
+        { num: 3, title: 'Puntadas Sashiko uniformes', text: 'Cose puntadas pequeñas y uniformes hacia adelante asegurando el parche. Deja el remate escondido en el interior.' },
+      ],
+    },
+    {
+      id: 'tut-3',
+      title: 'Conversión de Camisa Oversize en Top Cruzado',
+      category: 'transformacion',
+      categoryLabel: 'Transformación de Prendas',
+      duration: '50 min',
+      difficulty: 'Intermedio',
+      image: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=800&auto=format&fit=crop&q=80',
+      description: 'Convierte camisas masculinas amplias en prendas modernas entalladas con amarre frontal sin desperdiciar retazos.',
+      materials: ['1 camisa de hombre talla L o XL', 'Tijeras', 'Cinta elástica o cordón', 'Plancha'],
+      steps: [
+        { num: 1, title: 'Corte de largo y ajuste', text: 'Mide tu torso hasta la cintura natural y corta la camisa dejando 5 cm adicionales para el dobladillo.' },
+        { num: 2, title: 'Creación de tiras de amarre', text: 'Aprovecha las mangas sobrantes para confeccionar dos cintas anchas que se crucen en el frente.' },
+        { num: 3, title: 'Acabados y dobladillo', text: 'Plancha los bordes hacia adentro y realiza un pespunte limpio a máquina.' },
+      ],
+    },
+    {
+      id: 'tut-4',
+      title: 'Teñido Natural con Hueso de Aguacate y Cúrcuma',
+      category: 'reciclaje',
+      categoryLabel: 'Reciclaje Textil',
+      duration: '2 horas',
+      difficulty: 'Principiante',
+      image: 'https://images.unsplash.com/photo-1607344645866-009c320b5ab8?w=800&auto=format&fit=crop&q=80',
+      description: 'Restaura prendas descoloridas o con manchas difíciles usando tintes 100% orgánicos libres de químicos tóxicos.',
+      materials: ['Prenda 100% algodón o lino', '3 huesos de aguacate limpios o 2 cdas de cúrcuma', 'Olla grande', 'Agua y vinagre blanco'],
+      steps: [
+        { num: 1, title: 'Preparación de la fibra (Mordentado)', text: 'Hierve la prenda limpia en agua con una taza de vinagre durante 20 minutos para abrir las fibras naturales.' },
+        { num: 2, title: 'Extracción del tinte botánico', text: 'Tritura los huesos de aguacate y hiérvelos en 2 litros de agua durante 40 minutos hasta obtener un tono rosa viejo intenso.' },
+        { num: 3, title: 'Inmersión y fijado', text: 'Sumerge la prenda húmeda en el tinte colado a fuego bajo durante 1 hora y deja enfriar en la olla.' },
+      ],
+    },
+    {
+      id: 'tut-5',
+      title: 'Guía de Cuidados Circulares y Conservación',
+      category: 'sostenibilidad',
+      categoryLabel: 'Sostenibilidad',
+      duration: '15 min',
+      difficulty: 'Para Todos',
+      image: 'https://images.unsplash.com/photo-1544441893-675973e31985?w=800&auto=format&fit=crop&q=80',
+      description: 'Claves para triplicar la vida útil de tus prendas y evitar el microdesprendimiento de fibras en el lavado.',
+      materials: ['Bolsa de lavado para prendas delicadas', 'Jabón biodegradable neutro', 'Cepillo para pelusas'],
+      steps: [
+        { num: 1, title: 'Lavado en frío y al revés', text: 'Lava siempre tus prendas intervenidas con agua fría (máx 30°C) y volteadas para proteger bordados y parches.' },
+        { num: 2, title: 'Secado a la sombra', text: 'Evita la secadora automática de calor extremo; cuelga las prendas a la sombra para preservar la elasticidad y color.' },
+        { num: 3, title: 'Rotación y ventilación', text: 'Ventila chaquetas y prendas pesadas en lugar de lavarlas tras un solo uso, reduciendo el desgaste de la fibra.' },
+      ],
+    },
+  ];
+
+  const filteredTutorials = tutorialCategory === 'todos'
+    ? TUTORIALS_DATA
+    : TUTORIALS_DATA.filter((t) => t.category === tutorialCategory);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
@@ -378,6 +499,22 @@ export const InfoModals: React.FC<InfoModalProps> = ({
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-[#012d1d] mb-1">
+                      Motivo de contacto *
+                    </label>
+                    <select
+                      value={contactSubject}
+                      onChange={(e) => setContactSubject(e.target.value)}
+                      className="w-full bg-[#f5f4ef] border border-[#c1c8c2] rounded-lg p-2.5 text-sm focus:bg-white focus:border-[#012d1d] outline-none"
+                    >
+                      <option value="Consulta general sobre suprareciclaje">Consulta general sobre suprareciclaje</option>
+                      <option value="Quiero unirme como taller o costurero">Quiero unirme como taller o costurero</option>
+                      <option value="Dudas sobre mi solicitud o prenda">Dudas sobre mi solicitud o prenda</option>
+                      <option value="Soporte técnico o reporte de error">Soporte técnico o reporte de error</option>
+                      <option value="Alianzas y sostenibilidad">Alianzas y sostenibilidad</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-[#012d1d] mb-1">
                       Mensaje
                     </label>
                     <textarea
@@ -389,6 +526,12 @@ export const InfoModals: React.FC<InfoModalProps> = ({
                       className="w-full bg-[#f5f4ef] border border-[#c1c8c2] rounded-lg p-2.5 text-sm focus:bg-white focus:border-[#012d1d] outline-none"
                     />
                   </div>
+                  {contactError && (
+                    <div className="p-3 bg-[#fef2f2] border border-[#fecaca] rounded-xl text-xs text-[#991b1b] flex items-center gap-2">
+                      <span className="material-symbols-outlined text-sm text-[#dc2626]">error</span>
+                      <span>{contactError}</span>
+                    </div>
+                  )}
                   <div className="flex justify-end gap-3 pt-2">
                     <button
                       type="button"

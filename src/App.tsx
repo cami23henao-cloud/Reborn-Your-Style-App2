@@ -61,8 +61,12 @@ import { MensajesView } from './components/views/MensajesView';
 import { SolicitudResumenView } from './components/views/SolicitudResumenView';
 import { AdminPanelView } from './components/views/AdminPanelView';
 import { useScrollReveal } from './hooks/useScrollReveal';
+import { SplashScreen } from './components/common/SplashScreen';
 
 export function App() {
+  // Splash Screen State (Requirement 1: Scissors & Fabric animation directly redirecting to Inicio)
+  const [showSplash, setShowSplash] = useState(true);
+
   // Navigation State
   const [currentView, setCurrentView] = useState<AppView>('inicio');
   const [userRole, setUserRole] = useState<UserRole>('cliente');
@@ -561,6 +565,19 @@ export function App() {
     addToast('Prenda eliminada', 'La publicación ha sido eliminada del catálogo.', 'info');
   };
 
+  const handleSaveEditedGarment = (updatedGarment: GarmentProject) => {
+    setUserGarments((prev) =>
+      prev.map((g) => (g.id === updatedGarment.id ? updatedGarment : g))
+    );
+    setGarments((prev) =>
+      prev.map((g) => (g.id === updatedGarment.id ? updatedGarment : g))
+    );
+    if (currentUserAccount) {
+      saveUserGarment(currentUserAccount.id, updatedGarment);
+    }
+    addToast('Prenda actualizada', 'Los cambios en tu publicación han sido guardados correctamente.', 'success');
+  };
+
   const handleUpdateRequestStatus = (
     requestId: string,
     newStatus: 'Aceptada' | 'Rechazada' | 'En Proceso' | 'Completada'
@@ -699,6 +716,17 @@ export function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#faf9f4] text-[#1b1c19] font-sans antialiased selection:bg-[#b0f1cc] selection:text-[#002113] w-full overflow-x-hidden">
+      {/* 1. Ultra dynamic Scissors & Fabric cutting Splash Screen directly redirecting to Inicio */}
+      {showSplash && (
+        <SplashScreen
+          onFinish={() => {
+            setShowSplash(false);
+            setCurrentView('inicio');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+        />
+      )}
+
       {/* Toast Notifications */}
       <Toast toasts={toasts} onDismiss={handleDismissToast} />
 
@@ -785,6 +813,7 @@ export function App() {
             onEditService={handleOpenEditService}
             onDeleteService={handleDeleteService}
             onDeleteGarment={handleDeleteGarment}
+            onEditGarment={handleSaveEditedGarment}
             onUpdateRequestStatus={handleUpdateRequestStatus}
             onNavigate={handleNavigate}
             onUpdateProfile={handleUpdateProfile}
@@ -878,6 +907,7 @@ export function App() {
               onEditService={handleOpenEditService}
               onDeleteService={handleDeleteService}
               onDeleteGarment={handleDeleteGarment}
+              onEditGarment={handleSaveEditedGarment}
               onUpdateRequestStatus={handleUpdateRequestStatus}
               onNavigate={handleNavigate}
               onUpdateProfile={handleUpdateProfile}

@@ -16,9 +16,12 @@ interface ThemeLanguageContextType {
 const DICTIONARY: Record<Language, Record<string, string>> = {
   es: {
     // Navigation
+    'nav.inicio': 'Inicio',
     'nav.catalogo': 'Catálogo',
-    'nav.servicios': 'Servicios',
     'nav.tutoriales': 'Tutoriales',
+    'nav.ayuda': 'Centro de Ayuda',
+    'nav.perfil': 'Perfil',
+    'nav.servicios': 'Servicios',
     'nav.costureros': 'Costureros',
     'nav.iniciar_sesion': 'Iniciar sesión',
     'nav.registrarse': 'Registrarse',
@@ -74,9 +77,12 @@ const DICTIONARY: Record<Language, Record<string, string>> = {
   },
   en: {
     // Navigation
+    'nav.inicio': 'Home',
     'nav.catalogo': 'Catalog',
-    'nav.servicios': 'Services',
     'nav.tutoriales': 'Tutorials',
+    'nav.ayuda': 'Help Center',
+    'nav.perfil': 'Profile',
+    'nav.servicios': 'Services',
     'nav.costureros': 'Tailors',
     'nav.iniciar_sesion': 'Sign in',
     'nav.registrarse': 'Register',

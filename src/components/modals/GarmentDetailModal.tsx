@@ -42,7 +42,7 @@ export const GarmentDetailModal: React.FC<GarmentDetailModalProps> = ({
         {/* ================================================================= */}
         <div className="relative w-full h-72 sm:h-84 bg-[#102b1e] overflow-hidden rounded-t-3xl shrink-0">
           <img
-            src={garment.imageUrl || 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=1000&auto=format&fit=crop&q=80'}
+            src={(garment as any).storage_url || garment.imageUrl || 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=1000&auto=format&fit=crop&q=80'}
             alt={garment.title}
             className="w-full h-full object-cover"
             onError={(e) => {
@@ -51,12 +51,13 @@ export const GarmentDetailModal: React.FC<GarmentDetailModalProps> = ({
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent pointer-events-none" />
 
-          {/* CLOSE "X" BUTTON: Clearly visible, high-contrast, top-right, easy to click */}
+          {/* CLOSE "X" BUTTON: Fixed top-right, z-50, high-contrast, accessible */}
           <button
             onClick={onClose}
             type="button"
             aria-label="Cerrar detalles de la prenda"
-            className="absolute top-4 right-4 z-30 w-11 h-11 rounded-full bg-black/80 hover:bg-black text-white flex items-center justify-center shadow-lg border border-white/40 backdrop-blur-md transition-all hover:scale-105 active:scale-95 cursor-pointer"
+            style={{ position: 'absolute', top: '1rem', right: '1rem', zIndex: 50 }}
+            className="w-11 h-11 rounded-full bg-black/85 hover:bg-black text-white flex items-center justify-center shadow-2xl border border-white/50 backdrop-blur-md transition-all hover:scale-105 active:scale-95 cursor-pointer focus:outline-none"
             title="Cerrar ventana"
           >
             <span className="material-symbols-outlined text-2xl font-bold">close</span>

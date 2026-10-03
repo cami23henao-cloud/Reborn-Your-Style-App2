@@ -84,6 +84,7 @@ interface AuthModalProps {
 type AuthViewMode =
   | 'login'
   | 'google_account_picker'
+  | 'google_not_registered'
   | 'register'
   | 'register_verify'
   | 'forgot_password'
@@ -109,6 +110,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [isUsingOtherGoogleAccount, setIsUsingOtherGoogleAccount] = useState(false);
   const [customGoogleEmail, setCustomGoogleEmail] = useState('');
   const [customGoogleName, setCustomGoogleName] = useState('');
+  const [pendingGoogleAccount, setPendingGoogleAccount] = useState<{
+    email: string;
+    name: string;
+    avatarUrl?: string;
+  } | null>(null);
 
   // Input states for Register
   const [registerName, setRegisterName] = useState('');
@@ -165,6 +171,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setIsUsingOtherGoogleAccount(false);
       setCustomGoogleEmail('');
       setCustomGoogleName('');
+      setPendingGoogleAccount(null);
 
       setRecoveryStep('request');
       setRecoveryEmail('');
@@ -276,9 +283,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         const verifyRes = await loginWithGoogleExistingOnly(cleanEmail, displayName, avatarUrl);
         if (verifyRes.notRegistered) {
           setIsLoading(false);
+          setPendingGoogleAccount({
+            email: cleanEmail,
+            name: displayName,
+            avatarUrl,
+          });
           setRegisterEmail(cleanEmail);
           setRegisterName(displayName);
-          setErrorMsg('Esta cuenta de Google no está registrada en Reborn Your Style. Por favor crea tu cuenta para continuar.');
+          setErrorMsg('');
+          setViewMode('google_not_registered');
           return;
         }
 
@@ -748,6 +761,31 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
 
+  // Helper to render feedback messages at the BOTTOM of forms (Requirement 8)
+  const renderStatusMessages = () => {
+    if (!errorMsg && !successMsg) return null;
+    return (
+      <div className="mt-4 space-y-2">
+        {errorMsg && (
+          <div className="p-3.5 bg-[#fef2f2] border border-[#fecaca] rounded-xl flex items-start gap-2.5 text-xs text-[#991b1b] animate-fadeIn">
+            <span className="material-symbols-outlined text-[18px] text-[#dc2626] shrink-0 mt-0.5">
+              error
+            </span>
+            <span className="leading-relaxed font-medium">{errorMsg}</span>
+          </div>
+        )}
+        {successMsg && (
+          <div className="p-3.5 bg-[#f0fdf4] border border-[#bbf7d0] rounded-xl flex items-start gap-2.5 text-xs text-[#166534] animate-fadeIn">
+            <span className="material-symbols-outlined text-[18px] text-[#16a34a] shrink-0 mt-0.5">
+              check_circle
+            </span>
+            <span className="leading-relaxed font-medium">{successMsg}</span>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity">
       <div
@@ -776,25 +814,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             <BrandLogo size="lg" className="mb-2" />
           </div>
 
-          {/* Feedback Messages (Only shown upon user action) */}
-          {errorMsg && (
-            <div className="mb-5 p-3.5 bg-[#fef2f2] border border-[#fecaca] rounded-xl flex items-start gap-2.5 text-xs text-[#991b1b] animate-fadeIn">
-              <span className="material-symbols-outlined text-[18px] text-[#dc2626] shrink-0 mt-0.5">
-                error
-              </span>
-              <span className="leading-relaxed font-medium">{errorMsg}</span>
-            </div>
-          )}
-
-          {successMsg && (
-            <div className="mb-5 p-3.5 bg-[#f0fdf4] border border-[#bbf7d0] rounded-xl flex items-start gap-2.5 text-xs text-[#166534] animate-fadeIn">
-              <span className="material-symbols-outlined text-[18px] text-[#16a34a] shrink-0 mt-0.5">
-                check_circle
-              </span>
-              <span className="leading-relaxed font-medium">{successMsg}</span>
-            </div>
-          )}
-
           {/* ================================================================= */}
           {/* SCREEN 1: PANTALLA PRINCIPAL DE INICIO DE SESIÓN                  */}
           {/* ================================================================= */}
@@ -805,7 +824,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   Bienvenido a Reborn Your Style
                 </h2>
                 <p className="text-xs text-[#717973] mt-1 font-medium">
-                  Inicia sesión para continuar
+                  Transforma tus prendas. Reimagina tu estilo.
                 </p>
               </div>
 
@@ -935,10 +954,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <span>Continuar con Google</span>
               </button>
 
-              {/* “¿Aún no tienes una cuenta?” [ Crear una cuenta ] */}
+              {/* Contenedor de mensajes de estado en la parte INFERIOR del formulario */}
+              {renderStatusMessages()}
+
+              {/* “¿No tienes una cuenta?” [ Crear una cuenta ] */}
               <div className="mt-6 pt-4 border-t border-[#f0efe9] text-center">
                 <p className="text-xs text-[#717973]">
-                  ¿Aún no tienes una cuenta?{' '}
+                  ¿No tienes una cuenta?{' '}
                   <button
                     type="button"
                     onClick={() => {
@@ -1175,6 +1197,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </div>
               </div>
 
+              {renderStatusMessages()}
+
               {/* Back button */}
               <div className="pt-1 text-center">
                 <button
@@ -1190,6 +1214,98 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   ← Volver a inicio de sesión con correo y contraseña
                 </button>
               </div>
+            </div>
+          )}
+
+          {/* ================================================================= */}
+          {/* SCREEN: CUENTA DE GOOGLE NO REGISTRADA                             */}
+          {/* ================================================================= */}
+          {viewMode === 'google_not_registered' && (
+            <div className="py-2 text-center animate-fadeIn space-y-4">
+              <div className="w-14 h-14 rounded-full bg-white border border-[#e2e0d8] shadow-xs flex items-center justify-center mx-auto mb-2">
+                <svg className="w-7 h-7" viewBox="0 0 24 24">
+                  <path
+                    fill="#4285F4"
+                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                  />
+                  <path
+                    fill="#EA4335"
+                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                  />
+                </svg>
+              </div>
+
+              <h3 className="text-lg font-bold text-[#1b1c19] px-2 leading-snug">
+                Esta cuenta de Google todavía no está registrada en Reborn Your Style.
+              </h3>
+
+              {pendingGoogleAccount && (
+                <div className="p-3 bg-[#faf9f4] border border-[#e2e0d8] rounded-xl flex items-center justify-center gap-3 max-w-xs mx-auto text-left">
+                  {pendingGoogleAccount.avatarUrl ? (
+                    <img
+                      src={pendingGoogleAccount.avatarUrl}
+                      alt={pendingGoogleAccount.name}
+                      className="w-9 h-9 rounded-full object-cover border border-[#dadce0] shrink-0"
+                    />
+                  ) : (
+                    <div className="w-9 h-9 rounded-full bg-[#012d1d] text-[#b0f1cc] text-xs font-bold flex items-center justify-center shrink-0">
+                      {pendingGoogleAccount.name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div className="min-w-0 truncate">
+                    <p className="text-xs font-semibold text-[#1b1c19] truncate">{pendingGoogleAccount.name}</p>
+                    <p className="text-[11px] text-[#717973] truncate">{pendingGoogleAccount.email}</p>
+                  </div>
+                </div>
+              )}
+
+              <p className="text-xs text-[#717973] max-w-xs mx-auto leading-relaxed">
+                Para ingresar con Google, completa tu registro seleccionando tu tipo de cuenta.
+              </p>
+
+              {/* Botones requeridos: [ Crear una cuenta ] [ Volver ] */}
+              <div className="pt-2 space-y-2.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setErrorMsg('');
+                    setSuccessMsg('');
+                    if (pendingGoogleAccount) {
+                      setRegisterEmail(pendingGoogleAccount.email);
+                      setRegisterName(pendingGoogleAccount.name);
+                    }
+                    setViewMode('register');
+                  }}
+                  className="w-full py-3 px-4 bg-[#012d1d] hover:bg-[#0c3927] text-white font-semibold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[18px]">person_add</span>
+                  <span>Crear una cuenta</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setErrorMsg('');
+                    setSuccessMsg('');
+                    setPendingGoogleAccount(null);
+                    setViewMode('login');
+                  }}
+                  className="w-full py-2.5 px-4 bg-transparent hover:bg-[#faf9f4] border border-[#e2e0d8] text-[#414844] hover:text-[#1b1c19] font-medium text-xs rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+                  <span>Volver</span>
+                </button>
+              </div>
+
+              {renderStatusMessages()}
             </div>
           )}
 
@@ -1309,10 +1425,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </div>
                 </div>
 
-                {/* “¿Cómo quieres utilizar Reborn Your Style?” */}
+                {/* “Selecciona tu tipo de cuenta” */}
                 <div className="pt-1">
                   <label className="block text-xs font-semibold text-[#414844] mb-1.5">
-                    ¿Cómo quieres utilizar Reborn Your Style?
+                    Selecciona tu tipo de cuenta
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     <button
@@ -1406,6 +1522,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <span>Registrarse con Google</span>
               </button>
 
+              {/* Contenedor de mensajes de estado en la parte INFERIOR del formulario */}
+              {renderStatusMessages()}
+
               {/* “¿Ya tienes una cuenta?” [ Iniciar sesión ] */}
               <div className="mt-5 pt-3.5 border-t border-[#f0efe9] text-center">
                 <p className="text-xs text-[#717973]">
@@ -1477,6 +1596,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   )}
                 </button>
               </form>
+
+              {/* Mensajes de estado en la parte inferior */}
+              {renderStatusMessages()}
 
               {/* [ Reenviar código ] & Volver */}
               <div className="mt-4 flex items-center justify-between text-xs text-[#717973] pt-2">
@@ -1754,6 +1876,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </div>
               )}
 
+              {/* Mensajes de estado en la parte inferior */}
+              {renderStatusMessages()}
+
               {/* Enlace para volver */}
               {recoveryStep !== 'success' && (
                 <div className="mt-5 pt-3.5 border-t border-[#f0efe9] text-center">
@@ -1834,6 +1959,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   )}
                 </button>
               </form>
+
+              {/* Mensajes de estado en la parte inferior */}
+              {renderStatusMessages()}
 
               <div className="mt-5 pt-3.5 border-t border-[#f0efe9] text-center">
                 <button

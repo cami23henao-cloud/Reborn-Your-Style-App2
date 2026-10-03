@@ -51,7 +51,7 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
     }
   };
 
-  // Requested Navigation Items: Clean and professional, removed Quiénes somos, Misión, Visión, Impacto, Contacto
+  // Requested Navigation Items: Reorganized with Inicio, Catálogo, Tutoriales, Centro de Ayuda, Perfil
   interface NavItem {
     id: string;
     label: string;
@@ -65,6 +65,13 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
       ? []
       : [
           {
+            id: 'inicio',
+            label: t('nav.inicio'),
+            icon: 'home',
+            isActive: currentView === 'inicio',
+            onClick: () => onNavigate('inicio'),
+          },
+          {
             id: 'catalogo',
             label: t('nav.catalogo'),
             icon: 'inventory_2',
@@ -72,25 +79,31 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
             onClick: () => onNavigate('catalogos'),
           },
           {
-            id: 'costureros',
-            label: t('nav.costureros'),
-            icon: 'handyman',
-            isActive: currentView === 'costureros' || currentView === 'perfil-profesional',
-            onClick: () => onNavigate('costureros'),
-          },
-          {
-            id: 'servicios',
-            label: t('nav.servicios'),
-            icon: 'content_cut',
-            isActive: currentView === 'servicios',
-            onClick: () => onNavigate('servicios'),
-          },
-          {
             id: 'tutoriales',
             label: t('nav.tutoriales'),
             icon: 'school',
             isActive: false,
             onClick: () => onOpenInfoModal?.('tutoriales'),
+          },
+          {
+            id: 'ayuda',
+            label: t('nav.ayuda'),
+            icon: 'help_outline',
+            isActive: false,
+            onClick: () => onOpenInfoModal?.('contacto'),
+          },
+          {
+            id: 'perfil',
+            label: t('nav.perfil'),
+            icon: 'account_circle',
+            isActive: currentView === 'mi-estudio',
+            onClick: () => {
+              if (isLoggedIn) {
+                onNavigate('mi-estudio');
+              } else {
+                onOpenAuth('login');
+              }
+            },
           },
         ];
 

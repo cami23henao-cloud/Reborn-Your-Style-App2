@@ -343,7 +343,7 @@ export const CategoriaView: React.FC<CategoriaViewProps> = ({
             <span className="material-symbols-outlined text-2xl text-[#717973]">{categoryMeta.icon}</span>
           </div>
           <h3 className="font-headline text-lg font-bold text-[#012d1d]">
-            No hay prendas publicadas en esta categoría actualmente
+            No hay prendas disponibles en esta categoría
           </h3>
           <p className="text-xs text-[#414844] leading-relaxed">
             Sé el primero en compartir o solicitar un suprareciclaje para <strong>{categoryMeta.name}</strong>.

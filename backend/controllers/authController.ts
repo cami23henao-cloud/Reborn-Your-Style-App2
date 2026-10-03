@@ -172,7 +172,7 @@ export const login = async (req: Request, res: Response) => {
     if (!user) {
       return res.status(200).json({
         success: false,
-        message: 'No encontramos una cuenta registrada con este correo.',
+        message: 'No existe una cuenta registrada con este correo electrónico.',
       });
     }
 
@@ -181,7 +181,14 @@ export const login = async (req: Request, res: Response) => {
     if (!isMatch) {
       return res.status(200).json({
         success: false,
-        message: 'El correo o la contraseña no son correctos.',
+        message: 'Contraseña incorrecta. Inténtalo de nuevo.',
+      });
+    }
+
+    if (user.isVerified === false) {
+      return res.status(200).json({
+        success: false,
+        message: 'Tu cuenta aún no ha sido verificada. Por favor confirma el código enviado a tu correo antes de iniciar sesión.',
       });
     }
 
@@ -471,7 +478,7 @@ export const checkUser = async (req: Request, res: Response) => {
     isGoogleUser,
     message: exists
       ? 'Cuenta registrada en Reborn Your Style.'
-      : 'Esta cuenta de Google no está registrada en Reborn Your Style. Crea una cuenta para continuar.',
+      : 'Esta cuenta de Google todavía no está registrada en Reborn Your Style.',
   });
 };
 
@@ -539,7 +546,7 @@ export const googleLogin = async (req: Request, res: Response) => {
           email: cleanEmail,
           name: userName,
           picture: picture || null,
-          message: 'Esta cuenta de Google no está registrada en Reborn Your Style.',
+          message: 'Esta cuenta de Google todavía no está registrada en Reborn Your Style.',
         });
       }
 

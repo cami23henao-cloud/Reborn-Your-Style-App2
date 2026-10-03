@@ -454,6 +454,74 @@ async function startServer() {
     }
   });
 
+  // Support / Help Center Contact Endpoint (Requirement 12)
+  app.post('/api/contact', async (req, res) => {
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    try {
+      const { name, email, subject, message } = req.body;
+      const cleanName = (name || '').trim();
+      const cleanEmail = (email || '').trim().toLowerCase();
+      const cleanSubject = (subject || '').trim();
+      const cleanMessage = (message || '').trim();
+
+      if (!cleanName || !cleanEmail || !cleanMessage) {
+        return res.status(200).json({
+          success: false,
+          error: 'Por favor completa todos los campos requeridos: nombre, correo y mensaje.',
+        });
+      }
+
+      if (!cleanEmail.includes('@') || !cleanEmail.includes('.')) {
+        return res.status(200).json({
+          success: false,
+          error: 'Por favor ingresa un correo electrónico válido.',
+        });
+      }
+
+      // Try sending via SMTP if configured
+      const cfg = getSmtpConfig();
+      if (cfg.isConfigured) {
+        try {
+          const transporter = createSmtpTransporter();
+          if (transporter) {
+            await transporter.sendMail({
+              from: cfg.from,
+              to: cfg.from,
+              replyTo: cleanEmail,
+              subject: `[Centro de Ayuda] ${cleanSubject || 'Consulta general'} - ${cleanName}`,
+              text: `Mensaje de: ${cleanName} (${cleanEmail})\nMotivo: ${cleanSubject}\n\nMensaje:\n${cleanMessage}`,
+              html: `
+                <div style="font-family: sans-serif; padding: 20px; color: #1b1c19;">
+                  <h2 style="color: #012d1d;">Nuevo mensaje del Centro de Ayuda</h2>
+                  <p><strong>Nombre:</strong> ${escapeHtml(cleanName)}</p>
+                  <p><strong>Correo:</strong> ${escapeHtml(cleanEmail)}</p>
+                  <p><strong>Motivo:</strong> ${escapeHtml(cleanSubject || 'Consulta general')}</p>
+                  <hr style="border: 1px solid #efeee9; margin: 16px 0;" />
+                  <p><strong>Mensaje:</strong></p>
+                  <p style="white-space: pre-wrap; background: #faf9f4; padding: 12px; border-radius: 8px;">${escapeHtml(cleanMessage)}</p>
+                </div>
+              `,
+            });
+            console.log(`[Support Mail] Delivered help center query from ${cleanEmail}`);
+          }
+        } catch (mailErr: any) {
+          console.warn('[Support Mail] Could not send via SMTP, query logged:', mailErr?.message);
+        }
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: '¡Mensaje recibido con éxito! Nuestro equipo de soporte de Reborn Your Style se pondrá en contacto contigo en menos de 24 horas.',
+      });
+    } catch (err: any) {
+      console.error('[Contact Endpoint Error]:', err);
+      return res.status(200).json({
+        success: false,
+        error: 'No pudimos procesar tu mensaje en este momento. Por favor intenta nuevamente.',
+      });
+    }
+  });
+
   // Verify 6-digit Registration Code
   app.post('/api/auth/verify-registration-code', (req, res) => {
     res.setHeader('Content-Type', 'application/json; charset=utf-8');

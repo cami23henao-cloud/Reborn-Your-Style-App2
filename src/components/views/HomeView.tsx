@@ -40,8 +40,11 @@ export const HomeView: React.FC<HomeViewProps> = ({
             </div>
           </div>
 
-          {/* Headline - Larger, comfortable reading & balanced line-height */}
-          <h1 className="font-headline text-3xl sm:text-5xl lg:text-[54px] xl:text-6xl font-black text-[#012d1d] dark:text-white leading-[1.12] tracking-tight">
+          {/* Headline - Responsive typography with clamp(1.8rem, 4vw, 2.8rem) */}
+          <h1
+            style={{ fontSize: 'clamp(1.8rem, 4vw, 2.8rem)' }}
+            className="font-headline font-black text-[#012d1d] dark:text-white leading-[1.15] tracking-tight"
+          >
             {t('hero.title_pre')}
             <span className="text-[#2b694d] dark:text-[#b0f1cc]">{t('hero.title_highlight')}</span>
           </h1>
@@ -51,11 +54,11 @@ export const HomeView: React.FC<HomeViewProps> = ({
             {t('hero.desc')}
           </p>
 
-          {/* Action Buttons - Fully responsive, comfortable padding, completely visible */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 sm:gap-4 w-full sm:w-auto pt-2">
+          {/* Action Buttons - Fully responsive, width 100% on mobile, max-width on desktop, no overflow */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 sm:gap-4 w-full sm:w-auto pt-2 overflow-hidden">
             <button
               onClick={() => onNavigate('costureros')}
-              className="btn-interactive bg-[#012d1d] hover:bg-[#1b4332] active:bg-[#002113] text-white font-bold text-sm sm:text-base px-7 py-4 rounded-2xl shadow-md flex items-center justify-center gap-2.5 transition-all cursor-pointer whitespace-nowrap"
+              className="btn-interactive w-full sm:w-auto max-w-full sm:max-w-xs bg-[#012d1d] hover:bg-[#1b4332] active:bg-[#002113] text-white font-bold text-sm sm:text-base px-7 py-4 rounded-2xl shadow-md flex items-center justify-center gap-2.5 transition-all cursor-pointer whitespace-nowrap"
             >
               <span className="material-symbols-outlined text-xl text-[#b0f1cc]">handyman</span>
               <span>{t('hero.btn_costurero')}</span>
@@ -63,7 +66,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
             <button
               onClick={() => onNavigate('publicar-prenda')}
-              className="btn-interactive bg-white dark:bg-[#0e241c] text-[#012d1d] dark:text-white hover:bg-[#efeee9] dark:hover:bg-[#16382c] border border-[#c1c8c2] dark:border-[#2b694d]/50 font-bold text-sm sm:text-base px-6 py-4 rounded-2xl flex items-center justify-center gap-2.5 shadow-2xs transition-all cursor-pointer whitespace-nowrap"
+              className="btn-interactive w-full sm:w-auto max-w-full sm:max-w-xs bg-white dark:bg-[#0e241c] text-[#012d1d] dark:text-white hover:bg-[#efeee9] dark:hover:bg-[#16382c] border border-[#c1c8c2] dark:border-[#2b694d]/50 font-bold text-sm sm:text-base px-6 py-4 rounded-2xl flex items-center justify-center gap-2.5 shadow-2xs transition-all cursor-pointer whitespace-nowrap"
             >
               <span className="material-symbols-outlined text-xl text-[#2b694d] dark:text-[#b0f1cc]">add_circle</span>
               <span>{t('hero.btn_publicar')}</span>
@@ -71,7 +74,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
             <button
               onClick={() => onNavigate('catalogos')}
-              className="link-animated text-[#2b694d] dark:text-[#b0f1cc] hover:text-[#012d1d] dark:hover:text-white font-bold text-sm sm:text-base px-4 py-3 flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
+              className="link-animated w-full sm:w-auto text-[#2b694d] dark:text-[#b0f1cc] hover:text-[#012d1d] dark:hover:text-white font-bold text-sm sm:text-base px-4 py-3 flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
             >
               <span>{t('hero.btn_explorar')}</span>
               <span className="material-symbols-outlined text-base">arrow_forward</span>
@@ -124,7 +127,10 @@ export const HomeView: React.FC<HomeViewProps> = ({
             <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[#2b694d] dark:text-[#b0f1cc]">
               {t('home.categories_sub')}
             </span>
-            <h2 className="font-headline text-2xl sm:text-3xl lg:text-4xl font-bold text-[#012d1d] dark:text-white mt-1">
+            <h2
+              style={{ fontSize: 'clamp(1.4rem, 3vw, 2rem)' }}
+              className="font-headline font-bold text-[#012d1d] dark:text-white mt-1 leading-snug"
+            >
               {t('home.categories_title')}
             </h2>
           </div>
@@ -167,7 +173,10 @@ export const HomeView: React.FC<HomeViewProps> = ({
               <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[#2b694d] dark:text-[#b0f1cc]">
                 {t('home.wardrobe_badge')}
               </span>
-              <h2 className="font-headline text-2xl sm:text-3xl lg:text-4xl font-bold text-[#012d1d] dark:text-white mt-1">
+              <h2
+                style={{ fontSize: 'clamp(1.4rem, 3vw, 2rem)' }}
+                className="font-headline font-bold text-[#012d1d] dark:text-white mt-1 leading-snug"
+              >
                 {t('home.wardrobe_title')}
               </h2>
             </div>
@@ -255,7 +264,10 @@ export const HomeView: React.FC<HomeViewProps> = ({
           <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[#2b694d] dark:text-[#b0f1cc]">
             {t('home.how_badge')}
           </span>
-          <h2 className="font-headline text-2xl sm:text-3xl lg:text-4xl font-bold text-[#012d1d] dark:text-white">
+          <h2
+            style={{ fontSize: 'clamp(1.4rem, 3vw, 2rem)' }}
+            className="font-headline font-bold text-[#012d1d] dark:text-white leading-snug"
+          >
             {t('home.how_title')}
           </h2>
         </div>

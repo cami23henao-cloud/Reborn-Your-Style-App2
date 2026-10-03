@@ -292,7 +292,7 @@ export async function loginUser(
   if (!user) {
     return {
       success: false,
-      error: 'No encontramos una cuenta registrada con este correo.',
+      error: 'No existe una cuenta registrada con este correo electrónico.',
     };
   }
 
@@ -307,7 +307,14 @@ export async function loginUser(
   if (!isPasswordValid) {
     return {
       success: false,
-      error: 'El correo o la contraseña no son correctos.',
+      error: 'Contraseña incorrecta. Inténtalo de nuevo.',
+    };
+  }
+
+  if (user.isVerified === false) {
+    return {
+      success: false,
+      error: 'Tu cuenta aún no ha sido verificada. Por favor confirma el código enviado a tu correo antes de iniciar sesión.',
     };
   }
 
@@ -529,6 +536,25 @@ export function updateUserGarmentStatus(
   }
 }
 
+export function updateUserGarment(userId: string, updatedGarment: GarmentProject): void {
+  const db = getUsersDatabase();
+  const user = db.find((u) => u.id === userId);
+  if (user) {
+    const updated = user.garments.map((g) => (g.id === updatedGarment.id ? updatedGarment : g));
+    persistUserData(userId, { garments: updated });
+  }
+}
+
+export function deleteUserGarmentFromStore(userId: string, garmentId: string): void {
+  const db = getUsersDatabase();
+  const user = db.find((u) => u.id === userId);
+  if (user) {
+    persistUserData(userId, {
+      garments: user.garments.filter((g) => g.id !== garmentId),
+    });
+  }
+}
+
 /**
  * Clean Google Authentication:
  * Signs in with Google account or registers a clean new user if they don't exist yet.
@@ -664,7 +690,7 @@ export async function loginWithGoogleExistingOnly(email: string, name?: string, 
   return {
     success: false,
     notRegistered: true,
-    error: 'Esta cuenta de Google no está registrada en Reborn Your Style.',
+    error: 'Esta cuenta de Google todavía no está registrada en Reborn Your Style.',
   };
 }
 

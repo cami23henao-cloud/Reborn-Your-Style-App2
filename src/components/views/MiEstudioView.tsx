@@ -13,6 +13,7 @@ interface MiEstudioViewProps {
   onEditService: (service: ServiceItem) => void;
   onDeleteService: (id: string) => void;
   onDeleteGarment: (id: string) => void;
+  onEditGarment?: (updatedGarment: GarmentProject) => void;
   onUpdateRequestStatus: (requestId: string, newStatus: 'Aceptada' | 'Rechazada' | 'En Proceso' | 'Completada') => void;
   onNavigate: (view: AppView) => void;
   onUpdateProfile?: (updatedProfile: UserProfile) => void;
@@ -29,6 +30,7 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
   onEditService,
   onDeleteService,
   onDeleteGarment,
+  onEditGarment,
   onUpdateRequestStatus,
   onNavigate,
   onUpdateProfile,
@@ -38,6 +40,52 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
   const [activeTab, setActiveTab] = useState<'servicios' | 'solicitudes' | 'prendas' | 'perfil'>(
     userRole === 'profesional' ? 'servicios' : 'prendas'
   );
+
+  // Garment Edit and Delete Confirmation States (Requirement 11)
+  const [garmentToDelete, setGarmentToDelete] = useState<GarmentProject | null>(null);
+  const [garmentToEdit, setGarmentToEdit] = useState<GarmentProject | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editCategory, setEditCategory] = useState('Camisas');
+  const [editColor, setEditColor] = useState('');
+  const [editSize, setEditSize] = useState('M');
+  const [editBudget, setEditBudget] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editLocation, setEditLocation] = useState('');
+  const [editImageUrl, setEditImageUrl] = useState('');
+
+  const handleStartEditGarment = (g: GarmentProject) => {
+    setGarmentToEdit(g);
+    setEditTitle(g.title);
+    setEditCategory(g.category || 'Camisas');
+    setEditColor(g.color || '');
+    setEditSize(g.size || 'M');
+    setEditBudget(g.budget ? g.budget.toLocaleString('es-CO') : '');
+    setEditDescription(g.description || '');
+    setEditLocation(g.publicLocation || g.location || 'Medellín, Antioquia');
+    setEditImageUrl(g.imageUrl || '');
+  };
+
+  const handleSaveGarmentEdits = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!garmentToEdit) return;
+
+    const numericBudget = editBudget ? parseInt(editBudget.replace(/\D/g, ''), 10) : 0;
+    const updated: GarmentProject = {
+      ...garmentToEdit,
+      title: editTitle.trim() || garmentToEdit.title,
+      category: editCategory,
+      color: editColor.trim() || garmentToEdit.color,
+      size: editSize,
+      budget: numericBudget,
+      description: editDescription.trim() || garmentToEdit.description,
+      publicLocation: editLocation.trim() || garmentToEdit.publicLocation,
+      location: editLocation.trim() || garmentToEdit.location,
+      imageUrl: editImageUrl.trim() || garmentToEdit.imageUrl,
+    };
+
+    onEditGarment?.(updated);
+    setGarmentToEdit(null);
+  };
 
   // Profile Form state initialized with the current logged in user
   const [studioName, setStudioName] = useState(user?.name || '');
@@ -435,13 +483,24 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
                         </p>
                       </div>
 
-                      <button
-                        onClick={() => onDeleteGarment(garment.id)}
-                        className="p-2 text-[#717973] hover:text-[#ba1a1a] hover:bg-[#ffdad6] rounded-lg transition-colors"
-                        title="Eliminar publicación"
-                      >
-                        <span className="material-symbols-outlined text-lg">delete</span>
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleStartEditGarment(garment)}
+                          className="p-2 text-[#717973] hover:text-[#012d1d] hover:bg-[#f5f4ef] rounded-lg transition-colors cursor-pointer"
+                          title="Editar publicación"
+                        >
+                          <span className="material-symbols-outlined text-lg">edit</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setGarmentToDelete(garment)}
+                          className="p-2 text-[#717973] hover:text-[#ba1a1a] hover:bg-[#ffdad6] rounded-lg transition-colors cursor-pointer"
+                          title="Eliminar publicación"
+                        >
+                          <span className="material-symbols-outlined text-lg">delete</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -820,6 +879,258 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
                 <span>Confirmar y Borrar Cuenta</span>
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* ========================================================================= */}
+      {/* MODAL: CONFIRMAR ELIMINACIÓN DE PRENDA (Requirement 11)                    */}
+      {/* ========================================================================= */}
+      {garmentToDelete && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in"
+          onClick={() => setGarmentToDelete(null)}
+        >
+          <div
+            className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-[#c1c8c2] space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 text-[#ba1a1a]">
+              <div className="w-10 h-10 rounded-xl bg-[#ffdad6] flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-2xl">warning</span>
+              </div>
+              <div>
+                <h3 className="font-headline font-bold text-base text-[#012d1d]">
+                  ¿Eliminar publicación?
+                </h3>
+                <p className="text-xs text-[#717973]">
+                  Esta prenda se removerá del catálogo.
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-[#414844] leading-relaxed">
+              ¿Estás seguro de que deseas eliminar permanentemente la publicación <strong>"{garmentToDelete.title}"</strong>? Esta acción no se puede deshacer.
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#efeee9]">
+              <button
+                type="button"
+                onClick={() => setGarmentToDelete(null)}
+                className="px-4 py-2.5 rounded-xl text-xs font-semibold text-[#414844] hover:bg-[#f5f4ef] transition-colors cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onDeleteGarment(garmentToDelete.id);
+                  setGarmentToDelete(null);
+                }}
+                className="px-5 py-2.5 rounded-xl bg-[#ba1a1a] hover:bg-[#93000a] text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-sm">delete</span>
+                <span>Eliminar</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: EDITAR PUBLICACIÓN DE PRENDA (Requirement 11)                       */}
+      {/* ========================================================================= */}
+      {garmentToEdit && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in"
+          onClick={() => setGarmentToEdit(null)}
+        >
+          <div
+            className="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl border border-[#c1c8c2] space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-[#efeee9] pb-3">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-xl text-[#012d1d]">edit_note</span>
+                <h3 className="font-headline font-bold text-base text-[#012d1d]">
+                  Editar publicación de prenda
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setGarmentToEdit(null)}
+                className="w-8 h-8 rounded-full bg-[#f5f4ef] hover:bg-[#efeee9] flex items-center justify-center text-[#717973] cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-lg">close</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveGarmentEdits} className="space-y-3.5 text-xs">
+              {/* Foto URL / Preview */}
+              <div>
+                <label className="block font-bold text-[#012d1d] mb-1">
+                  URL de la Fotografía
+                </label>
+                <input
+                  type="url"
+                  value={editImageUrl}
+                  onChange={(e) => setEditImageUrl(e.target.value)}
+                  placeholder="https://..."
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#c1c8c2] text-xs text-[#1b1c19] focus:border-[#012d1d] outline-none"
+                />
+                {editImageUrl && (
+                  <div className="mt-2 w-full h-32 rounded-xl overflow-hidden bg-gray-100 border border-[#c1c8c2]">
+                    <img
+                      src={editImageUrl}
+                      alt="Vista previa"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=400&auto=format&fit=crop&q=80';
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Título */}
+              <div>
+                <label className="block font-bold text-[#012d1d] mb-1">
+                  Título de la prenda *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  placeholder="Ej. Jean oversize con bordados"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#c1c8c2] text-xs text-[#1b1c19] focus:border-[#012d1d] outline-none"
+                />
+              </div>
+
+              {/* Categoría y Talla */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-[#012d1d] mb-1">
+                    Categoría *
+                  </label>
+                  <select
+                    value={editCategory}
+                    onChange={(e) => setEditCategory(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl border border-[#c1c8c2] text-xs text-[#1b1c19] focus:border-[#012d1d] outline-none"
+                  >
+                    <option value="Camisas">Camisas</option>
+                    <option value="Pantalones">Pantalones</option>
+                    <option value="Vestidos">Vestidos</option>
+                    <option value="Faldas">Faldas</option>
+                    <option value="Bolsos">Bolsos</option>
+                    <option value="Chaquetas">Chaquetas</option>
+                    <option value="Shorts">Shorts</option>
+                    <option value="Suéteres">Suéteres</option>
+                    <option value="Gorras y Sombreros">Gorras y Sombreros</option>
+                    <option value="Mochilas">Mochilas</option>
+                    <option value="Calzones y Ropa Íntima">Calzones y Ropa Íntima</option>
+                    <option value="Accesorios">Accesorios</option>
+                    <option value="Trajes de Baño">Trajes de Baño</option>
+                    <option value="Medias">Medias</option>
+                    <option value="Otras Prendas">Otras Prendas</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-[#012d1d] mb-1">
+                    Talla
+                  </label>
+                  <select
+                    value={editSize}
+                    onChange={(e) => setEditSize(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl border border-[#c1c8c2] text-xs text-[#1b1c19] focus:border-[#012d1d] outline-none"
+                  >
+                    <option value="XS">XS</option>
+                    <option value="S">S</option>
+                    <option value="M">M</option>
+                    <option value="L">L</option>
+                    <option value="XL">XL</option>
+                    <option value="Única">Única</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Color y Presupuesto / Precio */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-[#012d1d] mb-1">
+                    Color
+                  </label>
+                  <input
+                    type="text"
+                    value={editColor}
+                    onChange={(e) => setEditColor(e.target.value)}
+                    placeholder="Ej. Azul Índigo"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#c1c8c2] text-xs text-[#1b1c19] focus:border-[#012d1d] outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-[#012d1d] mb-1">
+                    Precio / Presupuesto (COP)
+                  </label>
+                  <input
+                    type="text"
+                    value={editBudget}
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/\D/g, '');
+                      setEditBudget(digits ? Number(digits).toLocaleString('es-CO') : '');
+                    }}
+                    placeholder="50.000"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#c1c8c2] text-xs text-[#1b1c19] focus:border-[#012d1d] outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Ubicación */}
+              <div>
+                <label className="block font-bold text-[#012d1d] mb-1">
+                  Ubicación visible
+                </label>
+                <input
+                  type="text"
+                  value={editLocation}
+                  onChange={(e) => setEditLocation(e.target.value)}
+                  placeholder="Ej. Laureles, Medellín, Antioquia"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#c1c8c2] text-xs text-[#1b1c19] focus:border-[#012d1d] outline-none"
+                />
+              </div>
+
+              {/* Descripción */}
+              <div>
+                <label className="block font-bold text-[#012d1d] mb-1">
+                  Descripción de la prenda
+                </label>
+                <textarea
+                  rows={3}
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  placeholder="Detalles sobre el estado, tela y transformación deseada..."
+                  className="w-full px-3.5 py-2 rounded-xl border border-[#c1c8c2] text-xs text-[#1b1c19] focus:border-[#012d1d] outline-none resize-none"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#efeee9]">
+                <button
+                  type="button"
+                  onClick={() => setGarmentToEdit(null)}
+                  className="px-4 py-2.5 rounded-xl text-xs font-semibold text-[#414844] hover:bg-[#f5f4ef] transition-colors cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl bg-[#012d1d] hover:bg-[#1b4332] text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-sm">save</span>
+                  <span>Guardar cambios</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
