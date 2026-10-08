@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { UserRole, ServiceItem, GarmentProject, ServiceRequest, UserProfile, AppView } from '../../types';
 import { UserAvatar } from '../common/UserAvatar';
 import { GoogleMapsLocationPicker } from '../common/GoogleMapsLocationPicker';
+import { useThemeLanguage } from '../../context/ThemeLanguageContext';
 
 interface MiEstudioViewProps {
   user?: UserProfile;
@@ -36,6 +37,7 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
   onUpdateProfile,
   onDeleteAccount,
 }) => {
+  const { t, language } = useThemeLanguage();
   // Default tab depending on user role (Modista/Costurero opens on services, Cliente on prendas)
   const [activeTab, setActiveTab] = useState<'servicios' | 'solicitudes' | 'prendas' | 'perfil'>(
     userRole === 'profesional' ? 'servicios' : 'prendas'
@@ -168,19 +170,23 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
             />
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="font-headline text-2xl font-bold text-[#012d1d]">
-                  {studioName || (isModista ? 'Mi Taller' : 'Mi Perfil')}
+                <h1 className="font-headline text-2xl font-bold text-[#012d1d] dark:text-white text-hover-lift">
+                  {studioName || (isModista ? (language === 'en' ? 'My Workshop' : 'Mi Taller') : (language === 'en' ? 'My Profile' : 'Mi Perfil'))}
                 </h1>
                 <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#b0f1cc] text-[#002113]">
-                  {isAdmin ? 'Administrador' : isModista ? 'Taller / Modista' : 'Cliente'}
+                  {isAdmin
+                    ? (language === 'en' ? 'Administrator' : 'Administrador')
+                    : isModista
+                    ? (language === 'en' ? 'Workshop / Tailor' : 'Taller / Modista')
+                    : (language === 'en' ? 'Client' : 'Cliente')}
                 </span>
               </div>
-              <p className="text-xs text-[#717973] flex items-center gap-1 mt-1">
+              <p className="text-xs text-[#717973] dark:text-[#a7b8ae] flex items-center gap-1 mt-1">
                 <span className="material-symbols-outlined text-sm">location_on</span>
-                <span>{studioLocation || 'Sin ubicación configurada'}</span>
+                <span>{studioLocation || (language === 'en' ? 'No location set' : 'Sin ubicación configurada')}</span>
                 <span className="mx-1">•</span>
-                <span className="material-symbols-outlined text-sm text-[#2b694d]">verified_user</span>
-                <span>Cuenta verificada e independiente</span>
+                <span className="material-symbols-outlined text-sm text-[#2b694d] dark:text-[#b0f1cc]">verified_user</span>
+                <span>{language === 'en' ? 'Verified independent account' : 'Cuenta verificada e independiente'}</span>
               </p>
             </div>
           </div>
@@ -189,37 +195,37 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
             {isModista ? (
               <button
                 onClick={onOpenCreateService}
-                className="px-4 py-2 text-xs font-semibold rounded-lg bg-[#012d1d] hover:bg-[#1b4332] text-white transition-colors flex items-center gap-1.5 shadow-sm"
+                className="btn-interactive px-4 py-2 text-xs font-semibold rounded-lg bg-[#012d1d] hover:bg-[#1b4332] text-white transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer"
               >
                 <span className="material-symbols-outlined text-base">add</span>
-                <span>Nuevo Servicio de Confección</span>
+                <span>{language === 'en' ? 'New Tailoring Service' : 'Nuevo Servicio de Confección'}</span>
               </button>
             ) : (
               <button
                 onClick={() => onNavigate('publicar-prenda')}
-                className="px-4 py-2 text-xs font-semibold rounded-lg bg-[#012d1d] hover:bg-[#1b4332] text-white transition-colors flex items-center gap-1.5 shadow-sm"
+                className="btn-interactive px-4 py-2 text-xs font-semibold rounded-lg bg-[#012d1d] hover:bg-[#1b4332] text-white transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer"
               >
                 <span className="material-symbols-outlined text-base">add_circle</span>
-                <span>Publicar Prenda para Transformación</span>
+                <span>{language === 'en' ? 'Post Garment for Upcycling' : 'Publicar Prenda para Transformación'}</span>
               </button>
             )}
           </div>
         </div>
 
         {/* Dashboard Tabs tailored to role */}
-        <div className="flex gap-2 overflow-x-auto border-t border-[#efeee9] mt-6 pt-4 no-scrollbar">
+        <div className="flex gap-2 overflow-x-auto border-t border-[#efeee9] dark:border-[#2b694d]/30 mt-6 pt-4 no-scrollbar">
           {isModista ? (
             <>
               <button
                 onClick={() => setActiveTab('servicios')}
-                className={`px-4 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+                className={`px-4 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
                   activeTab === 'servicios'
                     ? 'bg-[#012d1d] text-white'
-                    : 'text-[#414844] hover:bg-[#f5f4ef]'
+                    : 'text-[#414844] dark:text-[#a7b8ae] hover:bg-[#f5f4ef] dark:hover:bg-[#112920]'
                 }`}
               >
                 <span className="material-symbols-outlined text-base">design_services</span>
-                <span>Mis Servicios del Taller</span>
+                <span>{language === 'en' ? 'Workshop Services' : 'Mis Servicios del Taller'}</span>
                 <span className="ml-1 bg-white/20 text-current px-1.5 py-0.2 rounded-full text-[10px]">
                   {services.length}
                 </span>
@@ -227,14 +233,14 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
 
               <button
                 onClick={() => setActiveTab('solicitudes')}
-                className={`px-4 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+                className={`px-4 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
                   activeTab === 'solicitudes'
                     ? 'bg-[#012d1d] text-white'
-                    : 'text-[#414844] hover:bg-[#f5f4ef]'
+                    : 'text-[#414844] dark:text-[#a7b8ae] hover:bg-[#f5f4ef] dark:hover:bg-[#112920]'
                 }`}
               >
                 <span className="material-symbols-outlined text-base">inbox</span>
-                <span>Solicitudes Recibidas de Clientes</span>
+                <span>{language === 'en' ? 'Client Inquiries' : 'Solicitudes Recibidas de Clientes'}</span>
                 <span className="ml-1 bg-[#b0f1cc] text-[#002113] px-1.5 py-0.2 rounded-full text-[10px] font-bold">
                   {requests.length}
                 </span>
@@ -244,14 +250,14 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
             <>
               <button
                 onClick={() => setActiveTab('prendas')}
-                className={`px-4 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+                className={`px-4 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
                   activeTab === 'prendas'
                     ? 'bg-[#012d1d] text-white'
-                    : 'text-[#414844] hover:bg-[#f5f4ef]'
+                    : 'text-[#414844] dark:text-[#a7b8ae] hover:bg-[#f5f4ef] dark:hover:bg-[#112920]'
                 }`}
               >
                 <span className="material-symbols-outlined text-base">checkroom</span>
-                <span>Mis Prendas Publicadas</span>
+                <span>{language === 'en' ? 'My Posted Garments' : 'Mis Prendas Publicadas'}</span>
                 <span className="ml-1 bg-white/20 text-current px-1.5 py-0.2 rounded-full text-[10px]">
                   {garments.length}
                 </span>
@@ -259,14 +265,14 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
 
               <button
                 onClick={() => setActiveTab('solicitudes')}
-                className={`px-4 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+                className={`px-4 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
                   activeTab === 'solicitudes'
                     ? 'bg-[#012d1d] text-white'
-                    : 'text-[#414844] hover:bg-[#f5f4ef]'
+                    : 'text-[#414844] dark:text-[#a7b8ae] hover:bg-[#f5f4ef] dark:hover:bg-[#112920]'
                 }`}
               >
                 <span className="material-symbols-outlined text-base">inbox</span>
-                <span>Mis Solicitudes Enviadas</span>
+                <span>{language === 'en' ? 'My Sent Requests' : 'Mis Solicitudes Enviadas'}</span>
                 <span className="ml-1 bg-[#b0f1cc] text-[#002113] px-1.5 py-0.2 rounded-full text-[10px] font-bold">
                   {requests.length}
                 </span>
@@ -276,14 +282,14 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
 
           <button
             onClick={() => setActiveTab('perfil')}
-            className={`px-4 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+            className={`px-4 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'perfil'
                 ? 'bg-[#012d1d] text-white'
-                : 'text-[#414844] hover:bg-[#f5f4ef]'
+                : 'text-[#414844] dark:text-[#a7b8ae] hover:bg-[#f5f4ef] dark:hover:bg-[#112920]'
             }`}
           >
             <span className="material-symbols-outlined text-base">settings</span>
-            <span>Configuración de Cuenta</span>
+            <span>{language === 'en' ? 'Account Settings' : 'Configuración de Cuenta'}</span>
           </button>
         </div>
       </div>
@@ -294,10 +300,12 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
           <div className="flex justify-between items-center">
             <div>
               <h2 className="font-headline text-xl font-bold text-[#012d1d]">
-                Catálogo de Servicios Ofrecidos por tu Taller
+                {language === 'en' ? 'Workshop Services Catalog' : 'Catálogo de Servicios Ofrecidos por tu Taller'}
               </h2>
               <p className="text-xs text-[#717973]">
-                Configura las técnicas de patronaje, confección o teñido y tus tarifas base para los clientes.
+                {language === 'en'
+                  ? 'Configure tailoring, redesign, or dyeing techniques and your base rates for clients.'
+                  : 'Configura las técnicas de patronaje, confección o teñido y tus tarifas base para los clientes.'}
               </p>
             </div>
             <button
@@ -305,7 +313,7 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
               className="bg-[#012d1d] text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-[#1b4332] transition-colors flex items-center gap-1.5 shadow-sm"
             >
               <span className="material-symbols-outlined text-sm">add</span>
-              <span>Crear Servicio</span>
+              <span>{language === 'en' ? 'Create Service' : 'Crear Servicio'}</span>
             </button>
           </div>
 
@@ -315,17 +323,19 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
                 <span className="material-symbols-outlined text-3xl">design_services</span>
               </div>
               <h3 className="font-headline font-bold text-lg text-[#012d1d]">
-                No has registrado servicios de confección todavía
+                {language === 'en' ? 'No tailoring services registered yet' : 'No has registrado servicios de confección todavía'}
               </h3>
               <p className="text-xs text-[#717973] max-w-md mx-auto">
-                Publica tu primer servicio para que los clientes puedan encontrarte y solicitarte cotizaciones personalizadas.
+                {language === 'en'
+                  ? 'Publish your first service so clients can find you and request custom quotes.'
+                  : 'Publica tu primer servicio para que los clientes puedan encontrarte y solicitarte cotizaciones personalizadas.'}
               </p>
               <button
                 onClick={onOpenCreateService}
                 className="px-5 py-2.5 rounded-xl bg-[#012d1d] text-white text-xs font-bold hover:bg-[#1b4332] transition-all shadow-sm inline-flex items-center gap-2"
               >
                 <span className="material-symbols-outlined text-base">add</span>
-                <span>Crear Primer Servicio</span>
+                <span>{language === 'en' ? 'Create First Service' : 'Crear Primer Servicio'}</span>
               </button>
             </div>
           ) : (
@@ -372,7 +382,7 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
                     <div className="mt-auto pt-4 border-t border-[#efeee9] flex justify-between items-center">
                       <div>
                         <span className="text-[10px] text-[#717973] uppercase tracking-wider block">
-                          Tarifa Base
+                          {language === 'en' ? 'Base Rate' : 'Tarifa Base'}
                         </span>
                         <p className="font-bold text-base text-[#012d1d]">
                           ${service.price.toLocaleString('es-CO')}
@@ -383,14 +393,14 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
                         <button
                           onClick={() => onEditService(service)}
                           className="p-2 text-[#717973] hover:text-[#012d1d] hover:bg-[#f5f4ef] rounded-lg transition-colors"
-                          title="Editar servicio"
+                          title={language === 'en' ? 'Edit service' : 'Editar servicio'}
                         >
                           <span className="material-symbols-outlined text-lg">edit</span>
                         </button>
                         <button
                           onClick={() => onDeleteService(service.id)}
                           className="p-2 text-[#717973] hover:text-[#ba1a1a] hover:bg-[#ffdad6] rounded-lg transition-colors"
-                          title="Eliminar servicio"
+                          title={language === 'en' ? 'Delete service' : 'Eliminar servicio'}
                         >
                           <span className="material-symbols-outlined text-lg">delete</span>
                         </button>
@@ -410,10 +420,12 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
           <div className="flex justify-between items-center">
             <div>
               <h2 className="font-headline text-xl font-bold text-[#012d1d]">
-                Mis Prendas en Transformación
+                {language === 'en' ? 'My Garments in Transformation' : 'Mis Prendas en Transformación'}
               </h2>
               <p className="text-xs text-[#717973]">
-                Prendas registradas en tu cuenta para suprareciclaje o arreglo.
+                {language === 'en'
+                  ? 'Garments registered in your account for upcycling or repair.'
+                  : 'Prendas registradas en tu cuenta para suprareciclaje o arreglo.'}
               </p>
             </div>
             <button
@@ -421,7 +433,7 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
               className="bg-[#012d1d] text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-[#1b4332] transition-colors flex items-center gap-1.5 shadow-sm"
             >
               <span className="material-symbols-outlined text-sm">add_circle</span>
-              <span>Publicar Prenda</span>
+              <span>{language === 'en' ? 'Post Garment' : 'Publicar Prenda'}</span>
             </button>
           </div>
 
@@ -431,17 +443,19 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
                 <span className="material-symbols-outlined text-3xl">checkroom</span>
               </div>
               <h3 className="font-headline font-bold text-lg text-[#012d1d]">
-                No tienes prendas publicadas todavía
+                {language === 'en' ? 'You have no published garments yet' : 'No tienes prendas publicadas todavía'}
               </h3>
               <p className="text-xs text-[#717973] max-w-md mx-auto">
-                Sube prendas de tu clóset para que modistas y talleres expertos en suprareciclaje puedan ayudarte a transformarlas.
+                {language === 'en'
+                  ? 'Upload garments from your wardrobe so expert upcycling tailors can help you transform them.'
+                  : 'Sube prendas de tu clóset para que modistas y talleres expertos en suprareciclaje puedan ayudarte a transformarlas.'}
               </p>
               <button
                 onClick={() => onNavigate('publicar-prenda')}
                 className="px-5 py-2.5 rounded-xl bg-[#012d1d] text-white text-xs font-bold hover:bg-[#1b4332] transition-all shadow-sm inline-flex items-center gap-2"
               >
                 <span className="material-symbols-outlined text-base">add_circle</span>
-                <span>Publicar Mi Primera Prenda</span>
+                <span>{language === 'en' ? 'Post My First Garment' : 'Publicar Mi Primera Prenda'}</span>
               </button>
             </div>
           ) : (
@@ -476,7 +490,7 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
                     <div className="mt-auto pt-4 border-t border-[#efeee9] flex justify-between items-center">
                       <div>
                         <span className="text-[10px] text-[#717973] uppercase tracking-wider block">
-                          Presupuesto Estimado
+                          {language === 'en' ? 'Estimated Budget' : 'Presupuesto Estimado'}
                         </span>
                         <p className="font-bold text-base text-[#012d1d]">
                           ${garment.budget.toLocaleString('es-CO')}
@@ -488,7 +502,7 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
                           type="button"
                           onClick={() => handleStartEditGarment(garment)}
                           className="p-2 text-[#717973] hover:text-[#012d1d] hover:bg-[#f5f4ef] rounded-lg transition-colors cursor-pointer"
-                          title="Editar publicación"
+                          title={language === 'en' ? 'Edit listing' : 'Editar publicación'}
                         >
                           <span className="material-symbols-outlined text-lg">edit</span>
                         </button>
@@ -496,7 +510,7 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
                           type="button"
                           onClick={() => setGarmentToDelete(garment)}
                           className="p-2 text-[#717973] hover:text-[#ba1a1a] hover:bg-[#ffdad6] rounded-lg transition-colors cursor-pointer"
-                          title="Eliminar publicación"
+                          title={language === 'en' ? 'Delete listing' : 'Eliminar publicación'}
                         >
                           <span className="material-symbols-outlined text-lg">delete</span>
                         </button>
@@ -515,12 +529,14 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
         <div className="space-y-6">
           <div>
             <h2 className="font-headline text-xl font-bold text-[#012d1d]">
-              {isModista ? 'Solicitudes de Trabajo Recibidas' : 'Mis Solicitudes de Confección'} ({requests.length})
+              {isModista 
+                ? (language === 'en' ? 'Received Work Requests' : 'Solicitudes de Trabajo Recibidas') 
+                : (language === 'en' ? 'My Tailoring Requests' : 'Mis Solicitudes de Confección')} ({requests.length})
             </h2>
             <p className="text-xs text-[#717973]">
               {isModista
-                ? 'Gestiona las solicitudes de clientes, cotizaciones y proyectos en curso.'
-                : 'Revisa el estado de tus cotizaciones enviadas a los talleres.'}
+                ? (language === 'en' ? 'Manage client requests, quotes, and ongoing projects.' : 'Gestiona las solicitudes de clientes, cotizaciones y proyectos en curso.')
+                : (language === 'en' ? 'Check the status of your quotes sent to workshops.' : 'Revisa el estado de tus cotizaciones enviadas a los talleres.')}
             </p>
           </div>
 
@@ -530,12 +546,12 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
                 <span className="material-symbols-outlined text-3xl">inbox</span>
               </div>
               <h3 className="font-headline font-bold text-lg text-[#012d1d]">
-                No tienes solicitudes activas
+                {language === 'en' ? 'No active requests' : 'No tienes solicitudes activas'}
               </h3>
               <p className="text-xs text-[#717973] max-w-md mx-auto">
                 {isModista
-                  ? 'Aquí aparecerán los presupuestos y mensajes enviados por clientes que desean contratar tus servicios.'
-                  : 'Explora talleres y costureros para enviarles solicitudes sobre tus prendas.'}
+                  ? (language === 'en' ? 'Quotes and messages from clients wanting your services will appear here.' : 'Aquí aparecerán los presupuestos y mensajes enviados por clientes que desean contratar tus servicios.')
+                  : (language === 'en' ? 'Explore tailors and workshops to send requests for your garments.' : 'Explora talleres y costureros para enviarles solicitudes sobre tus prendas.')}
               </p>
               {!isModista && (
                 <button
@@ -543,7 +559,7 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
                   className="px-5 py-2.5 rounded-xl bg-[#012d1d] text-white text-xs font-bold hover:bg-[#1b4332] transition-all shadow-sm inline-flex items-center gap-2"
                 >
                   <span className="material-symbols-outlined text-base">search</span>
-                  <span>Buscar Costureros y Talleres</span>
+                  <span>{language === 'en' ? 'Find Tailors & Workshops' : 'Buscar Costureros y Talleres'}</span>
                 </button>
               )}
             </div>
@@ -554,6 +570,10 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
                 const isInProgress = req.status === 'En Proceso';
                 const isCompleted = req.status === 'Completada';
                 const isRejected = req.status === 'Rechazada';
+
+                const statusLabel = language === 'en'
+                  ? (isPending ? 'Pending' : isInProgress ? 'In Progress' : isCompleted ? 'Completed' : 'Rejected')
+                  : req.status;
 
                 return (
                   <div
@@ -579,7 +599,7 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
                           }`}
                         >
                           <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
-                          <span>{req.status}</span>
+                          <span>{statusLabel}</span>
                         </span>
                       </div>
 
@@ -589,24 +609,24 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
                       </h3>
 
                       <p className="text-xs text-[#414844] leading-relaxed mb-4 line-clamp-3 bg-[#faf9f4] p-3 rounded-xl border border-[#efeee9]">
-                        "{req.notes || 'Sin observaciones adicionales.'}"
+                        "{req.notes || (language === 'en' ? 'No additional notes.' : 'Sin observaciones adicionales.')}"
                       </p>
 
                       {/* Participant & Budget Info */}
                       <div className="space-y-1.5 text-xs text-[#717973] mb-4">
                         <div className="flex items-center justify-between">
-                          <span>{isModista ? 'Cliente Solicitante:' : 'Taller Asignado:'}</span>
+                          <span>{isModista ? (language === 'en' ? 'Requesting Client:' : 'Cliente Solicitante:') : (language === 'en' ? 'Assigned Workshop:' : 'Taller Asignado:')}</span>
                           <strong className="text-[#012d1d] font-bold">{req.clientName}</strong>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span>Presupuesto Acordado:</span>
+                          <span>{language === 'en' ? 'Agreed Budget:' : 'Presupuesto Acordado:'}</span>
                           <strong className="text-[#012d1d] font-bold text-sm">
                             ${req.budget.toLocaleString('es-CO')} COP
                           </strong>
                         </div>
                         <div className="flex items-center justify-between text-[11px]">
-                          <span>Fecha de Creación:</span>
-                          <span>{new Date(req.createdAt).toLocaleDateString('es-CO')}</span>
+                          <span>{language === 'en' ? 'Creation Date:' : 'Fecha de Creación:'}</span>
+                          <span>{new Date(req.createdAt).toLocaleDateString(language === 'en' ? 'en-US' : 'es-CO')}</span>
                         </div>
                       </div>
                     </div>
@@ -618,7 +638,7 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
                         className="px-3 py-1.5 rounded-lg text-xs font-semibold text-[#012d1d] hover:bg-[#f5f4ef] transition-colors flex items-center gap-1 border border-[#c1c8c2]/50"
                       >
                         <span className="material-symbols-outlined text-sm">chat</span>
-                        <span>Abrir Chat</span>
+                        <span>{language === 'en' ? 'Open Chat' : 'Abrir Chat'}</span>
                       </button>
 
                       {isModista && isPending && (
@@ -627,13 +647,13 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
                             onClick={() => onUpdateRequestStatus(req.id, 'Rechazada')}
                             className="px-3 py-1.5 rounded-lg text-xs font-semibold text-[#ba1a1a] hover:bg-[#ffdad6] transition-colors"
                           >
-                            Rechazar
+                            {language === 'en' ? 'Decline' : 'Rechazar'}
                           </button>
                           <button
                             onClick={() => onUpdateRequestStatus(req.id, 'En Proceso')}
                             className="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-[#012d1d] hover:bg-[#1b4332] text-white shadow-xs transition-colors"
                           >
-                            Aceptar
+                            {language === 'en' ? 'Accept' : 'Aceptar'}
                           </button>
                         </div>
                       )}
@@ -644,20 +664,20 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
                           className="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-[#2b694d] hover:bg-[#012d1d] text-white flex items-center gap-1 shadow-xs"
                         >
                           <span className="material-symbols-outlined text-sm">done_all</span>
-                          <span>Finalizar Trabajo</span>
+                          <span>{language === 'en' ? 'Complete Work' : 'Finalizar Trabajo'}</span>
                         </button>
                       )}
 
                       {isCompleted && (
                         <span className="text-xs text-[#2b694d] font-bold flex items-center gap-1">
                           <span className="material-symbols-outlined text-sm">verified</span>
-                          <span>Completada</span>
+                          <span>{language === 'en' ? 'Completed' : 'Completada'}</span>
                         </span>
                       )}
 
                       {isRejected && (
                         <span className="text-xs text-[#ba1a1a] font-bold">
-                          Rechazada
+                          {language === 'en' ? 'Rejected' : 'Rechazada'}
                         </span>
                       )}
                     </div>
@@ -675,47 +695,53 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
           {/* Profile Edit Card */}
           <div className="bg-white rounded-2xl p-6 md:p-8 border border-[#efeee9] shadow-[0_4px_16px_rgba(1,45,29,0.05)]">
             <h2 className="font-headline text-xl font-bold text-[#012d1d] mb-1">
-              Configuración del Perfil
+              {language === 'en' ? 'Profile Settings' : 'Configuración del Perfil'}
             </h2>
             <p className="text-xs text-[#717973] mb-6">
-              Actualiza tus datos de contacto y ubicación para la plataforma.
+              {language === 'en'
+                ? 'Update your contact details and location for the platform.'
+                : 'Actualiza tus datos de contacto y ubicación para la plataforma.'}
             </p>
 
             {profileSaved && (
               <div className="mb-4 p-3 rounded-xl bg-[#b0f1cc] text-[#002113] text-xs font-bold flex items-center gap-2 border border-[#2b694d]/30">
                 <span className="material-symbols-outlined text-base text-[#2b694d]">check_circle</span>
-                <span>¡Cambios guardados correctamente!</span>
+                <span>{language === 'en' ? 'Changes saved successfully!' : '¡Cambios guardados correctamente!'}</span>
               </div>
             )}
 
             <form onSubmit={handleSaveProfile} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-[#012d1d] mb-1">
-                  Nombre {isModista ? 'del Taller / Modista' : 'Completo'} *
+                  {language === 'en'
+                    ? (isModista ? 'Workshop / Tailor Name *' : 'Full Name *')
+                    : `Nombre ${isModista ? 'del Taller / Modista' : 'Completo'} *`}
                 </label>
                 <input
                   type="text"
                   required
                   value={studioName}
                   onChange={(e) => setStudioName(e.target.value)}
-                  placeholder="Nombre o Taller"
+                  placeholder={language === 'en' ? 'Name or Workshop' : 'Nombre o Taller'}
                   className="w-full bg-[#f5f4ef] border border-[#c1c8c2] rounded-lg p-2.5 text-sm focus:bg-white focus:border-[#012d1d] outline-none"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-[#012d1d] mb-1">
-                  Dirección Física (Taller o Domicilio)
+                  {language === 'en' ? 'Physical Address (Workshop or Home)' : 'Dirección Física (Taller o Domicilio)'}
                 </label>
                 <input
                   type="text"
                   value={studioAddress}
                   onChange={(e) => setStudioAddress(e.target.value)}
-                  placeholder="Ej: Carrera 43A # 1-50, Taller 302"
+                  placeholder={language === 'en' ? 'e.g. Carrera 43A # 1-50, Studio 302' : 'Ej: Carrera 43A # 1-50, Taller 302'}
                   className="w-full bg-[#f5f4ef] border border-[#c1c8c2] rounded-lg p-2.5 text-sm focus:bg-white focus:border-[#012d1d] outline-none"
                 />
                 <span className="text-[11px] text-[#717973]">
-                  Opcional. Si no deseas mostrar dirección física exacta, déjala vacía.
+                  {language === 'en'
+                    ? 'Optional. If you do not wish to show an exact physical address, leave it empty.'
+                    : 'Opcional. Si no deseas mostrar dirección física exacta, déjala vacía.'}
                 </span>
               </div>
 
@@ -723,8 +749,8 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
                 <GoogleMapsLocationPicker
                   value={studioLocation}
                   onChange={(newLoc) => setStudioLocation(newLoc)}
-                  label="Ubicación en Google Maps"
-                  placeholder="Busca tu dirección, barrio o ciudad (ej. Chapinero, Bogotá D.C.)"
+                  label={language === 'en' ? 'Location on Google Maps' : 'Ubicación en Google Maps'}
+                  placeholder={language === 'en' ? 'Search your address, neighborhood or city (e.g. Chapinero, Bogotá)' : 'Busca tu dirección, barrio o ciudad (ej. Chapinero, Bogotá D.C.)'}
                   required={false}
                   showMapPreview={true}
                 />
@@ -732,7 +758,7 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
 
               <div>
                 <label className="block text-xs font-semibold text-[#012d1d] mb-1">
-                  Teléfono o WhatsApp
+                  {language === 'en' ? 'Phone or WhatsApp' : 'Teléfono o WhatsApp'}
                 </label>
                 <input
                   type="text"
@@ -745,7 +771,7 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
 
               <div>
                 <label className="block text-xs font-semibold text-[#012d1d] mb-1">
-                  Instagram / Redes
+                  {language === 'en' ? 'Instagram / Social Media' : 'Instagram / Redes'}
                 </label>
                 <input
                   type="text"
@@ -758,13 +784,13 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
 
               <div>
                 <label className="block text-xs font-semibold text-[#012d1d] mb-1">
-                  Biografía / Presentación
+                  {language === 'en' ? 'Bio / Presentation' : 'Biografía / Presentación'}
                 </label>
                 <textarea
                   rows={4}
                   value={studioBio}
                   onChange={(e) => setStudioBio(e.target.value)}
-                  placeholder="Describe tu experiencia, estilo o proyectos de moda circular..."
+                  placeholder={language === 'en' ? 'Describe your experience, style, or circular fashion projects...' : 'Describe tu experiencia, estilo o proyectos de moda circular...'}
                   className="w-full bg-[#f5f4ef] border border-[#c1c8c2] rounded-lg p-2.5 text-sm focus:bg-white focus:border-[#012d1d] outline-none"
                 />
               </div>
@@ -775,7 +801,7 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
                   className="px-6 py-2.5 bg-[#012d1d] hover:bg-[#1b4332] text-white text-xs font-bold rounded-lg transition-colors shadow-sm flex items-center gap-2"
                 >
                   <span className="material-symbols-outlined text-base">save</span>
-                  <span>Guardar Cambios</span>
+                  <span>{language === 'en' ? 'Save Changes' : 'Guardar Cambios'}</span>
                 </button>
               </div>
             </form>
@@ -789,10 +815,12 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
               </div>
               <div className="flex-1">
                 <h3 className="font-headline font-bold text-base text-[#ba1a1a]">
-                  Zona de Riesgo: Eliminar Cuenta
+                  {language === 'en' ? 'Danger Zone: Delete Account' : 'Zona de Riesgo: Eliminar Cuenta'}
                 </h3>
                 <p className="text-xs text-[#414844] mt-1 leading-relaxed">
-                  Al eliminar tu cuenta, todos tus datos personales, publicaciones de prendas, servicios y mensajes se borrarán permanentemente del sistema.
+                  {language === 'en'
+                    ? 'When you delete your account, all your personal data, garment listings, services, and messages will be permanently removed from the system.'
+                    : 'Al eliminar tu cuenta, todos tus datos personales, publicaciones de prendas, servicios y mensajes se borrarán permanentemente del sistema.'}
                 </p>
                 <div className="mt-4">
                   <button
@@ -801,7 +829,7 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
                     className="px-4 py-2 bg-[#ba1a1a] hover:bg-[#93000a] text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-2"
                   >
                     <span className="material-symbols-outlined text-sm">delete_forever</span>
-                    <span>Eliminar mi Cuenta Definitivamente</span>
+                    <span>{language === 'en' ? 'Permanently Delete My Account' : 'Eliminar mi Cuenta Definitivamente'}</span>
                   </button>
                 </div>
               </div>
@@ -820,17 +848,19 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
 
             <div>
               <h3 className="font-headline font-bold text-lg text-[#ba1a1a]">
-                Validación para Eliminar Cuenta
+                {language === 'en' ? 'Validation to Delete Account' : 'Validación para Eliminar Cuenta'}
               </h3>
               <p className="text-xs text-[#414844] mt-1 leading-relaxed">
-                Para confirmar la eliminación definitiva, introduce el siguiente código de validación de seguridad:
+                {language === 'en'
+                  ? 'To confirm permanent deletion, enter the following security validation code:'
+                  : 'Para confirmar la eliminación definitiva, introduce el siguiente código de validación de seguridad:'}
               </p>
             </div>
 
             {/* Generated Code Display Box */}
             <div className="p-4 rounded-xl bg-[#faf9f4] border-2 border-dashed border-[#c1c8c2] text-center">
               <span className="text-[11px] text-[#717973] uppercase tracking-wider block font-semibold mb-1">
-                Código de Confirmación
+                {language === 'en' ? 'Confirmation Code' : 'Código de Confirmación'}
               </span>
               <span className="font-mono text-xl font-bold tracking-widest text-[#012d1d] select-all">
                 {verificationCode}
@@ -840,7 +870,7 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
             {/* Code Input */}
             <div>
               <label className="block text-xs font-bold text-[#012d1d] mb-1">
-                Escribe el código tal como aparece arriba *
+                {language === 'en' ? 'Type code exactly as shown above *' : 'Escribe el código tal como aparece arriba *'}
               </label>
               <input
                 type="text"
@@ -867,7 +897,7 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
                 onClick={() => setIsDeleteModalOpen(false)}
                 className="px-4 py-2 rounded-xl text-xs font-semibold text-[#414844] hover:bg-[#f5f4ef] transition-colors"
               >
-                Cancelar
+                {language === 'en' ? 'Cancel' : 'Cancelar'}
               </button>
               <button
                 type="button"
@@ -876,7 +906,7 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
                 className="px-5 py-2 rounded-xl bg-[#ba1a1a] hover:bg-[#93000a] disabled:opacity-40 disabled:hover:bg-[#ba1a1a] text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
               >
                 <span className="material-symbols-outlined text-sm">delete_forever</span>
-                <span>Confirmar y Borrar Cuenta</span>
+                <span>{language === 'en' ? 'Confirm and Delete Account' : 'Confirmar y Borrar Cuenta'}</span>
               </button>
             </div>
           </div>
@@ -900,16 +930,20 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
               </div>
               <div>
                 <h3 className="font-headline font-bold text-base text-[#012d1d]">
-                  ¿Eliminar publicación?
+                  {language === 'en' ? 'Delete listing?' : '¿Eliminar publicación?'}
                 </h3>
                 <p className="text-xs text-[#717973]">
-                  Esta prenda se removerá del catálogo.
+                  {language === 'en' ? 'This garment will be removed from the catalog.' : 'Esta prenda se removerá del catálogo.'}
                 </p>
               </div>
             </div>
 
             <p className="text-xs text-[#414844] leading-relaxed">
-              ¿Estás seguro de que deseas eliminar permanentemente la publicación <strong>"{garmentToDelete.title}"</strong>? Esta acción no se puede deshacer.
+              {language === 'en' ? (
+                <>Are you sure you want to permanently delete the listing <strong>"{garmentToDelete.title}"</strong>? This action cannot be undone.</>
+              ) : (
+                <>¿Estás seguro de que deseas eliminar permanentemente la publicación <strong>"{garmentToDelete.title}"</strong>? Esta acción no se puede deshacer.</>
+              )}
             </p>
 
             <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#efeee9]">
@@ -918,7 +952,7 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
                 onClick={() => setGarmentToDelete(null)}
                 className="px-4 py-2.5 rounded-xl text-xs font-semibold text-[#414844] hover:bg-[#f5f4ef] transition-colors cursor-pointer"
               >
-                Cancelar
+                {language === 'en' ? 'Cancel' : 'Cancelar'}
               </button>
               <button
                 type="button"
@@ -929,7 +963,7 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
                 className="px-5 py-2.5 rounded-xl bg-[#ba1a1a] hover:bg-[#93000a] text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
               >
                 <span className="material-symbols-outlined text-sm">delete</span>
-                <span>Eliminar</span>
+                <span>{language === 'en' ? 'Delete' : 'Eliminar'}</span>
               </button>
             </div>
           </div>
@@ -952,7 +986,7 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-xl text-[#012d1d]">edit_note</span>
                 <h3 className="font-headline font-bold text-base text-[#012d1d]">
-                  Editar publicación de prenda
+                  {language === 'en' ? 'Edit garment listing' : 'Editar publicación de prenda'}
                 </h3>
               </div>
               <button
@@ -968,7 +1002,7 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
               {/* Foto URL / Preview */}
               <div>
                 <label className="block font-bold text-[#012d1d] mb-1">
-                  URL de la Fotografía
+                  {language === 'en' ? 'Photograph URL' : 'URL de la Fotografía'}
                 </label>
                 <input
                   type="url"
@@ -994,14 +1028,14 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
               {/* Título */}
               <div>
                 <label className="block font-bold text-[#012d1d] mb-1">
-                  Título de la prenda *
+                  {language === 'en' ? 'Garment title *' : 'Título de la prenda *'}
                 </label>
                 <input
                   type="text"
                   required
                   value={editTitle}
                   onChange={(e) => setEditTitle(e.target.value)}
-                  placeholder="Ej. Jean oversize con bordados"
+                  placeholder={language === 'en' ? 'e.g. Oversized embroidered denim jacket' : 'Ej. Jean oversize con bordados'}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-[#c1c8c2] text-xs text-[#1b1c19] focus:border-[#012d1d] outline-none"
                 />
               </div>
@@ -1010,34 +1044,34 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block font-bold text-[#012d1d] mb-1">
-                    Categoría *
+                    {language === 'en' ? 'Category *' : 'Categoría *'}
                   </label>
                   <select
                     value={editCategory}
                     onChange={(e) => setEditCategory(e.target.value)}
                     className="w-full px-3 py-2.5 rounded-xl border border-[#c1c8c2] text-xs text-[#1b1c19] focus:border-[#012d1d] outline-none"
                   >
-                    <option value="Camisas">Camisas</option>
-                    <option value="Pantalones">Pantalones</option>
-                    <option value="Vestidos">Vestidos</option>
-                    <option value="Faldas">Faldas</option>
-                    <option value="Bolsos">Bolsos</option>
-                    <option value="Chaquetas">Chaquetas</option>
+                    <option value="Camisas">{language === 'en' ? 'Shirts' : 'Camisas'}</option>
+                    <option value="Pantalones">{language === 'en' ? 'Pants' : 'Pantalones'}</option>
+                    <option value="Vestidos">{language === 'en' ? 'Dresses' : 'Vestidos'}</option>
+                    <option value="Faldas">{language === 'en' ? 'Skirts' : 'Faldas'}</option>
+                    <option value="Bolsos">{language === 'en' ? 'Bags' : 'Bolsos'}</option>
+                    <option value="Chaquetas">{language === 'en' ? 'Jackets' : 'Chaquetas'}</option>
                     <option value="Shorts">Shorts</option>
-                    <option value="Suéteres">Suéteres</option>
-                    <option value="Gorras y Sombreros">Gorras y Sombreros</option>
-                    <option value="Mochilas">Mochilas</option>
-                    <option value="Calzones y Ropa Íntima">Calzones y Ropa Íntima</option>
-                    <option value="Accesorios">Accesorios</option>
-                    <option value="Trajes de Baño">Trajes de Baño</option>
-                    <option value="Medias">Medias</option>
-                    <option value="Otras Prendas">Otras Prendas</option>
+                    <option value="Suéteres">{language === 'en' ? 'Sweaters' : 'Suéteres'}</option>
+                    <option value="Gorras y Sombreros">{language === 'en' ? 'Caps & Hats' : 'Gorras y Sombreros'}</option>
+                    <option value="Mochilas">{language === 'en' ? 'Backpacks' : 'Mochilas'}</option>
+                    <option value="Calzones y Ropa Íntima">{language === 'en' ? 'Underwear & Intimates' : 'Calzones y Ropa Íntima'}</option>
+                    <option value="Accesorios">{language === 'en' ? 'Accessories' : 'Accesorios'}</option>
+                    <option value="Trajes de Baño">{language === 'en' ? 'Swimwear' : 'Trajes de Baño'}</option>
+                    <option value="Medias">{language === 'en' ? 'Socks & Hosiery' : 'Medias'}</option>
+                    <option value="Otras Prendas">{language === 'en' ? 'Other Garments' : 'Otras Prendas'}</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="block font-bold text-[#012d1d] mb-1">
-                    Talla
+                    {language === 'en' ? 'Size' : 'Talla'}
                   </label>
                   <select
                     value={editSize}
@@ -1049,7 +1083,7 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
                     <option value="M">M</option>
                     <option value="L">L</option>
                     <option value="XL">XL</option>
-                    <option value="Única">Única</option>
+                    <option value="Única">{language === 'en' ? 'One size' : 'Única'}</option>
                   </select>
                 </div>
               </div>
@@ -1058,20 +1092,20 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block font-bold text-[#012d1d] mb-1">
-                    Color
+                    {language === 'en' ? 'Color' : 'Color'}
                   </label>
                   <input
                     type="text"
                     value={editColor}
                     onChange={(e) => setEditColor(e.target.value)}
-                    placeholder="Ej. Azul Índigo"
+                    placeholder={language === 'en' ? 'e.g. Indigo Blue' : 'Ej. Azul Índigo'}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-[#c1c8c2] text-xs text-[#1b1c19] focus:border-[#012d1d] outline-none"
                   />
                 </div>
 
                 <div>
                   <label className="block font-bold text-[#012d1d] mb-1">
-                    Precio / Presupuesto (COP)
+                    {language === 'en' ? 'Price / Budget (COP)' : 'Precio / Presupuesto (COP)'}
                   </label>
                   <input
                     type="text"
@@ -1089,13 +1123,13 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
               {/* Ubicación */}
               <div>
                 <label className="block font-bold text-[#012d1d] mb-1">
-                  Ubicación visible
+                  {language === 'en' ? 'Visible Location' : 'Ubicación visible'}
                 </label>
                 <input
                   type="text"
                   value={editLocation}
                   onChange={(e) => setEditLocation(e.target.value)}
-                  placeholder="Ej. Laureles, Medellín, Antioquia"
+                  placeholder={language === 'en' ? 'e.g. Laureles, Medellín, Antioquia' : 'Ej. Laureles, Medellín, Antioquia'}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-[#c1c8c2] text-xs text-[#1b1c19] focus:border-[#012d1d] outline-none"
                 />
               </div>
@@ -1103,13 +1137,13 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
               {/* Descripción */}
               <div>
                 <label className="block font-bold text-[#012d1d] mb-1">
-                  Descripción de la prenda
+                  {language === 'en' ? 'Garment description' : 'Descripción de la prenda'}
                 </label>
                 <textarea
                   rows={3}
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
-                  placeholder="Detalles sobre el estado, tela y transformación deseada..."
+                  placeholder={language === 'en' ? 'Details about condition, fabric and desired redesign...' : 'Detalles sobre el estado, tela y transformación deseada...'}
                   className="w-full px-3.5 py-2 rounded-xl border border-[#c1c8c2] text-xs text-[#1b1c19] focus:border-[#012d1d] outline-none resize-none"
                 />
               </div>
@@ -1120,14 +1154,14 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
                   onClick={() => setGarmentToEdit(null)}
                   className="px-4 py-2.5 rounded-xl text-xs font-semibold text-[#414844] hover:bg-[#f5f4ef] transition-colors cursor-pointer"
                 >
-                  Cancelar
+                  {language === 'en' ? 'Cancel' : 'Cancelar'}
                 </button>
                 <button
                   type="submit"
                   className="px-5 py-2.5 rounded-xl bg-[#012d1d] hover:bg-[#1b4332] text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-sm">save</span>
-                  <span>Guardar cambios</span>
+                  <span>{language === 'en' ? 'Save Changes' : 'Guardar cambios'}</span>
                 </button>
               </div>
             </form>

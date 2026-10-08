@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BrandLogo } from '../BrandLogo';
+import { useThemeLanguage } from '../../context/ThemeLanguageContext';
 import {
   registerVerifiedUser,
   loginUser,
@@ -8,16 +9,22 @@ import {
   loginWithGoogleExistingOnly,
   updateUserPassword,
   isAccountRegistered,
-  getDeviceGoogleAccounts,
-  saveDeviceGoogleAccount,
-  removeDeviceGoogleAccount,
-  DeviceGoogleAccount,
+  findAccountByIdentifier,
   StoredUserAccount
 } from '../../services/userStore';
 import {
   validateEmailFormat,
   EXCLUSIVE_ADMIN_EMAIL
 } from '../../services/securityService';
+import { signInWithGooglePopup } from '../../services/firebaseAuth';
+
+// Helper to mask email partially (e.g., j***@gmail.com or a***o@rebornyourstyle.co)
+function maskEmail(email: string): string {
+  if (!email || !email.includes('@')) return email || '';
+  const [user, domain] = email.split('@');
+  if (user.length <= 2) return `${user[0]}***@${domain}`;
+  return `${user[0]}***${user[user.length - 1]}@${domain}`;
+}
 
 // Safe API helper that strictly parses JSON and never crashes on HTML or network errors
 async function safeApiCall<T = any>(
@@ -74,6 +81,13 @@ async function safeApiCall<T = any>(
   }
 }
 
+function maskEmailAddress(emailStr: string): string {
+  if (!emailStr || !emailStr.includes('@')) return emailStr;
+  const [userPart, domain] = emailStr.split('@');
+  if (userPart.length <= 2) return `${userPart[0]}*@${domain}`;
+  return `${userPart[0]}*****${userPart.slice(-1)}@${domain}`;
+}
+
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -83,8 +97,6 @@ interface AuthModalProps {
 
 type AuthViewMode =
   | 'login'
-  | 'google_account_picker'
-  | 'google_not_registered'
   | 'register'
   | 'register_verify'
   | 'forgot_password'
@@ -96,6 +108,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onLoginAccount,
   initialMode = 'login',
 }) => {
+  const { language } = useThemeLanguage();
+  const isEn = language === 'en';
+
   // Navigation View State
   const [viewMode, setViewMode] = useState<AuthViewMode>(initialMode === 'register' ? 'register' : 'login');
   const [selectedRole, setSelectedRole] = useState<'cliente' | 'profesional'>('cliente');
@@ -104,17 +119,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [showLoginPassword, setShowLoginPassword] = useState(false);
-
-  // States for Google Account Chooser (Device accounts)
-  const [deviceAccounts, setDeviceAccounts] = useState<DeviceGoogleAccount[]>([]);
-  const [isUsingOtherGoogleAccount, setIsUsingOtherGoogleAccount] = useState(false);
-  const [customGoogleEmail, setCustomGoogleEmail] = useState('');
-  const [customGoogleName, setCustomGoogleName] = useState('');
-  const [pendingGoogleAccount, setPendingGoogleAccount] = useState<{
-    email: string;
-    name: string;
-    avatarUrl?: string;
-  } | null>(null);
 
   // Input states for Register
   const [registerName, setRegisterName] = useState('');
@@ -128,8 +132,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [verificationCode, setVerificationCode] = useState('');
   const [verificationCooldown, setVerificationCooldown] = useState(0);
 
-  // Password Recovery Flow: 1 ('request') -> 2 ('verify') -> 3 ('new_password') -> 4 ('success')
-  const [recoveryStep, setRecoveryStep] = useState<'request' | 'verify' | 'new_password' | 'success'>('request');
+  // Password Recovery Flow (Search -> Verify Code -> New Password -> Success)
+  const [recoveryStep, setRecoveryStep] = useState<
+    'search' | 'verify' | 'new_password' | 'success'
+  >('search');
+  const [recoveryQuery, setRecoveryQuery] = useState('');
+  const [foundUserAccount, setFoundUserAccount] = useState<{
+    id: string;
+    name: string;
+    email: string;
+    avatarUrl?: string | null;
+    role?: string;
+  } | null>(null);
   const [recoveryEmail, setRecoveryEmail] = useState('');
   const [recoveryCodeInput, setRecoveryCodeInput] = useState('');
   const [recoveryResetToken, setRecoveryResetToken] = useState('');
@@ -138,6 +152,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [showRecoveryNewPassword, setShowRecoveryNewPassword] = useState(false);
   const [showRecoveryConfirmNewPassword, setShowRecoveryConfirmNewPassword] = useState(false);
   const [recoveryCooldown, setRecoveryCooldown] = useState(0);
+  const otpInputRef = useRef<HTMLInputElement>(null);
 
   // Administrative access
   const [adminEmail, setAdminEmail] = useState('');
@@ -167,13 +182,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setVerificationCode('');
       setVerificationCooldown(0);
 
-      setDeviceAccounts(getDeviceGoogleAccounts());
-      setIsUsingOtherGoogleAccount(false);
-      setCustomGoogleEmail('');
-      setCustomGoogleName('');
-      setPendingGoogleAccount(null);
-
-      setRecoveryStep('request');
+      setRecoveryStep('search');
+      setRecoveryQuery('');
+      setFoundUserAccount(null);
       setRecoveryEmail('');
       setRecoveryCodeInput('');
       setRecoveryResetToken('');
@@ -207,6 +218,25 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       return () => clearTimeout(timer);
     }
   }, [recoveryCooldown]);
+
+  // Listen for Google OAuth callback message from popup window
+  useEffect(() => {
+    const handleAuthMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'GOOGLE_AUTH_SUCCESS' && event.data?.user?.email) {
+        processGoogleEmail(event.data.user.email, event.data.user.name, event.data.user.picture);
+      } else if (event.data?.type === 'GOOGLE_AUTH_ERROR') {
+        setIsLoading(false);
+        setErrorMsg(
+          isEn
+            ? 'Could not complete Google sign-in. Please try again or use your email and password.'
+            : 'No se pudo completar el acceso con Google. Por favor intenta nuevamente o usa tu correo y contraseña.'
+        );
+      }
+    };
+
+    window.addEventListener('message', handleAuthMessage);
+    return () => window.removeEventListener('message', handleAuthMessage);
+  }, [isEn]);
 
   if (!isOpen) return null;
 
@@ -255,12 +285,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   // ---------------------------------------------------------------------------
-  // 2. CONTINUAR CON GOOGLE
+  // 2. CONTINUAR CON GOOGLE (OFICIAL GOOGLE IDENTITY SERVICES)
   // ---------------------------------------------------------------------------
-  const processGoogleEmail = async (rawEmail: string, rawName?: string, rawPicture?: string, isExplicitRegister = false) => {
+  const processGoogleEmail = async (rawEmail: string, rawName?: string, rawPicture?: string) => {
     const cleanEmail = (rawEmail || '').trim().toLowerCase();
     if (!cleanEmail || !cleanEmail.includes('@')) {
-      setErrorMsg('El correo electrónico no es válido.');
+      setErrorMsg(isEn ? 'Invalid email address.' : 'El correo electrónico no es válido.');
       setIsLoading(false);
       return;
     }
@@ -276,94 +306,40 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         rawPicture ||
         `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName)}&backgroundColor=012d1d&textColor=b0f1cc`;
 
-      // Requirement 3:
-      // "Si una cuenta Google ya está registrada en Reborn Your Style: permitir acceso.
-      // Si no está registrada: no crear automáticamente una cuenta; mostrar la opción de crear una cuenta."
-      if (!isExplicitRegister && viewMode !== 'register') {
-        const verifyRes = await loginWithGoogleExistingOnly(cleanEmail, displayName, avatarUrl);
-        if (verifyRes.notRegistered) {
-          setIsLoading(false);
-          setPendingGoogleAccount({
-            email: cleanEmail,
-            name: displayName,
-            avatarUrl,
-          });
-          setRegisterEmail(cleanEmail);
-          setRegisterName(displayName);
-          setErrorMsg('');
-          setViewMode('google_not_registered');
-          return;
-        }
-
-        if (verifyRes.success && verifyRes.user) {
-          saveDeviceGoogleAccount({
-            email: cleanEmail,
-            name: displayName,
-            avatarUrl,
-          });
-          setDeviceAccounts(getDeviceGoogleAccounts());
-          setIsLoading(false);
-          setSuccessMsg(`¡Bienvenido(a) a Reborn Your Style, ${verifyRes.user.name}!`);
-          setTimeout(() => {
-            onLoginAccount(verifyRes.user!);
-            onClose();
-          }, 400);
-          return;
-        }
+      // Requirement 2:
+      // "4. Después de autenticarse, Reborn Your Style debe comprobar si ese correo ya tiene una cuenta registrada en nuestra base de datos.
+      //  5. Si la cuenta existe, iniciar sesión normalmente.
+      //  6. Si el correo de Google NO está registrado en Reborn Your Style, NO crear automáticamente una cuenta ni permitir el acceso. Mostrar un mensaje indicando que primero debe registrarse."
+      const verifyRes = await loginWithGoogleExistingOnly(cleanEmail, displayName, avatarUrl);
+      if (verifyRes.notRegistered) {
+        setIsLoading(false);
+        setErrorMsg(
+          isEn
+            ? `This Google account (${cleanEmail}) is not registered in Reborn Your Style. Please create an account first to access.`
+            : `Esta cuenta de Google (${cleanEmail}) no está registrada en Reborn Your Style. Por favor, crea una cuenta primero para poder acceder.`
+        );
+        return;
       }
 
-      // If user is explicitly in register mode or confirmed creation:
-      // 1. Authenticate with backend API (POST /api/auth/google/login)
-      const apiRes = await safeApiCall<{
-        success: boolean;
-        token?: string;
-        user?: any;
-        message?: string;
-      }>('/api/auth/google/login', 'POST', {
-        email: cleanEmail,
-        name: displayName,
-        picture: avatarUrl,
-        role: selectedRole || 'cliente',
-      });
-
-      if (apiRes.success && apiRes.data?.token) {
-        try {
-          localStorage.setItem('reborn_auth_token', apiRes.data.token);
-        } catch (e) {
-          console.warn('Could not store token in localStorage:', e);
-        }
-      }
-
-      // 2. Synchronize with client-side user database
-      const storeRes = await loginOrRegisterWithGoogle({
-        email: cleanEmail,
-        name: displayName,
-        role: selectedRole || 'cliente',
-        avatarUrl,
-      });
-
-      // 3. Save as active account on this device
-      saveDeviceGoogleAccount({
-        email: cleanEmail,
-        name: displayName,
-        avatarUrl,
-      });
-      setDeviceAccounts(getDeviceGoogleAccounts());
-
-      setIsLoading(false);
-
-      if (storeRes.success && storeRes.user) {
-        setSuccessMsg(`¡Bienvenido(a) a Reborn Your Style, ${storeRes.user.name}!`);
+      if (verifyRes.success && verifyRes.user) {
+        setIsLoading(false);
+        setSuccessMsg(isEn ? `Welcome back, ${verifyRes.user.name}!` : `¡Bienvenido(a) de nuevo, ${verifyRes.user.name}!`);
         setTimeout(() => {
-          onLoginAccount(storeRes.user!);
+          onLoginAccount(verifyRes.user!);
           onClose();
         }, 400);
-      } else {
-        setErrorMsg(storeRes.error || apiRes.error || 'Los datos ingresados no son correctos.');
+        return;
       }
+
+      setIsLoading(false);
+      setErrorMsg(verifyRes.error || (isEn ? 'Could not sign in with Google.' : 'No fue posible iniciar sesión con Google.'));
     } catch {
       setIsLoading(false);
-      setErrorMsg('No pudimos procesar la autenticación con Google. Por favor intenta nuevamente.');
+      setErrorMsg(
+        isEn
+          ? 'Could not process Google authentication. Please try again.'
+          : 'No pudimos procesar la autenticación con Google. Por favor intenta nuevamente.'
+      );
     }
   };
 
@@ -372,22 +348,38 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setSuccessMsg('');
     setIsLoading(true);
 
+    // 1. Primary: Official Google Account Chooser via Firebase / Google OAuth Popup
     try {
-      let googleClientId =
-        (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID ||
-        (window as any).GOOGLE_CLIENT_ID ||
-        '';
-
-      if (!googleClientId) {
-        const cfgRes = await safeApiCall<{ configured?: boolean; clientId?: string }>('/api/auth/google/config', 'GET');
-        if (cfgRes.success && cfgRes.data?.clientId) {
-          googleClientId = cfgRes.data.clientId;
-        }
+      const credential = await signInWithGooglePopup();
+      if (credential?.user?.email) {
+        await processGoogleEmail(
+          credential.user.email,
+          credential.user.displayName || undefined,
+          credential.user.photoURL || undefined
+        );
+        return;
       }
+    } catch (popupErr: any) {
+      // User closed the popup window without selecting an account
+      if (
+        popupErr?.code === 'auth/popup-closed-by-user' ||
+        popupErr?.code === 'auth/cancelled-popup-request' ||
+        popupErr?.message?.includes('closed-by-user')
+      ) {
+        setIsLoading(false);
+        return;
+      }
+      console.warn('Firebase Google popup fallback:', popupErr);
+    }
+
+    // 2. Secondary: Google Identity Services (GIS) Token Client Flow
+    try {
+      const googleClientId =
+        (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID ||
+        '1058802324996-kpvh92i36sj8q70f011sie09p22bolp9.apps.googleusercontent.com';
 
       const googleObj = typeof window !== 'undefined' ? (window as any).google : null;
 
-      // If Google Identity Services (GIS) native account chooser is configured
       if (googleClientId && googleObj?.accounts?.oauth2) {
         const tokenClient = googleObj.accounts.oauth2.initTokenClient({
           client_id: googleClientId,
@@ -396,11 +388,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           callback: async (tokenRes: any) => {
             if (tokenRes?.error) {
               setIsLoading(false);
-              if (tokenRes.error !== 'access_denied') {
-                setDeviceAccounts(getDeviceGoogleAccounts());
-                setIsUsingOtherGoogleAccount(false);
-                setViewMode('google_account_picker');
-              }
+              if (tokenRes.error === 'access_denied') return;
+              setErrorMsg(
+                isEn
+                  ? 'Could not complete Google authentication. Please try again or sign in with your email.'
+                  : 'No fue posible completar la autenticación con Google. Por favor intenta de nuevo o ingresa con tu correo.'
+              );
               return;
             }
 
@@ -415,37 +408,56 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   return;
                 }
               } catch (err) {
-                console.error('Error fetching Google user profile:', err);
+                console.warn('Error fetching Google user profile:', err);
               }
             }
             setIsLoading(false);
-            setDeviceAccounts(getDeviceGoogleAccounts());
-            setIsUsingOtherGoogleAccount(false);
-            setViewMode('google_account_picker');
+            setErrorMsg(
+              isEn
+                ? 'Could not verify your Google account. Please try again.'
+                : 'No fue posible verificar tu cuenta de Google. Por favor intenta de nuevo.'
+            );
           },
           error_callback: () => {
             setIsLoading(false);
-            setDeviceAccounts(getDeviceGoogleAccounts());
-            setIsUsingOtherGoogleAccount(false);
-            setViewMode('google_account_picker');
           },
         });
 
         tokenClient.requestAccessToken({ prompt: 'select_account' });
         return;
       }
-
-      // If GIS client_id is not configured or in sandbox, present the Google account chooser for device
-      setIsLoading(false);
-      setDeviceAccounts(getDeviceGoogleAccounts());
-      setIsUsingOtherGoogleAccount(false);
-      setViewMode('google_account_picker');
-    } catch {
-      setIsLoading(false);
-      setDeviceAccounts(getDeviceGoogleAccounts());
-      setIsUsingOtherGoogleAccount(false);
-      setViewMode('google_account_picker');
+    } catch (gisErr) {
+      console.warn('GIS token client fallback:', gisErr);
     }
+
+    // 3. Fallback: Server OAuth 2.0 Popup Flow
+    try {
+      const urlRes = await safeApiCall<{ configured?: boolean; url?: string }>('/api/auth/google/url', 'GET');
+      if (urlRes.success && urlRes.data?.configured && urlRes.data?.url) {
+        const width = 500;
+        const height = 650;
+        const left = window.screenX + (window.outerWidth - width) / 2;
+        const top = window.screenY + (window.outerHeight - height) / 2;
+        const popup = window.open(
+          urlRes.data.url,
+          'google_oauth_popup',
+          `width=${width},height=${height},left=${left},top=${top},status=no,toolbar=no,menubar=no`
+        );
+        if (popup) {
+          setIsLoading(false);
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn('Server OAuth popup fallback:', err);
+    }
+
+    setIsLoading(false);
+    setErrorMsg(
+      isEn
+        ? 'Please sign in with your email and password or create an account to continue.'
+        : 'Por favor ingresa con tu correo y contraseña o crea una cuenta para continuar.'
+    );
   };
 
   // ---------------------------------------------------------------------------
@@ -606,49 +618,156 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   // ---------------------------------------------------------------------------
-  // 5. RECUPERAR CONTRASEÑA - PASO 1: SOLICITAR CÓDIGO
+  // 5. RECUPERAR CONTRASEÑA - BÚSQUEDA Y ENVÍO EXCLUSIVO VÍA CORREO (GMAIL)
   // ---------------------------------------------------------------------------
-  const handleRequestRecoveryCode = async (e: React.FormEvent) => {
+  const handleSearchAccount = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
     setSuccessMsg('');
 
-    const cleanEmail = recoveryEmail.trim().toLowerCase();
-    if (!cleanEmail || !cleanEmail.includes('@')) {
-      setErrorMsg('Por favor ingresa un correo electrónico válido.');
-      return;
-    }
-
-    // Check account in real database first
-    if (!isAccountRegistered(cleanEmail)) {
-      setErrorMsg('No encontramos una cuenta con este correo. Puedes crear una cuenta nueva.');
+    const clean = recoveryQuery.replace(/[\u200B-\u200D\uFEFF]/g, '').trim().toLowerCase();
+    if (!clean) {
+      setErrorMsg(
+        isEn
+          ? 'Please enter your registered email address.'
+          : 'Por favor ingresa la dirección de correo electrónico asociada a tu cuenta.'
+      );
       return;
     }
 
     setIsLoading(true);
     try {
-      const res = await safeApiCall<{ exists?: boolean; message?: string; error?: string }>(
-        '/api/auth/send-recovery-code',
-        'POST',
-        { email: cleanEmail }
-      );
+      // 1. Search in authoritative server database
+      const res = await safeApiCall<{
+        exists?: boolean;
+        user?: {
+          id: string;
+          name: string;
+          email: string;
+          avatarUrl?: string | null;
+          role?: string;
+        };
+        error?: string;
+      }>('/api/auth/search-account', 'POST', { query: clean, email: clean });
+
+      let targetUser = res.success && res.data?.exists && res.data?.user ? res.data.user : null;
+
+      // 2. Search in local persistent database if not found on server
+      if (!targetUser) {
+        const localAcc = findAccountByIdentifier(clean);
+        if (localAcc) {
+          targetUser = {
+            id: localAcc.id,
+            name: localAcc.name || localAcc.profile?.name || localAcc.email.split('@')[0],
+            email: localAcc.email,
+            avatarUrl: localAcc.profile?.avatarUrl || '',
+            role: localAcc.role || 'cliente',
+          };
+        }
+      }
+
+      // Si no existe: mensaje limpio exacto según requerimiento
+      if (!targetUser) {
+        setIsLoading(false);
+        setErrorMsg(
+          isEn
+            ? 'No account found associated with this email address.'
+            : 'No existe una cuenta asociada a este correo electrónico.'
+        );
+        return;
+      }
+
+      // 2. Solicitar al backend la generación y envío del código real al correo
+      const sendRes = await safeApiCall<{
+        success: boolean;
+        error?: string;
+        message?: string;
+      }>('/api/auth/send-recovery-code', 'POST', {
+        email: targetUser.email,
+      });
+
       setIsLoading(false);
 
-      if (res.success) {
-        setRecoveryCodeInput('');
-        setRecoveryCooldown(60);
-        setRecoveryStep('verify');
-      } else {
-        setErrorMsg(res.error || 'No encontramos una cuenta con este correo. Puedes crear una cuenta nueva.');
+      if (!sendRes?.success) {
+        setErrorMsg(
+          sendRes?.error ||
+            (isEn
+              ? 'Could not send the code. Please try again.'
+              : 'No pudimos enviar el código. Inténtalo nuevamente.')
+        );
+        return;
       }
+
+      // 3. Envío exitoso: avanzar al paso de verificación
+      setFoundUserAccount(targetUser);
+      setRecoveryEmail(targetUser.email);
+      setRecoveryCodeInput('');
+      setRecoveryCooldown(60);
+      setErrorMsg('');
+      setSuccessMsg(
+        isEn
+          ? 'We sent a verification code to your email.'
+          : 'Enviamos un código de verificación a tu correo electrónico.'
+      );
+      setRecoveryStep('verify');
     } catch {
       setIsLoading(false);
-      setErrorMsg('No pudimos procesar tu solicitud. Por favor intenta nuevamente.');
+      setErrorMsg(
+        isEn
+          ? 'Could not send the code. Please try again.'
+          : 'No pudimos enviar el código. Inténtalo nuevamente.'
+      );
+    }
+  };
+
+  // Reenviar código OTP de 6 dígitos exclusivamente por correo
+  const handleResendRecoveryCode = async () => {
+    if (recoveryCooldown > 0) return;
+    setErrorMsg('');
+    setIsLoading(true);
+
+    try {
+      const targetEmail = (foundUserAccount?.email || recoveryEmail).trim().toLowerCase();
+      const sendRes = await safeApiCall<{
+        success: boolean;
+        error?: string;
+        message?: string;
+      }>('/api/auth/send-recovery-code', 'POST', {
+        email: targetEmail,
+      });
+
+      setIsLoading(false);
+
+      if (!sendRes?.success) {
+        setErrorMsg(
+          sendRes?.error ||
+            (isEn
+              ? 'Could not send the code. Please try again.'
+              : 'No pudimos enviar el código. Inténtalo nuevamente.')
+        );
+        return;
+      }
+
+      setRecoveryCooldown(60);
+      setRecoveryCodeInput('');
+      setErrorMsg('');
+      setSuccessMsg(
+        isEn
+          ? 'We sent a verification code to your email.'
+          : 'Enviamos un código de verificación a tu correo electrónico.'
+      );
+    } catch {
+      setIsLoading(false);
+      setErrorMsg(
+        isEn
+          ? 'Could not send the code. Please try again.'
+          : 'No pudimos enviar el código. Inténtalo nuevamente.'
+      );
     }
   };
 
   // ---------------------------------------------------------------------------
-  // 5. RECUPERAR CONTRASEÑA - PASO 2: VERIFICAR CÓDIGO
+  // 5. RECUPERAR CONTRASEÑA - PASO 3: VALIDAR CÓDIGO DE 6 DÍGITOS
   // ---------------------------------------------------------------------------
   const handleVerifyRecoveryCode = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -657,14 +776,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     const cleanCode = recoveryCodeInput.trim();
     if (!cleanCode || cleanCode.length < 6) {
-      setErrorMsg('Por favor ingresa el código completo de 6 dígitos.');
+      setErrorMsg(isEn ? 'Please enter the complete 6-digit code.' : 'Por favor ingresa el código completo de 6 dígitos.');
       return;
     }
+
+    const targetEmail = (foundUserAccount?.email || recoveryEmail).trim().toLowerCase();
 
     setIsLoading(true);
     try {
       const res = await safeApiCall<{ resetToken?: string }>('/api/auth/verify-recovery-code', 'POST', {
-        email: recoveryEmail.trim().toLowerCase(),
+        email: targetEmail,
         code: cleanCode,
       });
       setIsLoading(false);
@@ -672,17 +793,23 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       if (res.success && res.data?.resetToken) {
         setRecoveryResetToken(res.data.resetToken);
         setRecoveryStep('new_password');
+        setErrorMsg('');
+        setSuccessMsg('');
       } else {
-        setErrorMsg(res.error || 'El código ingresado es incorrecto o ha expirado.');
+        setErrorMsg(res.error || (isEn ? 'Incorrect or expired code.' : 'El código ingresado es incorrecto o ha expirado.'));
       }
     } catch {
       setIsLoading(false);
-      setErrorMsg('No fue posible validar el código. Por favor intenta nuevamente.');
+      setErrorMsg(
+        isEn
+          ? 'Could not validate the code. Please try again.'
+          : 'No fue posible validar el código. Por favor intenta nuevamente.'
+      );
     }
   };
 
   // ---------------------------------------------------------------------------
-  // 5. RECUPERAR CONTRASEÑA - PASO 3: CAMBIAR CONTRASEÑA
+  // 5. RECUPERAR CONTRASEÑA - PASO 4: RESTABLECER NUEVA CONTRASEÑA
   // ---------------------------------------------------------------------------
   const handleSetNewPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -690,30 +817,53 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setSuccessMsg('');
 
     if (!recoveryNewPassword || recoveryNewPassword.length < 6) {
-      setErrorMsg('La nueva contraseña debe tener al menos 6 caracteres.');
+      setErrorMsg(isEn ? 'Password must be at least 6 characters.' : 'La nueva contraseña debe tener al menos 6 caracteres.');
       return;
     }
 
     if (recoveryNewPassword !== recoveryConfirmNewPassword) {
-      setErrorMsg('Las contraseñas no coinciden. Por favor verifícalas.');
+      setErrorMsg(isEn ? 'Passwords do not match.' : 'Las contraseñas no coinciden. Por favor verifícalas.');
       return;
     }
 
+    const targetEmail = (foundUserAccount?.email || recoveryEmail).trim().toLowerCase();
+
     setIsLoading(true);
     try {
-      // Invalidate token and update on server
+      // Invalidate token and update on server database
       const serverRes = await safeApiCall('/api/auth/reset-password', 'POST', {
-        email: recoveryEmail.trim().toLowerCase(),
+        email: targetEmail,
         resetToken: recoveryResetToken,
         newPassword: recoveryNewPassword,
       });
 
       // Update in local persistent database
-      const localRes = await updateUserPassword(recoveryEmail.trim().toLowerCase(), recoveryNewPassword);
+      const localRes = await updateUserPassword(targetEmail, recoveryNewPassword);
       setIsLoading(false);
 
       if (serverRes.success || localRes.success) {
+        setErrorMsg('');
+        setSuccessMsg(
+          isEn
+            ? 'Password updated successfully. You can now sign in.'
+            : 'Contraseña actualizada correctamente. Ya puedes iniciar sesión.'
+        );
         setRecoveryStep('success');
+
+        // Redirige al usuario de vuelta al formulario de Inicio de Sesión
+        setTimeout(() => {
+          setLoginEmail(targetEmail);
+          setLoginPassword('');
+          setRecoveryStep('search');
+          setRecoveryQuery('');
+          setFoundUserAccount(null);
+          setRecoveryEmail('');
+          setRecoveryCodeInput('');
+          setRecoveryResetToken('');
+          setRecoveryNewPassword('');
+          setRecoveryConfirmNewPassword('');
+          setViewMode('login');
+        }, 2200);
       } else {
         setErrorMsg(serverRes.error || localRes.error || 'No pudimos actualizar la contraseña. Intenta nuevamente.');
       }
@@ -787,9 +937,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 md:p-6 bg-black/60 backdrop-blur-sm transition-opacity overflow-y-auto">
       <div
-        className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl border border-[#efeee9] overflow-hidden flex flex-col max-h-[92vh] animate-fadeIn"
+        className="relative w-full max-w-[440px] my-auto bg-white rounded-3xl shadow-2xl border border-[#efeee9] overflow-hidden flex flex-col max-h-[90vh] animate-fadeIn"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Decorative Gradient Bar */}
@@ -800,13 +950,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           onClick={onClose}
           type="button"
           aria-label="Cerrar ventana"
-          className="absolute top-4 right-4 z-10 w-9 h-9 rounded-full bg-[#f5f4ef] hover:bg-[#efeee9] text-[#414844] hover:text-[#1b1c19] flex items-center justify-center transition-colors cursor-pointer"
+          className="absolute top-3.5 right-3.5 z-10 w-9 h-9 rounded-full bg-[#f5f4ef] hover:bg-[#efeee9] text-[#414844] hover:text-[#1b1c19] flex items-center justify-center transition-colors cursor-pointer shadow-2xs"
         >
           <span className="material-symbols-outlined text-[20px]">close</span>
         </button>
 
-        {/* Scrollable Container */}
-        <div className="overflow-y-auto px-6 py-6 sm:px-8 sm:py-7">
+        {/* Scrollable Container with balanced padding */}
+        <div className="overflow-y-auto px-5 py-5 sm:px-7 sm:py-6 overscroll-contain">
           {/* ================================================================= */}
           {/* HEADER: LOGO OFICIAL DE REBORN YOUR STYLE                          */}
           {/* ================================================================= */}
@@ -821,10 +971,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             <div>
               <div className="text-center mb-6">
                 <h2 className="text-xl font-bold tracking-tight text-[#012d1d]">
-                  Bienvenido a Reborn Your Style
+                  {isEn ? 'Welcome to Reborn Your Style' : 'Bienvenido a Reborn Your Style'}
                 </h2>
                 <p className="text-xs text-[#717973] mt-1 font-medium">
-                  Transforma tus prendas. Reimagina tu estilo.
+                  {isEn ? 'Transform your garments. Reimagine your style.' : 'Transforma tus prendas. Reimagina tu estilo.'}
                 </p>
               </div>
 
@@ -832,7 +982,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 {/* [ Correo electrónico ] */}
                 <div>
                   <label className="block text-xs font-semibold text-[#414844] mb-1.5">
-                    Correo electrónico
+                    {isEn ? 'Email address' : 'Correo electrónico'}
                   </label>
                   <div className="relative">
                     <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#717973]">
@@ -843,7 +993,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       required
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
-                      placeholder="nombre@correo.com"
+                      placeholder={isEn ? 'name@example.com' : 'nombre@correo.com'}
                       autoComplete="email"
                       className="w-full pl-10 pr-4 py-2.5 bg-[#faf9f4] border border-[#e2e0d8] focus:border-[#012d1d] focus:bg-white rounded-xl text-sm text-[#1b1c19] placeholder-[#a0a5a1] outline-none transition-all"
                     />
@@ -853,7 +1003,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 {/* [ Contraseña ] */}
                 <div>
                   <label className="block text-xs font-semibold text-[#414844] mb-1.5">
-                    Contraseña
+                    {isEn ? 'Password' : 'Contraseña'}
                   </label>
                   <div className="relative">
                     <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#717973]">
@@ -889,10 +1039,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   {isLoading ? (
                     <>
                       <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span>Iniciando sesión...</span>
+                      <span>{isEn ? 'Signing in...' : 'Iniciando sesión...'}</span>
                     </>
                   ) : (
-                    <span>Iniciar sesión</span>
+                    <span>{isEn ? 'Sign in' : 'Iniciar sesión'}</span>
                   )}
                 </button>
 
@@ -903,13 +1053,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     onClick={() => {
                       setErrorMsg('');
                       setSuccessMsg('');
-                      setRecoveryEmail(loginEmail);
-                      setRecoveryStep('request');
+                      setRecoveryQuery(loginEmail);
+                      setRecoveryStep('search');
                       setViewMode('forgot_password');
                     }}
                     className="text-xs font-semibold text-[#2b694d] hover:text-[#012d1d] hover:underline transition-colors cursor-pointer"
                   >
-                    ¿Olvidaste tu contraseña?
+                    {isEn ? 'Forgot your password?' : '¿Olvidaste tu contraseña?'}
                   </button>
                 </div>
               </form>
@@ -921,7 +1071,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
                   <span className="bg-white px-3 text-[#8e918f] font-medium tracking-wider">
-                    o
+                    {isEn ? 'or' : 'o'}
                   </span>
                 </div>
               </div>
@@ -951,7 +1101,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
                   />
                 </svg>
-                <span>Continuar con Google</span>
+                <span>{isEn ? 'Continue with Google' : 'Continuar con Google'}</span>
               </button>
 
               {/* Contenedor de mensajes de estado en la parte INFERIOR del formulario */}
@@ -960,7 +1110,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               {/* “¿No tienes una cuenta?” [ Crear una cuenta ] */}
               <div className="mt-6 pt-4 border-t border-[#f0efe9] text-center">
                 <p className="text-xs text-[#717973]">
-                  ¿No tienes una cuenta?{' '}
+                  {isEn ? "Don't have an account?" : '¿No tienes una cuenta?'}{' '}
                   <button
                     type="button"
                     onClick={() => {
@@ -970,7 +1120,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     }}
                     className="font-semibold text-[#012d1d] hover:text-[#2b694d] hover:underline transition-colors cursor-pointer"
                   >
-                    Crear una cuenta
+                    {isEn ? 'Create an account' : 'Crear una cuenta'}
                   </button>
                 </p>
               </div>
@@ -986,326 +1136,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   }}
                   className="text-[11px] text-[#a0a5a1] hover:text-[#414844] transition-colors cursor-pointer"
                 >
-                  Acceso Administrativo
+                  {isEn ? 'Administrative Access' : 'Acceso Administrativo'}
                 </button>
               </div>
-            </div>
-          )}
-
-          {/* ================================================================= */}
-          {/* SCREEN 2: ACCESO Y SELECCIÓN DE CUENTA DE GOOGLE (DISPOSITIVO)    */}
-          {/* ================================================================= */}
-          {viewMode === 'google_account_picker' && (
-            <div className="py-1 space-y-4 animate-in fade-in duration-200">
-              {/* Google Brand Header */}
-              <div className="text-center space-y-2">
-                <div className="w-12 h-12 rounded-full bg-white border border-[#e2e0d8] shadow-xs flex items-center justify-center mx-auto">
-                  <svg className="w-6 h-6" viewBox="0 0 24 24">
-                    <path
-                      fill="#4285F4"
-                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                    />
-                    <path
-                      fill="#34A853"
-                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                    />
-                    <path
-                      fill="#FBBC05"
-                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                    />
-                    <path
-                      fill="#EA4335"
-                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                    />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-semibold text-[#202124] tracking-tight">
-                  Elige una cuenta
-                </h3>
-                <p className="text-xs text-[#5f6368] max-w-sm mx-auto leading-relaxed">
-                  para continuar en <strong className="text-[#202124]">Reborn Your Style</strong>
-                </p>
-              </div>
-
-              {/* Account Selection Box (Google style) */}
-              <div className="pt-1">
-                {!isUsingOtherGoogleAccount && deviceAccounts.length > 0 ? (
-                  <div className="space-y-3">
-                    <p className="text-[11px] font-medium text-[#5f6368] px-1">
-                      Cuentas activas en este dispositivo / navegador:
-                    </p>
-
-                    <div className="border border-[#dadce0] rounded-2xl overflow-hidden divide-y divide-[#f1f3f4] bg-white shadow-xs">
-                      {deviceAccounts.map((account) => (
-                        <div
-                          key={account.email}
-                          onClick={() => processGoogleEmail(account.email, account.name, account.avatarUrl)}
-                          className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-[#f8fafd] transition-colors cursor-pointer group"
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            {account.avatarUrl ? (
-                              <img
-                                src={account.avatarUrl}
-                                alt={account.name}
-                                className="w-10 h-10 rounded-full object-cover border border-[#dadce0] shrink-0"
-                              />
-                            ) : (
-                              <div className="w-10 h-10 rounded-full bg-[#012d1d] text-[#b0f1cc] font-semibold text-base flex items-center justify-center shrink-0">
-                                {account.name.charAt(0).toUpperCase()}
-                              </div>
-                            )}
-                            <div className="min-w-0 truncate">
-                              <p className="text-sm font-semibold text-[#202124] group-hover:text-[#1a73e8] transition-colors truncate">
-                                {account.name}
-                              </p>
-                              <p className="text-xs text-[#5f6368] truncate">{account.email}</p>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-1">
-                            <button
-                              type="button"
-                              title="Quitar cuenta de este dispositivo"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                removeDeviceGoogleAccount(account.email);
-                                setDeviceAccounts(getDeviceGoogleAccounts());
-                              }}
-                              className="opacity-0 group-hover:opacity-100 p-1 rounded-full hover:bg-[#e8eaed] text-[#5f6368] hover:text-[#d93025] transition-all cursor-pointer"
-                            >
-                              <span className="material-symbols-outlined text-[16px]">close</span>
-                            </button>
-                            <span className="material-symbols-outlined text-[#dadce0] group-hover:text-[#1a73e8] transition-colors text-[20px]">
-                              chevron_right
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-
-                      {/* "+ Usar otra cuenta" tile */}
-                      <div
-                        onClick={() => {
-                          setErrorMsg('');
-                          setSuccessMsg('');
-                          setIsUsingOtherGoogleAccount(true);
-                        }}
-                        className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-[#f8fafd] transition-colors cursor-pointer group"
-                      >
-                        <div className="w-10 h-10 rounded-full border border-dashed border-[#dadce0] group-hover:border-[#1a73e8] flex items-center justify-center text-[#5f6368] group-hover:text-[#1a73e8] shrink-0 transition-colors">
-                          <span className="material-symbols-outlined text-[20px]">person_add</span>
-                        </div>
-                        <div>
-                          <p className="text-sm font-semibold text-[#202124] group-hover:text-[#1a73e8] transition-colors">
-                            Usar otra cuenta de Google
-                          </p>
-                          <p className="text-xs text-[#5f6368]">
-                            Ingresar con cualquier otra cuenta de Google
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  /* Form: Ingresar otra cuenta de Google */
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      if (customGoogleEmail.trim()) {
-                        processGoogleEmail(customGoogleEmail, customGoogleName);
-                      }
-                    }}
-                    className="space-y-3.5"
-                  >
-                    <div>
-                      <label className="block text-xs font-semibold text-[#202124] mb-1.5">
-                        Correo de Google (Gmail o Workspace)
-                      </label>
-                      <input
-                        type="email"
-                        required
-                        autoFocus
-                        placeholder="tu-correo@gmail.com"
-                        value={customGoogleEmail}
-                        onChange={(e) => setCustomGoogleEmail(e.target.value)}
-                        className="w-full px-4 py-2.5 bg-white border border-[#dadce0] focus:border-[#1a73e8] focus:ring-2 focus:ring-[#1a73e8]/20 rounded-xl text-sm text-[#202124] outline-none transition-all placeholder:text-[#9aa0a6]"
-                      />
-                      <p className="text-[11px] text-[#5f6368] mt-1.5 leading-relaxed">
-                        Cualquier cuenta de Google activa podrá ingresar inmediatamente o registrarse sin restricciones ni contraseñas.
-                      </p>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-[#202124] mb-1.5">
-                        Nombre completo o perfil (opcional)
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Tu nombre completo"
-                        value={customGoogleName}
-                        onChange={(e) => setCustomGoogleName(e.target.value)}
-                        className="w-full px-4 py-2 bg-white border border-[#dadce0] focus:border-[#1a73e8] focus:ring-2 focus:ring-[#1a73e8]/20 rounded-xl text-sm text-[#202124] outline-none transition-all placeholder:text-[#9aa0a6]"
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between pt-2">
-                      {deviceAccounts.length > 0 ? (
-                        <button
-                          type="button"
-                          disabled={isLoading}
-                          onClick={() => {
-                            setErrorMsg('');
-                            setIsUsingOtherGoogleAccount(false);
-                          }}
-                          className="text-xs font-semibold text-[#1a73e8] hover:underline cursor-pointer"
-                        >
-                          ← Ver cuentas del dispositivo
-                        </button>
-                      ) : (
-                        <div />
-                      )}
-
-                      <button
-                        type="submit"
-                        disabled={isLoading || !customGoogleEmail.trim()}
-                        className="py-2.5 px-5 bg-[#012d1d] hover:bg-[#0c3927] disabled:bg-[#a0a5a1] text-white font-semibold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer ml-auto"
-                      >
-                        {isLoading ? (
-                          <>
-                            <span className="inline-block w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            <span>Iniciando sesión...</span>
-                          </>
-                        ) : (
-                          <span>Continuar con esta cuenta</span>
-                        )}
-                      </button>
-                    </div>
-                  </form>
-                )}
-              </div>
-
-              {/* Google Security & Privacy note */}
-              <div className="pt-2 text-center space-y-2 border-t border-[#f1f3f4]">
-                <p className="text-[11px] text-[#70757a] leading-relaxed">
-                  Para continuar, Google compartirá tu nombre, dirección de correo electrónico y foto de perfil con Reborn Your Style.
-                </p>
-                <div className="flex items-center justify-center gap-3 text-[11px] text-[#70757a]">
-                  <span>Español (Latinoamérica)</span>
-                  <span>•</span>
-                  <a href="#privacidad" onClick={(e) => { e.preventDefault(); }} className="hover:underline">Privacidad</a>
-                  <span>•</span>
-                  <a href="#terminos" onClick={(e) => { e.preventDefault(); }} className="hover:underline">Condiciones</a>
-                </div>
-              </div>
-
-              {renderStatusMessages()}
-
-              {/* Back button */}
-              <div className="pt-1 text-center">
-                <button
-                  type="button"
-                  disabled={isLoading}
-                  onClick={() => {
-                    setErrorMsg('');
-                    setSuccessMsg('');
-                    setViewMode('login');
-                  }}
-                  className="text-xs font-semibold text-[#717973] hover:text-[#012d1d] transition-colors cursor-pointer"
-                >
-                  ← Volver a inicio de sesión con correo y contraseña
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* ================================================================= */}
-          {/* SCREEN: CUENTA DE GOOGLE NO REGISTRADA                             */}
-          {/* ================================================================= */}
-          {viewMode === 'google_not_registered' && (
-            <div className="py-2 text-center animate-fadeIn space-y-4">
-              <div className="w-14 h-14 rounded-full bg-white border border-[#e2e0d8] shadow-xs flex items-center justify-center mx-auto mb-2">
-                <svg className="w-7 h-7" viewBox="0 0 24 24">
-                  <path
-                    fill="#4285F4"
-                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                  />
-                  <path
-                    fill="#EA4335"
-                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                  />
-                </svg>
-              </div>
-
-              <h3 className="text-lg font-bold text-[#1b1c19] px-2 leading-snug">
-                Esta cuenta de Google todavía no está registrada en Reborn Your Style.
-              </h3>
-
-              {pendingGoogleAccount && (
-                <div className="p-3 bg-[#faf9f4] border border-[#e2e0d8] rounded-xl flex items-center justify-center gap-3 max-w-xs mx-auto text-left">
-                  {pendingGoogleAccount.avatarUrl ? (
-                    <img
-                      src={pendingGoogleAccount.avatarUrl}
-                      alt={pendingGoogleAccount.name}
-                      className="w-9 h-9 rounded-full object-cover border border-[#dadce0] shrink-0"
-                    />
-                  ) : (
-                    <div className="w-9 h-9 rounded-full bg-[#012d1d] text-[#b0f1cc] text-xs font-bold flex items-center justify-center shrink-0">
-                      {pendingGoogleAccount.name.charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                  <div className="min-w-0 truncate">
-                    <p className="text-xs font-semibold text-[#1b1c19] truncate">{pendingGoogleAccount.name}</p>
-                    <p className="text-[11px] text-[#717973] truncate">{pendingGoogleAccount.email}</p>
-                  </div>
-                </div>
-              )}
-
-              <p className="text-xs text-[#717973] max-w-xs mx-auto leading-relaxed">
-                Para ingresar con Google, completa tu registro seleccionando tu tipo de cuenta.
-              </p>
-
-              {/* Botones requeridos: [ Crear una cuenta ] [ Volver ] */}
-              <div className="pt-2 space-y-2.5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setErrorMsg('');
-                    setSuccessMsg('');
-                    if (pendingGoogleAccount) {
-                      setRegisterEmail(pendingGoogleAccount.email);
-                      setRegisterName(pendingGoogleAccount.name);
-                    }
-                    setViewMode('register');
-                  }}
-                  className="w-full py-3 px-4 bg-[#012d1d] hover:bg-[#0c3927] text-white font-semibold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <span className="material-symbols-outlined text-[18px]">person_add</span>
-                  <span>Crear una cuenta</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setErrorMsg('');
-                    setSuccessMsg('');
-                    setPendingGoogleAccount(null);
-                    setViewMode('login');
-                  }}
-                  className="w-full py-2.5 px-4 bg-transparent hover:bg-[#faf9f4] border border-[#e2e0d8] text-[#414844] hover:text-[#1b1c19] font-medium text-xs rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                >
-                  <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-                  <span>Volver</span>
-                </button>
-              </div>
-
-              {renderStatusMessages()}
             </div>
           )}
 
@@ -1316,10 +1149,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             <div>
               <div className="text-center mb-5">
                 <h2 className="text-xl font-bold tracking-tight text-[#012d1d]">
-                  Crea tu cuenta
+                  {isEn ? 'Create your account' : 'Crea tu cuenta'}
                 </h2>
                 <p className="text-xs text-[#717973] mt-1 font-medium leading-relaxed">
-                  Únete a Reborn Your Style y empieza a transformar tus prendas.
+                  {isEn ? 'Join Reborn Your Style and start transforming your clothes.' : 'Únete a Reborn Your Style y empieza a transformar tus prendas.'}
                 </p>
               </div>
 
@@ -1327,7 +1160,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 {/* 1. Nombre completo */}
                 <div>
                   <label className="block text-xs font-semibold text-[#414844] mb-1">
-                    Nombre completo
+                    {isEn ? 'Full name' : 'Nombre completo'}
                   </label>
                   <div className="relative">
                     <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#717973]">
@@ -1338,7 +1171,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       required
                       value={registerName}
                       onChange={(e) => setRegisterName(e.target.value)}
-                      placeholder="Ej. Camila Rojas"
+                      placeholder={isEn ? 'E.g. Camila Rojas' : 'Ej. Camila Rojas'}
                       className="w-full pl-10 pr-4 py-2.5 bg-[#faf9f4] border border-[#e2e0d8] focus:border-[#012d1d] focus:bg-white rounded-xl text-sm text-[#1b1c19] placeholder-[#a0a5a1] outline-none transition-all"
                     />
                   </div>
@@ -1347,7 +1180,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 {/* 2. Correo electrónico */}
                 <div>
                   <label className="block text-xs font-semibold text-[#414844] mb-1">
-                    Correo electrónico
+                    {isEn ? 'Email address' : 'Correo electrónico'}
                   </label>
                   <div className="relative">
                     <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#717973]">
@@ -1358,7 +1191,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       required
                       value={registerEmail}
                       onChange={(e) => setRegisterEmail(e.target.value)}
-                      placeholder="nombre@correo.com"
+                      placeholder={isEn ? 'name@example.com' : 'nombre@correo.com'}
                       autoComplete="email"
                       className="w-full pl-10 pr-4 py-2.5 bg-[#faf9f4] border border-[#e2e0d8] focus:border-[#012d1d] focus:bg-white rounded-xl text-sm text-[#1b1c19] placeholder-[#a0a5a1] outline-none transition-all"
                     />
@@ -1368,7 +1201,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 {/* 3. Contraseña */}
                 <div>
                   <label className="block text-xs font-semibold text-[#414844] mb-1">
-                    Contraseña
+                    {isEn ? 'Password' : 'Contraseña'}
                   </label>
                   <div className="relative">
                     <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#717973]">
@@ -1379,7 +1212,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       required
                       value={registerPassword}
                       onChange={(e) => setRegisterPassword(e.target.value)}
-                      placeholder="Mínimo 6 caracteres"
+                      placeholder={isEn ? 'Minimum 6 characters' : 'Mínimo 6 caracteres'}
                       autoComplete="new-password"
                       className="w-full pl-10 pr-10 py-2.5 bg-[#faf9f4] border border-[#e2e0d8] focus:border-[#012d1d] focus:bg-white rounded-xl text-sm text-[#1b1c19] placeholder-[#a0a5a1] outline-none transition-all"
                     />
@@ -1398,7 +1231,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 {/* 4. Confirmar contraseña */}
                 <div>
                   <label className="block text-xs font-semibold text-[#414844] mb-1">
-                    Confirmar contraseña
+                    {isEn ? 'Confirm password' : 'Confirmar contraseña'}
                   </label>
                   <div className="relative">
                     <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#717973]">
@@ -1409,7 +1242,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       required
                       value={registerConfirmPassword}
                       onChange={(e) => setRegisterConfirmPassword(e.target.value)}
-                      placeholder="Repite tu contraseña"
+                      placeholder={isEn ? 'Repeat password' : 'Repite tu contraseña'}
                       autoComplete="new-password"
                       className="w-full pl-10 pr-10 py-2.5 bg-[#faf9f4] border border-[#e2e0d8] focus:border-[#012d1d] focus:bg-white rounded-xl text-sm text-[#1b1c19] placeholder-[#a0a5a1] outline-none transition-all"
                     />
@@ -1428,7 +1261,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 {/* “Selecciona tu tipo de cuenta” */}
                 <div className="pt-1">
                   <label className="block text-xs font-semibold text-[#414844] mb-1.5">
-                    Selecciona tu tipo de cuenta
+                    {isEn ? 'Select your account type' : 'Selecciona tu tipo de cuenta'}
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     <button
@@ -1441,9 +1274,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       }`}
                     >
                       <span className="material-symbols-outlined text-[20px]">person</span>
-                      <span className="text-xs font-bold">Usuario</span>
+                      <span className="text-xs font-bold">{isEn ? 'Client' : 'Usuario'}</span>
                       <span className="text-[10px] text-[#717973] font-normal leading-tight">
-                        Transformar o comprar
+                        {isEn ? 'Transform or buy' : 'Transformar o comprar'}
                       </span>
                     </button>
 
@@ -1457,9 +1290,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       }`}
                     >
                       <span className="material-symbols-outlined text-[20px]">content_cut</span>
-                      <span className="text-xs font-bold">Diseñador</span>
+                      <span className="text-xs font-bold">{isEn ? 'Tailor' : 'Diseñador'}</span>
                       <span className="text-[10px] text-[#717973] font-normal leading-tight">
-                        Ofrecer servicios
+                        {isEn ? 'Offer services' : 'Ofrecer servicios'}
                       </span>
                     </button>
                   </div>
@@ -1474,10 +1307,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   {isLoading ? (
                     <>
                       <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span>Enviando código de verificación...</span>
+                      <span>{isEn ? 'Sending verification code...' : 'Enviando código de verificación...'}</span>
                     </>
                   ) : (
-                    <span>Crear cuenta</span>
+                    <span>{isEn ? 'Create account' : 'Crear cuenta'}</span>
                   )}
                 </button>
               </form>
@@ -1489,7 +1322,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
                   <span className="bg-white px-3 text-[#8e918f] font-medium tracking-wider">
-                    o
+                    {isEn ? 'or' : 'o'}
                   </span>
                 </div>
               </div>
@@ -1519,7 +1352,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
                   />
                 </svg>
-                <span>Registrarse con Google</span>
+                <span>{isEn ? 'Sign up with Google' : 'Registrarse con Google'}</span>
               </button>
 
               {/* Contenedor de mensajes de estado en la parte INFERIOR del formulario */}
@@ -1528,7 +1361,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               {/* “¿Ya tienes una cuenta?” [ Iniciar sesión ] */}
               <div className="mt-5 pt-3.5 border-t border-[#f0efe9] text-center">
                 <p className="text-xs text-[#717973]">
-                  ¿Ya tienes una cuenta?{' '}
+                  {isEn ? 'Already have an account?' : '¿Ya tienes una cuenta?'}{' '}
                   <button
                     type="button"
                     onClick={() => {
@@ -1538,7 +1371,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     }}
                     className="font-semibold text-[#012d1d] hover:text-[#2b694d] hover:underline transition-colors cursor-pointer"
                   >
-                    Iniciar sesión
+                    {isEn ? 'Sign in' : 'Iniciar sesión'}
                   </button>
                 </p>
               </div>
@@ -1555,10 +1388,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   <span className="material-symbols-outlined text-[24px]">mark_email_read</span>
                 </div>
                 <h2 className="text-xl font-bold tracking-tight text-[#012d1d]">
-                  Verifica tu correo electrónico
+                  {isEn ? 'Verify your email address' : 'Verifica tu correo electrónico'}
                 </h2>
                 <p className="text-xs text-[#717973] mt-1.5 leading-relaxed">
-                  Enviamos un código de verificación a tu correo:{' '}
+                  {isEn ? 'We sent a verification code to your email: ' : 'Enviamos un código de verificación a tu correo: '}
                   <strong className="text-[#012d1d]">{registerEmail}</strong>
                 </p>
               </div>
@@ -1566,7 +1399,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <form onSubmit={handleVerifyRegisterCode} className="space-y-4">
                 <div>
                   <label className="block text-xs font-semibold text-[#414844] mb-2 text-center">
-                    Código de 6 dígitos
+                    {isEn ? '6-digit code' : 'Código de 6 dígitos'}
                   </label>
                   <input
                     type="text"
@@ -1589,10 +1422,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   {isLoading ? (
                     <>
                       <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span>Verificando código...</span>
+                      <span>{isEn ? 'Verifying code...' : 'Verificando código...'}</span>
                     </>
                   ) : (
-                    <span>Verificar correo</span>
+                    <span>{isEn ? 'Verify email' : 'Verificar correo'}</span>
                   )}
                 </button>
               </form>
@@ -1611,18 +1444,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   }}
                   className="hover:text-[#012d1d] transition-colors cursor-pointer"
                 >
-                  Modificar datos
+                  {isEn ? 'Edit info' : 'Modificar datos'}
                 </button>
 
                 {verificationCooldown > 0 ? (
-                  <span className="text-[#a0a5a1]">Reenviar en {verificationCooldown}s</span>
+                  <span className="text-[#a0a5a1]">
+                    {isEn ? `Resend in ${verificationCooldown}s` : `Reenviar en ${verificationCooldown}s`}
+                  </span>
                 ) : (
                   <button
                     type="button"
                     onClick={handleResendRegisterCode}
                     className="font-semibold text-[#2b694d] hover:underline cursor-pointer"
                   >
-                    Reenviar código
+                    {isEn ? 'Resend code' : 'Reenviar código'}
                   </button>
                 )}
               </div>
@@ -1630,27 +1465,29 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           )}
 
           {/* ================================================================= */}
-          {/* SCREEN 5: RECUPERAR CONTRASEÑA                                    */}
+          {/* SCREEN 5: RECUPERAR CONTRASEÑA (FLUJO TIPO FACEBOOK)              */}
           {/* ================================================================= */}
           {viewMode === 'forgot_password' && (
             <div>
-              {/* PASO 1: Ingresar correo */}
-              {recoveryStep === 'request' && (
+              {/* PASO 1: CORREO ELECTRÓNICO */}
+              {/* ============================================================= */}
+              {/* 1. INTERFAZ DE BÚSQUEDA EXCLUSIVA POR CORREO (ESTILO MINIMALISTA) */}
+              {/* ============================================================= */}
+              {recoveryStep === 'search' && (
                 <div>
                   <div className="text-center mb-5">
                     <h2 className="text-xl font-bold tracking-tight text-[#012d1d]">
-                      Recupera tu contraseña
+                      {isEn ? 'Find your account' : 'Encuentra tu cuenta'}
                     </h2>
                     <p className="text-xs text-[#717973] mt-1.5 leading-relaxed">
-                      Introduce el correo asociado a tu cuenta y te enviaremos un código de verificación.
+                      {isEn
+                        ? 'Enter the email address associated with your account.'
+                        : 'Ingresa la dirección de correo electrónico asociada a tu cuenta.'}
                     </p>
                   </div>
 
-                  <form onSubmit={handleRequestRecoveryCode} className="space-y-4">
+                  <form onSubmit={handleSearchAccount} className="space-y-4">
                     <div>
-                      <label className="block text-xs font-semibold text-[#414844] mb-1.5">
-                        Correo electrónico
-                      </label>
                       <div className="relative">
                         <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#717973]">
                           <span className="material-symbols-outlined text-[18px]">mail</span>
@@ -1658,16 +1495,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         <input
                           type="email"
                           required
-                          value={recoveryEmail}
-                          onChange={(e) => setRecoveryEmail(e.target.value)}
-                          placeholder="nombre@correo.com"
+                          value={recoveryQuery}
+                          onChange={(e) => setRecoveryQuery(e.target.value)}
+                          placeholder={
+                            isEn
+                              ? 'Email address (e.g. user@gmail.com)'
+                              : 'Correo electrónico (ej. usuario@gmail.com)'
+                          }
                           autoFocus
-                          className="w-full pl-10 pr-4 py-2.5 bg-[#faf9f4] border border-[#e2e0d8] focus:border-[#012d1d] focus:bg-white rounded-xl text-sm text-[#1b1c19] placeholder-[#a0a5a1] outline-none transition-all"
+                          className="w-full pl-10 pr-4 py-3 bg-[#faf9f4] border border-[#e2e0d8] focus:border-[#012d1d] focus:bg-white rounded-xl text-sm text-[#1b1c19] placeholder-[#a0a5a1] outline-none transition-all font-medium"
                         />
                       </div>
                     </div>
 
-                    {/* [ Enviar código ] */}
+                    {/* [ Continuar ] Botón de acción */}
                     <button
                       type="submit"
                       disabled={isLoading}
@@ -1676,47 +1517,107 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       {isLoading ? (
                         <>
                           <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          <span>Verificando cuenta...</span>
+                          <span>{isEn ? 'Searching...' : 'Buscando cuenta...'}</span>
                         </>
                       ) : (
-                        <span>Enviar código</span>
+                        <span>{isEn ? 'Continue' : 'Continuar'}</span>
                       )}
+                    </button>
+
+                    {/* [ Regresar al inicio de sesión ] */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setErrorMsg('');
+                        setSuccessMsg('');
+                        setViewMode('login');
+                      }}
+                      className="w-full py-2.5 px-4 bg-transparent hover:bg-[#f0efe9] text-[#717973] hover:text-[#1b1c19] font-medium text-xs rounded-xl transition-all flex items-center justify-center cursor-pointer"
+                    >
+                      <span>{isEn ? 'Back to sign in' : 'Regresar al inicio de sesión'}</span>
                     </button>
                   </form>
                 </div>
               )}
 
-              {/* PASO 2: Ingresar código de 6 dígitos */}
+              {/* ============================================================= */}
+              {/* PASO 2: INGRESO DE CÓDIGO OTP (6 DÍGITOS)                     */}
+              {/* ============================================================= */}
               {recoveryStep === 'verify' && (
                 <div>
                   <div className="text-center mb-5">
                     <h2 className="text-xl font-bold tracking-tight text-[#012d1d]">
-                      Recupera tu contraseña
+                      {isEn ? 'Verification code' : 'Código de verificación'}
                     </h2>
                     <p className="text-xs text-[#717973] mt-1.5 leading-relaxed">
-                      Introduce el código que enviamos a tu correo:{' '}
-                      <strong className="text-[#012d1d]">{recoveryEmail}</strong>
+                      {isEn
+                        ? 'We have sent a 6-digit code to your email address.'
+                        : 'Hemos enviado un código de 6 dígitos a tu correo electrónico.'}
                     </p>
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-[#012d1d] text-xs font-semibold rounded-full mt-2 border border-emerald-200/80">
+                      <span className="material-symbols-outlined text-[15px] text-[#2b694d]">mail</span>
+                      <span>
+                        {isEn
+                          ? `Sent code to ${maskEmailAddress(foundUserAccount?.email || recoveryEmail)}`
+                          : `Enviamos un código a ${maskEmailAddress(foundUserAccount?.email || recoveryEmail)}`}
+                      </span>
+                    </div>
                   </div>
 
                   <form onSubmit={handleVerifyRecoveryCode} className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-[#414844] mb-2 text-center">
-                        Código de 6 dígitos
-                      </label>
-                      <input
-                        type="text"
-                        maxLength={6}
-                        required
-                        value={recoveryCodeInput}
-                        onChange={(e) => setRecoveryCodeInput(e.target.value.replace(/[^0-9]/g, ''))}
-                        placeholder="••••••"
-                        autoFocus
-                        className="w-full text-center tracking-[0.5em] font-mono font-bold text-2xl py-3 bg-[#faf9f4] border border-[#e2e0d8] focus:border-[#012d1d] focus:bg-white rounded-xl text-[#012d1d] placeholder-[#a0a5a1] outline-none transition-all shadow-inner"
-                      />
+
+                    {/* Casilla estilizada para 6 dígitos numéricos */}
+                    <div className="space-y-1.5">
+                      <div
+                        className="relative cursor-text"
+                        onClick={() => otpInputRef.current?.focus()}
+                      >
+                        <div className="grid grid-cols-6 gap-2 sm:gap-2.5">
+                          {[0, 1, 2, 3, 4, 5].map((idx) => {
+                            const val = recoveryCodeInput[idx] || '';
+                            const isCurrent = recoveryCodeInput.length === idx;
+                            const isFilled = Boolean(val);
+                            return (
+                              <div
+                                key={idx}
+                                className={`h-13 sm:h-14 flex items-center justify-center text-xl sm:text-2xl font-bold font-mono rounded-xl border-2 transition-all ${
+                                  isCurrent
+                                    ? 'border-[#012d1d] bg-white ring-2 ring-[#012d1d]/15 shadow-sm text-[#012d1d]'
+                                    : isFilled
+                                    ? 'border-[#012d1d]/40 bg-[#faf9f4] text-[#012d1d]'
+                                    : 'border-[#e2e0d8] bg-[#faf9f4] text-[#a0a5a1]'
+                                }`}
+                              >
+                                {val ? (
+                                  <span>{val}</span>
+                                ) : (
+                                  <span className="w-1.5 h-1.5 rounded-full bg-[#c0c5c1]" />
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* Hidden input taking full area so user clicks anywhere to type/paste */}
+                        <input
+                          ref={otpInputRef}
+                          type="tel"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          maxLength={6}
+                          autoFocus
+                          value={recoveryCodeInput}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 6);
+                            setRecoveryCodeInput(val);
+                          }}
+                          className="absolute inset-0 opacity-0 w-full h-full cursor-pointer text-transparent"
+                          aria-label={isEn ? '6-digit verification code' : 'Código de verificación de 6 dígitos'}
+                        />
+                      </div>
                     </div>
 
-                    {/* [ Verificar código ] */}
+                    {/* [ Validar código ] Botón */}
                     <button
                       type="submit"
                       disabled={isLoading || recoveryCodeInput.length < 6}
@@ -1725,47 +1626,58 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       {isLoading ? (
                         <>
                           <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          <span>Verificando...</span>
+                          <span>{isEn ? 'Validating...' : 'Validando código...'}</span>
                         </>
                       ) : (
-                        <span>Verificar código</span>
+                        <span>{isEn ? 'Validate code' : 'Validar código'}</span>
                       )}
                     </button>
                   </form>
 
+                  {/* Enlaces y botones: [ Reenviar código ] (con temporizador activo de 60s) */}
                   <div className="mt-4 flex items-center justify-between text-xs text-[#717973] pt-2">
                     <button
                       type="button"
-                      onClick={() => setRecoveryStep('request')}
+                      onClick={() => {
+                        setErrorMsg('');
+                        setSuccessMsg('');
+                        setRecoveryStep('search');
+                      }}
                       className="hover:text-[#012d1d] transition-colors cursor-pointer"
                     >
-                      Cambiar correo
+                      {isEn ? 'Search another account' : 'Buscar otra cuenta'}
                     </button>
 
                     {recoveryCooldown > 0 ? (
-                      <span className="text-[#a0a5a1]">Reenviar en {recoveryCooldown}s</span>
+                      <span className="text-[#717973] font-medium bg-[#f0efe9] px-2.5 py-1 rounded-md">
+                        {isEn ? `Resend code (${recoveryCooldown}s)` : `Reenviar código (${recoveryCooldown}s)`}
+                      </span>
                     ) : (
                       <button
                         type="button"
-                        onClick={handleRequestRecoveryCode}
+                        onClick={handleResendRecoveryCode}
                         className="font-semibold text-[#2b694d] hover:underline cursor-pointer"
                       >
-                        Reenviar código
+                        {isEn ? 'Resend code' : 'Reenviar código'}
                       </button>
                     )}
                   </div>
                 </div>
               )}
 
-              {/* PASO 3: Crea una nueva contraseña */}
+              {/* ============================================================= */}
+              {/* PASO 3: RESTABLECIMIENTO DE CONTRASEÑA                        */}
+              {/* ============================================================= */}
               {recoveryStep === 'new_password' && (
                 <div>
                   <div className="text-center mb-5">
                     <h2 className="text-xl font-bold tracking-tight text-[#012d1d]">
-                      Crea una nueva contraseña
+                      {isEn ? 'Create your new password' : 'Crea tu nueva contraseña'}
                     </h2>
                     <p className="text-xs text-[#717973] mt-1.5 leading-relaxed">
-                      Define una nueva contraseña segura para tu cuenta.
+                      {isEn
+                        ? 'Enter and confirm your new password (minimum 6 characters).'
+                        : 'Ingresa y confirma tu nueva contraseña (mínimo 6 caracteres).'}
                     </p>
                   </div>
 
@@ -1773,7 +1685,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     {/* [ Nueva contraseña ] */}
                     <div>
                       <label className="block text-xs font-semibold text-[#414844] mb-1">
-                        Nueva contraseña
+                        {isEn ? 'New password' : 'Nueva contraseña'}
                       </label>
                       <div className="relative">
                         <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#717973]">
@@ -1784,7 +1696,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                           required
                           value={recoveryNewPassword}
                           onChange={(e) => setRecoveryNewPassword(e.target.value)}
-                          placeholder="Mínimo 6 caracteres"
+                          placeholder={isEn ? 'New password (min. 6 characters)' : 'Nueva contraseña (mínimo 6 caracteres)'}
                           autoFocus
                           className="w-full pl-10 pr-10 py-2.5 bg-[#faf9f4] border border-[#e2e0d8] focus:border-[#012d1d] focus:bg-white rounded-xl text-sm text-[#1b1c19] placeholder-[#a0a5a1] outline-none transition-all"
                         />
@@ -1803,7 +1715,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     {/* [ Confirmar nueva contraseña ] */}
                     <div>
                       <label className="block text-xs font-semibold text-[#414844] mb-1">
-                        Confirmar nueva contraseña
+                        {isEn ? 'Confirm new password' : 'Confirmar nueva contraseña'}
                       </label>
                       <div className="relative">
                         <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#717973]">
@@ -1814,7 +1726,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                           required
                           value={recoveryConfirmNewPassword}
                           onChange={(e) => setRecoveryConfirmNewPassword(e.target.value)}
-                          placeholder="Repite la nueva contraseña"
+                          placeholder={isEn ? 'Confirm new password' : 'Confirmar nueva contraseña'}
                           className="w-full pl-10 pr-10 py-2.5 bg-[#faf9f4] border border-[#e2e0d8] focus:border-[#012d1d] focus:bg-white rounded-xl text-sm text-[#1b1c19] placeholder-[#a0a5a1] outline-none transition-all"
                         />
                         <button
@@ -1829,7 +1741,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       </div>
                     </div>
 
-                    {/* [ Cambiar contraseña ] */}
+                    {/* [ Actualizar contraseña ] Botón */}
                     <button
                       type="submit"
                       disabled={isLoading}
@@ -1838,10 +1750,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       {isLoading ? (
                         <>
                           <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          <span>Actualizando contraseña...</span>
+                          <span>{isEn ? 'Updating...' : 'Actualizando...'}</span>
                         </>
                       ) : (
-                        <span>Cambiar contraseña</span>
+                        <span>{isEn ? 'Update password' : 'Actualizar contraseña'}</span>
                       )}
                     </button>
                   </form>
@@ -1855,15 +1767,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     <span className="material-symbols-outlined text-[28px]">check_circle</span>
                   </div>
                   <h3 className="text-lg font-bold text-[#012d1d]">
-                    Tu contraseña se ha actualizado correctamente.
+                    {isEn
+                      ? 'Password updated successfully'
+                      : 'Contraseña actualizada correctamente'}
                   </h3>
                   <p className="text-xs text-[#717973] leading-relaxed">
-                    Ya puedes utilizar tu nueva contraseña para iniciar sesión en tu cuenta de Reborn Your Style.
+                    {isEn
+                      ? 'You can now return to sign in to your Reborn Your Style account.'
+                      : 'Ya puedes regresar al inicio de sesión con tu nueva contraseña.'}
                   </p>
                   <button
                     type="button"
                     onClick={() => {
-                      setLoginEmail(recoveryEmail);
+                      setLoginEmail(foundUserAccount?.email || recoveryEmail);
                       setLoginPassword('');
                       setErrorMsg('');
                       setSuccessMsg('');
@@ -1871,7 +1787,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     }}
                     className="w-full mt-2 py-3 px-4 bg-[#012d1d] hover:bg-[#0c3927] text-white font-semibold text-sm rounded-xl shadow-md transition-all cursor-pointer"
                   >
-                    Iniciar sesión
+                    {isEn ? 'Back to sign in' : 'Regresar al inicio de sesión'}
                   </button>
                 </div>
               )}
@@ -1892,7 +1808,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     className="text-xs font-semibold text-[#012d1d] hover:text-[#2b694d] hover:underline transition-colors flex items-center justify-center gap-1 mx-auto cursor-pointer"
                   >
                     <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-                    <span>Volver al inicio de sesión</span>
+                    <span>{isEn ? 'Back to sign in' : 'Volver al inicio de sesión'}</span>
                   </button>
                 </div>
               )}

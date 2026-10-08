@@ -1,5 +1,6 @@
 import React from 'react';
 import { ToastMessage } from '../types';
+import { useThemeLanguage } from '../context/ThemeLanguageContext';
 
 interface ToastProps {
   toasts: ToastMessage[];
@@ -7,6 +8,9 @@ interface ToastProps {
 }
 
 export const Toast: React.FC<ToastProps> = ({ toasts, onDismiss }) => {
+  const { language } = useThemeLanguage();
+  const isEn = language === 'en';
+
   if (toasts.length === 0) return null;
 
   return (
@@ -35,8 +39,8 @@ export const Toast: React.FC<ToastProps> = ({ toasts, onDismiss }) => {
             </div>
             <button
               onClick={() => onDismiss(toast.id)}
-              className="text-white/70 hover:text-white transition-colors shrink-0 p-1"
-              aria-label="Cerrar notificación"
+              className="text-white/70 hover:text-white transition-colors shrink-0 p-1 cursor-pointer"
+              aria-label={isEn ? 'Dismiss notification' : 'Cerrar notificación'}
             >
               <span className="material-symbols-outlined text-lg">close</span>
             </button>

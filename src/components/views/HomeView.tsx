@@ -21,7 +21,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   onNavigateToDesigners,
   onSelectCategory
 }) => {
-  const { t } = useThemeLanguage();
+  const { t, tCategory, language } = useThemeLanguage();
 
   return (
     <div className="flex flex-col w-full animate-in fade-in pb-16">
@@ -29,10 +29,10 @@ export const HomeView: React.FC<HomeViewProps> = ({
       {/* 1. HERO SECTION - Clean, Responsive Proportions, No Cut-off Buttons        */}
       {/* ========================================================================= */}
       <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 lg:py-20 flex flex-col lg:flex-row items-center gap-10 lg:gap-14">
-        {/* Left Column: Brand, Pitch & Primary CTAs */}
+        {/* Left Column: Brand, Pitch & Primary CTAs with Staggered Entrance */}
         <div className="flex-1 flex flex-col gap-6 sm:gap-7 items-start w-full">
-          {/* Badge */}
-          <div className="flex flex-wrap items-center gap-3">
+          {/* Badge (Stagger 1) */}
+          <div className="flex flex-wrap items-center gap-3 animate-stagger-1">
             <BrandLogo size="xs" variant="emblem" />
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#b0f1cc]/50 dark:bg-[#112920] text-[#002113] dark:text-[#b0f1cc] text-xs sm:text-sm font-bold border border-[#2b694d]/30 shadow-2xs">
               <span className="material-symbols-outlined text-base">recycling</span>
@@ -40,22 +40,22 @@ export const HomeView: React.FC<HomeViewProps> = ({
             </div>
           </div>
 
-          {/* Headline - Responsive typography with clamp(1.8rem, 4vw, 2.8rem) */}
+          {/* Headline (Stagger 2) - Responsive typography with clamp(1.8rem, 4vw, 2.8rem) */}
           <h1
             style={{ fontSize: 'clamp(1.8rem, 4vw, 2.8rem)' }}
-            className="font-headline font-black text-[#012d1d] dark:text-white leading-[1.15] tracking-tight"
+            className="font-headline font-black text-[#012d1d] dark:text-white leading-[1.15] tracking-tight animate-stagger-2 text-hover-lift"
           >
             {t('hero.title_pre')}
             <span className="text-[#2b694d] dark:text-[#b0f1cc]">{t('hero.title_highlight')}</span>
           </h1>
 
-          {/* Subtitle - Increased readability and spacing */}
-          <p className="text-base sm:text-lg text-[#414844] dark:text-[#a7b8ae] leading-relaxed max-w-2xl font-normal">
+          {/* Subtitle (Stagger 2) - Increased readability and spacing */}
+          <p className="text-base sm:text-lg text-[#414844] dark:text-[#a7b8ae] leading-relaxed max-w-2xl font-normal animate-stagger-2">
             {t('hero.desc')}
           </p>
 
-          {/* Action Buttons - Fully responsive, width 100% on mobile, max-width on desktop, no overflow */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 sm:gap-4 w-full sm:w-auto pt-2 overflow-hidden">
+          {/* Action Buttons (Stagger 3) - Fully responsive, width 100% on mobile, max-width on desktop */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 sm:gap-4 w-full sm:w-auto pt-2 overflow-hidden animate-stagger-3">
             <button
               onClick={() => onNavigate('costureros')}
               className="btn-interactive w-full sm:w-auto max-w-full sm:max-w-xs bg-[#012d1d] hover:bg-[#1b4332] active:bg-[#002113] text-white font-bold text-sm sm:text-base px-7 py-4 rounded-2xl shadow-md flex items-center justify-center gap-2.5 transition-all cursor-pointer whitespace-nowrap"
@@ -82,8 +82,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
           </div>
         </div>
 
-        {/* Right Column: Hero Visual Showcase */}
-        <div className="w-full lg:flex-1 h-80 sm:h-[440px] lg:h-[480px] rounded-3xl overflow-hidden shadow-2xl relative border border-[#c1c8c2]/40 dark:border-[#2b694d]/40 bg-[#102b1e]">
+        {/* Right Column: Hero Visual Showcase (Stagger 2) */}
+        <div className="w-full lg:flex-1 h-80 sm:h-[440px] lg:h-[480px] rounded-3xl overflow-hidden shadow-2xl relative border border-[#c1c8c2]/40 dark:border-[#2b694d]/40 bg-[#102b1e] animate-stagger-2">
           <img
             className="w-full h-full object-cover opacity-90 transition-transform duration-700 hover:scale-105"
             alt="Moda circular y transformación textil Reborn Your Style"
@@ -155,8 +155,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   {cat.icon}
                 </span>
               </div>
-              <span className="text-xs sm:text-sm font-bold text-[#012d1d] dark:text-white group-hover:text-[#2b694d] dark:group-hover:text-[#b0f1cc] transition-colors truncate w-full">
-                {cat.name}
+              <span className="text-xs sm:text-sm font-bold text-[#012d1d] dark:text-white group-hover:text-[#2b694d] dark:group-hover:text-[#b0f1cc] transition-colors truncate w-full text-hover-lift">
+                {tCategory(cat.name)}
               </span>
             </button>
           ))}
@@ -175,14 +175,14 @@ export const HomeView: React.FC<HomeViewProps> = ({
               </span>
               <h2
                 style={{ fontSize: 'clamp(1.4rem, 3vw, 2rem)' }}
-                className="font-headline font-bold text-[#012d1d] dark:text-white mt-1 leading-snug"
+                className="font-headline font-bold text-[#012d1d] dark:text-white mt-1 leading-snug animate-fade-in-down"
               >
                 {t('home.wardrobe_title')}
               </h2>
             </div>
             <button
               onClick={() => onNavigate('mi-estudio')}
-              className="text-sm font-bold text-[#2b694d] dark:text-[#b0f1cc] hover:text-[#012d1d] dark:hover:text-white flex items-center gap-1.5 cursor-pointer self-start md:self-end"
+              className="text-sm font-bold text-[#2b694d] dark:text-[#b0f1cc] hover:text-[#012d1d] dark:hover:text-white flex items-center gap-1.5 cursor-pointer self-start md:self-end text-hover-lift"
             >
               <span>{t('home.wardrobe_link')}</span>
               <span className="material-symbols-outlined text-base">chevron_right</span>
@@ -196,18 +196,18 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 <div className="w-14 h-14 rounded-2xl bg-[#f5f4ef] dark:bg-[#112920] flex items-center justify-center text-[#012d1d] dark:text-[#b0f1cc]">
                   <span className="material-symbols-outlined text-3xl">inventory_2</span>
                 </div>
-                <h3 className="font-headline font-bold text-xl sm:text-2xl text-[#012d1d] dark:text-white">
-                  Inventario Protegido
+                <h3 className="font-headline font-bold text-xl sm:text-2xl text-[#012d1d] dark:text-white text-hover-lift">
+                  {t('home.card1_title')}
                 </h3>
                 <p className="text-sm sm:text-base text-[#414844] dark:text-[#a7b8ae] leading-relaxed">
-                  Registra tus prendas en desuso, fotos de detalle y solicitudes de transformación dentro de tu espacio privado y confidencial.
+                  {t('home.card1_desc')}
                 </p>
               </div>
               <button
                 onClick={() => onNavigate('publicar-prenda')}
-                className="text-sm font-bold text-[#2b694d] dark:text-[#b0f1cc] hover:text-[#012d1d] dark:hover:text-white flex items-center gap-1 pt-4 border-t border-[#efeee9] dark:border-[#173328] cursor-pointer"
+                className="text-sm font-bold text-[#2b694d] dark:text-[#b0f1cc] hover:text-[#012d1d] dark:hover:text-white flex items-center gap-1 pt-4 border-t border-[#efeee9] dark:border-[#173328] cursor-pointer text-hover-lift"
               >
-                <span>Registrar nueva prenda →</span>
+                <span>{t('home.card1_btn')}</span>
               </button>
             </div>
 
@@ -217,18 +217,18 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 <div className="w-14 h-14 rounded-2xl bg-[#f5f4ef] dark:bg-[#112920] flex items-center justify-center text-[#012d1d] dark:text-[#b0f1cc]">
                   <span className="material-symbols-outlined text-3xl">chat_bubble</span>
                 </div>
-                <h3 className="font-headline font-bold text-xl sm:text-2xl text-[#012d1d] dark:text-white">
-                  Conversaciones Directas
+                <h3 className="font-headline font-bold text-xl sm:text-2xl text-[#012d1d] dark:text-white text-hover-lift">
+                  {t('home.card2_title')}
                 </h3>
                 <p className="text-sm sm:text-base text-[#414844] dark:text-[#a7b8ae] leading-relaxed">
-                  Comunícate exclusivamente con el modista asignado a tu proyecto para acordar medidas, presupuesto y avances sin intermediarios.
+                  {t('home.card2_desc')}
                 </p>
               </div>
               <button
                 onClick={() => onNavigate('mensajes')}
-                className="text-sm font-bold text-[#2b694d] dark:text-[#b0f1cc] hover:text-[#012d1d] dark:hover:text-white flex items-center gap-1 pt-4 border-t border-[#efeee9] dark:border-[#173328] cursor-pointer"
+                className="text-sm font-bold text-[#2b694d] dark:text-[#b0f1cc] hover:text-[#012d1d] dark:hover:text-white flex items-center gap-1 pt-4 border-t border-[#efeee9] dark:border-[#173328] cursor-pointer text-hover-lift"
               >
-                <span>Mis mensajes y solicitudes →</span>
+                <span>{t('home.card2_btn')}</span>
               </button>
             </div>
 
@@ -238,18 +238,18 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 <div className="w-14 h-14 rounded-2xl bg-[#f5f4ef] dark:bg-[#112920] flex items-center justify-center text-[#012d1d] dark:text-[#b0f1cc]">
                   <span className="material-symbols-outlined text-3xl">eco</span>
                 </div>
-                <h3 className="font-headline font-bold text-xl sm:text-2xl text-[#012d1d] dark:text-white">
-                  Impacto Ambiental Medible
+                <h3 className="font-headline font-bold text-xl sm:text-2xl text-[#012d1d] dark:text-white text-hover-lift">
+                  {t('home.card3_title')}
                 </h3>
                 <p className="text-sm sm:text-base text-[#414844] dark:text-[#a7b8ae] leading-relaxed">
-                  Calcula los litros de agua y kilogramos de CO2 ahorrados en cada transformación textil realizada en territorio colombiano.
+                  {t('home.card3_desc')}
                 </p>
               </div>
               <button
                 onClick={() => onNavigate('inspiracion')}
-                className="text-sm font-bold text-[#2b694d] dark:text-[#b0f1cc] hover:text-[#012d1d] dark:hover:text-white flex items-center gap-1 pt-4 border-t border-[#efeee9] dark:border-[#173328] cursor-pointer"
+                className="text-sm font-bold text-[#2b694d] dark:text-[#b0f1cc] hover:text-[#012d1d] dark:hover:text-white flex items-center gap-1 pt-4 border-t border-[#efeee9] dark:border-[#173328] cursor-pointer text-hover-lift"
               >
-                <span>Ver guía de sostenibilidad →</span>
+                <span>{t('home.card3_btn')}</span>
               </button>
             </div>
           </div>
@@ -266,7 +266,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           </span>
           <h2
             style={{ fontSize: 'clamp(1.4rem, 3vw, 2rem)' }}
-            className="font-headline font-bold text-[#012d1d] dark:text-white leading-snug"
+            className="font-headline font-bold text-[#012d1d] dark:text-white leading-snug animate-fade-in-down"
           >
             {t('home.how_title')}
           </h2>
@@ -275,30 +275,30 @@ export const HomeView: React.FC<HomeViewProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {[
             {
-              step: 'Paso 1',
-              title: 'Sube tu prenda o proyecto',
-              desc: 'Comparte fotos de esa prenda en tu armario y describe la idea o transformación que imaginas.',
+              step: language === 'en' ? 'Step 1' : 'Paso 1',
+              title: t('home.step1_title'),
+              desc: t('home.step1_desc'),
               icon: 'photo_camera',
               action: () => onNavigate('publicar-prenda')
             },
             {
-              step: 'Paso 2',
-              title: 'Elige tu diseñador o taller',
-              desc: 'Explora perfiles de diseñadores y modistas certificados en Colombia y solicita una cotización.',
+              step: language === 'en' ? 'Step 2' : 'Paso 2',
+              title: t('home.step2_title'),
+              desc: t('home.step2_desc'),
               icon: 'person_pin_circle',
               action: () => onNavigate('costureros')
             },
             {
-              step: 'Paso 3',
-              title: 'Confección y rediseño',
-              desc: 'Coordina detalles, medidas y técnicas sostenibles directamente por el chat interno.',
+              step: language === 'en' ? 'Step 3' : 'Paso 3',
+              title: t('home.step3_title'),
+              desc: t('home.step3_desc'),
               icon: 'content_cut',
               action: () => onNavigate('mensajes')
             },
             {
-              step: 'Paso 4',
-              title: 'Estrena y genera impacto',
-              desc: 'Recibe una pieza única de moda circular con huella de agua y carbono positiva para el planeta.',
+              step: language === 'en' ? 'Step 4' : 'Paso 4',
+              title: t('home.step4_title'),
+              desc: t('home.step4_desc'),
               icon: 'eco',
               action: () => onNavigate('inspiracion')
             }
@@ -315,7 +315,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 <span className="text-xs font-bold text-[#2b694d] dark:text-[#b0f1cc] uppercase tracking-wider block">
                   {item.step}
                 </span>
-                <h3 className="font-headline font-bold text-lg text-[#012d1d] dark:text-white">
+                <h3 className="font-headline font-bold text-lg text-[#012d1d] dark:text-white text-hover-lift">
                   {item.title}
                 </h3>
                 <p className="text-sm text-[#414844] dark:text-[#a7b8ae] leading-relaxed">
@@ -323,7 +323,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 </p>
               </div>
               <span className="text-sm font-bold text-[#2b694d] dark:text-[#b0f1cc] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                <span>Comenzar</span>
+                <span>{language === 'en' ? 'Start' : 'Comenzar'}</span>
                 <span className="material-symbols-outlined text-sm">arrow_forward</span>
               </span>
             </div>

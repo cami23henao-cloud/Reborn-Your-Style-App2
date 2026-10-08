@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 import { sendRecoveryCodeEmail } from '../services/mailer';
 
 // JWT Secret Key from server environment
@@ -275,43 +276,89 @@ export const forgotPassword = async (req: Request, res: Response) => {
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   try {
     const { email } = req.body;
-    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanEmail = (email || '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim().toLowerCase();
 
     if (!cleanEmail || !cleanEmail.includes('@')) {
       return res.status(200).json({
         success: false,
+        error: 'Por favor ingresa un correo electrónico válido.',
         message: 'Por favor ingresa un correo electrónico válido.',
       });
     }
 
-    // Generate 6-digit numeric recovery code
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    // Check if account exists in database
+    const user = usersStore.get(cleanEmail);
+    const exists =
+      Boolean(user) ||
+      cleanEmail === 'admin@rebornyourstyle.com' ||
+      cleanEmail === 'admin@rebornstyle.co' ||
+      cleanEmail === 'alex.moreno@rebornyourstyle.co' ||
+      cleanEmail === 'cami23henao@gmail.com';
+
+    if (!exists) {
+      return res.status(200).json({
+        success: false,
+        exists: false,
+        error: 'No existe una cuenta asociada a este correo electrónico.',
+        message: 'No existe una cuenta asociada a este correo electrónico.',
+      });
+    }
+
+    // Generate cryptographically secure 6-digit numeric recovery code (valid for 15 minutes)
+    const code = crypto.randomInt(100000, 1000000).toString();
+    const codeHash = crypto.createHash('sha256').update(code).digest('hex');
     const expiresAt = Date.now() + 15 * 60 * 1000; // 15 minutes
 
-    recoveryCodesStore.set(cleanEmail, {
-      code,
-      expiresAt,
-      attempts: 0,
-    });
+    const existingRecord = recoveryCodesStore.get(cleanEmail);
+    if (existingRecord && existingRecord.lastRequestedAt && Date.now() - existingRecord.lastRequestedAt < 60000) {
+      return res.status(200).json({
+        success: false,
+        error: 'Por favor espera un minuto antes de solicitar un nuevo código de verificación.',
+        message: 'Por favor espera un minuto antes de solicitar un nuevo código de verificación.',
+      });
+    }
 
     try {
       await sendRecoveryCodeEmail(cleanEmail, code);
+
+      recoveryCodesStore.set(cleanEmail, {
+        code: '',
+        codeHash,
+        expiresAt,
+        attempts: 0,
+        lastRequestedAt: Date.now(),
+        purpose: 'recovery',
+      } as any);
+
+      // Save hash directly to the user in database
+      if (user) {
+        user.reset_code_hash = codeHash;
+        user.reset_expires_at = new Date(expiresAt).toISOString();
+        delete user.reset_code;
+        usersStore.set(cleanEmail, user);
+        savePersistedUsers();
+      }
+
       return res.status(200).json({
         success: true,
-        message: 'Código de recuperación enviado a tu correo electrónico.',
+        exists: true,
+        message: 'Enviamos un código de verificación a tu correo electrónico.',
+        expiresInMinutes: 15,
       });
     } catch (mailError: any) {
       console.warn('[SMTP Notice] Mailer could not send email:', mailError.message);
       return res.status(200).json({
         success: false,
-        message: 'El servidor requiere la configuración de las variables de entorno SMTP (SMTP_HOST, SMTP_USER, SMTP_PASS) para realizar el envío real.',
+        error: 'No pudimos enviar el código. Inténtalo nuevamente.',
+        message: 'No pudimos enviar el código. Inténtalo nuevamente.',
       });
     }
   } catch (error: any) {
     console.error('[AuthController.forgotPassword Error]:', error.message);
     return res.status(200).json({
       success: false,
-      message: 'No pudimos procesar la recuperación de contraseña.',
+      error: 'No pudimos enviar el código. Inténtalo nuevamente.',
+      message: 'No pudimos enviar el código. Inténtalo nuevamente.',
     });
   }
 };
@@ -324,39 +371,99 @@ export const verifyRecoveryCode = async (req: Request, res: Response) => {
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   try {
     const { email, code } = req.body;
-    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanEmail = (email || '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim().toLowerCase();
     const cleanCode = (code || '').trim();
 
-    const record = recoveryCodesStore.get(cleanEmail);
-    if (!record) {
+    if (!cleanEmail || !cleanCode || cleanCode.length !== 6) {
       return res.status(200).json({
         success: false,
+        error: 'Por favor ingresa el código de 6 dígitos completo.',
+        message: 'Por favor ingresa el código de 6 dígitos completo.',
+      });
+    }
+
+    const record = recoveryCodesStore.get(cleanEmail) as any;
+    const user = usersStore.get(cleanEmail);
+
+    const validHash = record?.codeHash || user?.reset_code_hash;
+    const validExpiry = record?.expiresAt || (user?.reset_expires_at ? new Date(user.reset_expires_at).getTime() : 0);
+
+    if (!validHash) {
+      return res.status(200).json({
+        success: false,
+        error: 'No hay un código pendiente para este correo o ya fue utilizado.',
         message: 'No hay un código pendiente para este correo o ya fue utilizado.',
       });
     }
 
-    if (Date.now() > record.expiresAt) {
+    if (Date.now() > validExpiry) {
       recoveryCodesStore.delete(cleanEmail);
+      if (user) {
+        user.reset_code_hash = '';
+        savePersistedUsers();
+      }
       return res.status(200).json({
         success: false,
+        error: 'El código de recuperación ha expirado. Por favor solicita uno nuevo.',
         message: 'El código de recuperación ha expirado. Por favor solicita uno nuevo.',
       });
     }
 
-    if (record.code !== cleanCode) {
-      record.attempts += 1;
+    if (record && record.attempts >= 5) {
+      recoveryCodesStore.delete(cleanEmail);
+      if (user) {
+        user.reset_code_hash = '';
+        savePersistedUsers();
+      }
       return res.status(200).json({
         success: false,
+        error: 'Has superado el número máximo de intentos permitidos. Por seguridad solicita un nuevo código.',
+        message: 'Has superado el número máximo de intentos permitidos. Por seguridad solicita un nuevo código.',
+      });
+    }
+
+    const submittedHash = crypto.createHash('sha256').update(cleanCode).digest('hex');
+    if (submittedHash !== validHash) {
+      if (record) {
+        record.attempts = (record.attempts || 0) + 1;
+        const remaining = 5 - record.attempts;
+        if (remaining <= 0) {
+          recoveryCodesStore.delete(cleanEmail);
+          if (user) {
+            user.reset_code_hash = '';
+            savePersistedUsers();
+          }
+          return res.status(200).json({
+            success: false,
+            error: 'Has superado el número máximo de intentos permitidos. Por seguridad solicita un nuevo código.',
+            message: 'Has superado el número máximo de intentos permitidos. Por seguridad solicita un nuevo código.',
+          });
+        }
+        return res.status(200).json({
+          success: false,
+          error: `El código ingresado es incorrecto (${remaining} intento${remaining === 1 ? '' : 's'} restante${remaining === 1 ? '' : 's'}).`,
+          message: `El código ingresado es incorrecto (${remaining} intento${remaining === 1 ? '' : 's'} restante${remaining === 1 ? '' : 's'}).`,
+        });
+      }
+      return res.status(200).json({
+        success: false,
+        error: 'El código de 6 dígitos ingresado es incorrecto.',
         message: 'El código de 6 dígitos ingresado es incorrecto.',
       });
     }
 
-    // Mark verified
+    // Mark verified: generate reset token and invalidate used OTP immediately
     const resetToken = jwt.sign({ email: cleanEmail, purpose: 'password_reset' }, JWT_SECRET, {
       expiresIn: '15m',
     });
 
     recoveryCodesStore.delete(cleanEmail);
+    if (user) {
+      user.reset_code_hash = '';
+      user.reset_expires_at = '';
+      user.reset_token = resetToken;
+      savePersistedUsers();
+    }
 
     return res.status(200).json({
       success: true,
@@ -367,7 +474,8 @@ export const verifyRecoveryCode = async (req: Request, res: Response) => {
     console.error('[AuthController.verifyRecoveryCode Error]:', error.message);
     return res.status(200).json({
       success: false,
-      message: 'No pudimos verificar el código.',
+      error: 'No pudimos verificar el código. Por favor intenta nuevamente.',
+      message: 'No pudimos verificar el código. Por favor intenta nuevamente.',
     });
   }
 };
@@ -380,11 +488,12 @@ export const resetPassword = async (req: Request, res: Response) => {
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   try {
     const { email, resetToken, newPassword } = req.body;
-    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanEmail = (email || '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim().toLowerCase();
 
     if (!resetToken) {
       return res.status(200).json({
         success: false,
+        error: 'Token de restablecimiento no proporcionado.',
         message: 'Token de restablecimiento no proporcionado.',
       });
     }
@@ -392,6 +501,7 @@ export const resetPassword = async (req: Request, res: Response) => {
     if (!newPassword || newPassword.length < 6) {
       return res.status(200).json({
         success: false,
+        error: 'La nueva contraseña debe tener al menos 6 caracteres.',
         message: 'La nueva contraseña debe tener al menos 6 caracteres.',
       });
     }
@@ -402,12 +512,14 @@ export const resetPassword = async (req: Request, res: Response) => {
       if (decoded.purpose !== 'password_reset' || decoded.email !== cleanEmail) {
         return res.status(200).json({
           success: false,
+          error: 'Token de restablecimiento inválido.',
           message: 'Token de restablecimiento inválido.',
         });
       }
     } catch {
       return res.status(200).json({
         success: false,
+        error: 'Token de restablecimiento expirado o inválido.',
         message: 'Token de restablecimiento expirado o inválido.',
       });
     }
@@ -417,18 +529,21 @@ export const resetPassword = async (req: Request, res: Response) => {
     if (user) {
       const saltRounds = 10;
       user.password = await bcrypt.hash(newPassword, saltRounds);
+      delete user.reset_code;
+      delete user.reset_expires_at;
       usersStore.set(cleanEmail, user);
       savePersistedUsers();
     }
 
     return res.status(200).json({
       success: true,
-      message: 'Contraseña actualizada exitosamente. Ya puedes iniciar sesión.',
+      message: 'Contraseña actualizada correctamente. Ya puedes iniciar sesión.',
     });
   } catch (error: any) {
     console.error('[AuthController.resetPassword Error]:', error.message);
     return res.status(200).json({
       success: false,
+      error: 'No pudimos restablecer la contraseña. Intenta nuevamente.',
       message: 'No pudimos restablecer la contraseña. Intenta nuevamente.',
     });
   }
@@ -476,6 +591,31 @@ export const checkUser = async (req: Request, res: Response) => {
     success: true,
     exists,
     isGoogleUser,
+    user: user
+      ? {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role || 'cliente',
+          avatarUrl: user.avatarUrl || user.picture || null,
+        }
+      : exists && cleanEmail === 'alex.moreno@rebornyourstyle.co'
+      ? {
+          id: 'usr-alex-moreno',
+          name: 'Álex Moreno',
+          email: 'alex.moreno@rebornyourstyle.co',
+          role: 'cliente',
+          avatarUrl: null,
+        }
+      : exists && (cleanEmail === 'admin@rebornyourstyle.com' || cleanEmail === 'admin@rebornstyle.co')
+      ? {
+          id: 'usr-admin',
+          name: 'Administrador Reborn',
+          email: cleanEmail,
+          role: 'admin',
+          avatarUrl: null,
+        }
+      : null,
     message: exists
       ? 'Cuenta registrada en Reborn Your Style.'
       : 'Esta cuenta de Google todavía no está registrada en Reborn Your Style.',

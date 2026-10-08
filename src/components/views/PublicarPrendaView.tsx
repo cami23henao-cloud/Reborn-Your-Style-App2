@@ -5,6 +5,7 @@ import { BrandLogo } from '../BrandLogo';
 import { ContinuousColorWheel } from '../common/ContinuousColorWheel';
 import { ColombianLocationSelector, ComprehensiveLocation } from '../common/ColombianLocationSelector';
 import { UserAvatar } from '../common/UserAvatar';
+import { useThemeLanguage } from '../../context/ThemeLanguageContext';
 
 interface PublicarPrendaViewProps {
   onPublishProject: (project: GarmentProject) => void;
@@ -42,6 +43,7 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
   onOpenEditProfile,
   initialDraft
 }) => {
+  const { t, tCategory, language } = useThemeLanguage();
   // Form State - Starts completely clean and empty for new creations
   // Requirement 3: Disable automatic detection, talla starts EMPTY, category manual
   // Requirement 2: Ruleta de colores starts without color selected
@@ -111,19 +113,19 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
   const handlePublish = (e: React.FormEvent) => {
     e.preventDefault();
     if (!categoria.trim()) {
-      setFormError('Por favor selecciona una categoría para clasificar tu prenda manualmente.');
+      setFormError(language === 'en' ? 'Please select a textile category to classify your garment.' : 'Por favor selecciona una categoría para clasificar tu prenda manualmente.');
       return;
     }
     if (!talla.trim()) {
-      setFormError('Por favor selecciona o escribe la talla de la prenda.');
+      setFormError(language === 'en' ? 'Please select or enter the garment size.' : 'Por favor selecciona o escribe la talla de la prenda.');
       return;
     }
     if (!colorSeleccionado.trim()) {
-      setFormError('Por favor selecciona el color de la prenda en el círculo de colores.');
+      setFormError(language === 'en' ? 'Please select the garment color on the color wheel.' : 'Por favor selecciona el color de la prenda en el círculo de colores.');
       return;
     }
     if (!imageUrl) {
-      setFormError('Por favor sube una fotografía de la prenda.');
+      setFormError(language === 'en' ? 'Please upload a photo of the garment.' : 'Por favor sube una fotografía de la prenda.');
       return;
     }
     setFormError('');
@@ -195,21 +197,21 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
   return (
     <div className="w-full max-w-7xl mx-auto px-4 md:px-12 py-10 md:py-12 animate-in fade-in">
       {/* Title Header with Logo Badge */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 bg-white p-6 rounded-3xl border border-[#c1c8c2]/50 shadow-xs">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 bg-white dark:bg-[#0e241c] p-6 rounded-3xl border border-[#c1c8c2]/50 dark:border-[#2b694d]/40 shadow-xs">
         <div className="space-y-1">
           <div className="flex items-center gap-3">
             <BrandLogo size="xs" variant="emblem" />
-            <h1 className="font-headline text-2xl md:text-3xl font-bold text-[#012d1d]">
-              Publicar una Prenda
+            <h1 className="font-headline text-2xl md:text-3xl font-bold text-[#012d1d] dark:text-white animate-title-entry text-hover-lift">
+              {t('publish.title')}
             </h1>
           </div>
-          <p className="text-xs md:text-sm text-[#414844] max-w-2xl leading-relaxed">
-            Conecta con artesanos textiles, publica para venta, intercambio de moda circular o solicita rediseño.
+          <p className="text-xs md:text-sm text-[#414844] dark:text-[#a7b8ae] max-w-2xl leading-relaxed animate-fade-up">
+            {t('publish.desc')}
           </p>
         </div>
 
         {/* User Identity & Profile Photo Card */}
-        <div className="flex items-center gap-3 bg-[#faf9f4] p-2.5 pl-3 rounded-2xl border border-[#c1c8c2]/40 shrink-0">
+        <div className="flex items-center gap-3 bg-[#faf9f4] dark:bg-[#112920] p-2.5 pl-3 rounded-2xl border border-[#c1c8c2]/40 dark:border-[#2b694d]/30 shrink-0">
           <UserAvatar
             src={user.avatarUrl}
             name={user.name}
@@ -217,14 +219,16 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
             borderClassName="border-2 border-[#b0f1cc] shadow-xs"
           />
           <div className="text-left pr-2">
-            <span className="text-[10px] text-[#717973] uppercase font-bold block">Publicando como</span>
-            <span className="text-xs font-bold text-[#012d1d] block">{user.name}</span>
+            <span className="text-[10px] text-[#717973] dark:text-[#a7b8ae] uppercase font-bold block">
+              {language === 'en' ? 'Posting as' : 'Publicando como'}
+            </span>
+            <span className="text-xs font-bold text-[#012d1d] dark:text-white block">{user.name}</span>
           </div>
           <button
             type="button"
             onClick={onOpenEditProfile}
-            className="p-1.5 rounded-lg text-[#2b694d] hover:bg-[#efeee9] transition-colors"
-            title="Editar foto y perfil"
+            className="p-1.5 rounded-lg text-[#2b694d] dark:text-[#b0f1cc] hover:bg-[#efeee9] dark:hover:bg-[#17382c] transition-colors cursor-pointer"
+            title={language === 'en' ? 'Edit photo and profile' : 'Editar foto y perfil'}
           >
             <span className="material-symbols-outlined text-lg">edit</span>
           </button>
@@ -242,18 +246,18 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
           )}
 
           {/* Section 1: Fotos */}
-          <section className="bg-white rounded-2xl shadow-sm p-6 md:p-8 border border-[#c1c8c2]/50 space-y-4">
+          <section className="bg-white dark:bg-[#0e241c] rounded-2xl shadow-sm p-6 md:p-8 border border-[#c1c8c2]/50 dark:border-[#2b694d]/40 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="font-headline text-base font-bold text-[#012d1d] flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#2b694d]">photo_camera</span>
-                <span>1. Fotografía de la prenda *</span>
+              <h2 className="font-headline text-base font-bold text-[#012d1d] dark:text-white flex items-center gap-2">
+                <span className="material-symbols-outlined text-[#2b694d] dark:text-[#b0f1cc]">photo_camera</span>
+                <span>{language === 'en' ? '1. Garment Photograph *' : '1. Fotografía de la prenda *'}</span>
               </h2>
-              <span className="text-xs text-[#717973]">Formatos: JPG, PNG, WebP</span>
+              <span className="text-xs text-[#717973] dark:text-[#a7b8ae]">{language === 'en' ? 'Formats: JPG, PNG, WebP' : 'Formatos: JPG, PNG, WebP'}</span>
             </div>
 
             <div
               onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-[#2b694d]/40 rounded-2xl p-6 flex flex-col items-center justify-center bg-[#faf9f4] hover:bg-[#f2f0e9] transition-colors cursor-pointer text-center group"
+              className="border-2 border-dashed border-[#2b694d]/40 rounded-2xl p-6 flex flex-col items-center justify-center bg-[#faf9f4] dark:bg-[#112920] hover:bg-[#f2f0e9] dark:hover:bg-[#17382c] transition-colors cursor-pointer text-center group"
             >
               <input
                 type="file"
@@ -262,14 +266,16 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
                 accept="image/*"
                 className="hidden"
               />
-              <span className="material-symbols-outlined text-4xl text-[#2b694d] mb-2 group-hover:scale-110 transition-transform">
+              <span className="material-symbols-outlined text-4xl text-[#2b694d] dark:text-[#b0f1cc] mb-2 group-hover:scale-110 transition-transform">
                 cloud_upload
               </span>
-              <p className="font-bold text-xs md:text-sm text-[#012d1d] mb-1">
-                Haz clic para subir una foto o arrástrala aquí
+              <p className="font-bold text-xs md:text-sm text-[#012d1d] dark:text-white mb-1">
+                {language === 'en' ? 'Click to upload a photo or drag it here' : 'Haz clic para subir una foto o arrástrala aquí'}
               </p>
-              <p className="text-[11px] text-[#717973]">
-                Recomendamos buena iluminación para que los artesanos aprecien el color y textura real.
+              <p className="text-[11px] text-[#717973] dark:text-[#a7b8ae]">
+                {language === 'en'
+                  ? 'We recommend good lighting so tailors can appreciate the real texture and color.'
+                  : 'Recomendamos buena iluminación para que los artesanos aprecien el color y textura real.'}
               </p>
             </div>
 
@@ -290,32 +296,34 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
           </section>
 
           {/* Section 2: Información Principal */}
-          <section className="bg-white rounded-2xl shadow-sm p-6 md:p-8 border border-[#c1c8c2]/50 space-y-5">
-            <h2 className="font-headline text-base font-bold text-[#012d1d] flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#2b694d]">info</span>
-              <span>2. Información de la Prenda</span>
+          <section className="bg-white dark:bg-[#0e241c] rounded-2xl shadow-sm p-6 md:p-8 border border-[#c1c8c2]/50 dark:border-[#2b694d]/40 space-y-5">
+            <h2 className="font-headline text-base font-bold text-[#012d1d] dark:text-white flex items-center gap-2">
+              <span className="material-symbols-outlined text-[#2b694d] dark:text-[#b0f1cc]">info</span>
+              <span>{language === 'en' ? '2. Garment Information' : '2. Información de la Prenda'}</span>
             </h2>
 
             {/* Title */}
             <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-[#012d1d]">
-                Nombre de la prenda / Título de la publicación *
+              <label className="block text-xs font-bold text-[#012d1d] dark:text-white">
+                {language === 'en' ? 'Garment name / Listing title *' : 'Nombre de la prenda / Título de la publicación *'}
               </label>
               <input
                 type="text"
                 required
                 value={titulo}
                 onChange={(e) => setTitulo(e.target.value)}
-                placeholder="Ej. Chaqueta Denim Levi's vintage con bordado"
-                className="w-full px-4 py-3 rounded-xl border border-[#c1c8c2] bg-white text-sm text-[#1b1c19] focus:border-[#012d1d] focus:ring-1 focus:ring-[#012d1d] outline-none"
+                placeholder={language === 'en' ? "e.g. Vintage Levi's denim jacket with floral embroidery" : "Ej. Chaqueta Denim Levi's vintage con bordado"}
+                className="w-full px-4 py-3 rounded-xl border border-[#c1c8c2] dark:border-[#2b694d]/50 bg-white dark:bg-[#112920] text-sm text-[#1b1c19] dark:text-white focus:border-[#012d1d] dark:focus:border-[#b0f1cc] focus:ring-1 focus:ring-[#012d1d] outline-none"
               />
             </div>
 
             {/* Expanded 16 Categories */}
             <div className="space-y-2">
-              <label className="block text-xs font-bold text-[#012d1d] flex items-center justify-between">
-                <span>Categoría de la Prenda (16 Categorías) *</span>
-                <span className="text-[10px] text-[#2b694d] font-normal">Moda circular</span>
+              <label className="block text-xs font-bold text-[#012d1d] dark:text-white flex items-center justify-between">
+                <span>{language === 'en' ? 'Garment Category (16 Categories) *' : 'Categoría de la Prenda (16 Categorías) *'}</span>
+                <span className="text-[10px] text-[#2b694d] dark:text-[#b0f1cc] font-normal">
+                  {language === 'en' ? 'Circular fashion' : 'Moda circular'}
+                </span>
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {EXPANDED_CATEGORIES.map((cat) => {
@@ -327,12 +335,12 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
                       onClick={() => setCategoria(cat.name)}
                       className={`p-2.5 rounded-xl text-left border transition-all flex items-center gap-2 ${
                         isSelected
-                          ? 'bg-[#012d1d] text-white border-[#012d1d] shadow-sm'
-                          : 'bg-[#faf9f4] text-[#414844] border-[#c1c8c2]/40 hover:bg-[#efeee9]'
+                          ? 'bg-[#012d1d] dark:bg-[#b0f1cc] text-white dark:text-[#002113] border-[#012d1d] dark:border-[#b0f1cc] shadow-sm'
+                          : 'bg-[#faf9f4] dark:bg-[#112920] text-[#414844] dark:text-[#a7b8ae] border-[#c1c8c2]/40 dark:border-[#2b694d]/30 hover:bg-[#efeee9] dark:hover:bg-[#17382c]'
                       }`}
                     >
                       <span className="material-symbols-outlined text-base">{cat.icon}</span>
-                      <span className="text-xs font-bold truncate">{cat.name}</span>
+                      <span className="text-xs font-bold truncate">{tCategory(cat.name)}</span>
                     </button>
                   );
                 })}
@@ -342,25 +350,32 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
             {/* Condition and Size */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-[#012d1d]">
-                  Estado de la prenda *
+                <label className="block text-xs font-bold text-[#012d1d] dark:text-white">
+                  {language === 'en' ? 'Garment condition *' : 'Estado de la prenda *'}
                 </label>
                 <select
                   value={estado}
                   onChange={(e) => setEstado(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#c1c8c2] bg-white text-xs text-[#1b1c19] focus:border-[#012d1d] outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#c1c8c2] dark:border-[#2b694d]/50 bg-white dark:bg-[#112920] text-xs text-[#1b1c19] dark:text-white focus:border-[#012d1d] dark:focus:border-[#b0f1cc] outline-none"
                 >
-                  {CONDITION_OPTIONS.map((opt) => (
-                    <option key={opt} value={opt}>{opt}</option>
-                  ))}
+                  {CONDITION_OPTIONS.map((opt) => {
+                    const label = language === 'en' ? (
+                      opt === 'Nuevo con etiquetas' ? 'New with tags' :
+                      opt === 'Como nuevo (1-2 usos)' ? 'Like new (1-2 uses)' :
+                      opt === 'Usado - Buen estado' ? 'Pre-owned - Good condition' :
+                      opt === 'Desgastado - Con gran potencial de reuso' ? 'Worn - Great upcycling potential' :
+                      'For complete repair or rework'
+                    ) : opt;
+                    return <option key={opt} value={opt}>{label}</option>;
+                  })}
                 </select>
               </div>
 
               {/* Requirement 3: Talla starts completely EMPTY (no 'S', 'M' or preselected value) */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <label className="block text-xs font-bold text-[#012d1d]">
-                    Talla de la prenda *
+                  <label className="block text-xs font-bold text-[#012d1d] dark:text-white">
+                    {language === 'en' ? 'Garment size *' : 'Talla de la prenda *'}
                   </label>
                   {talla && (
                     <button
@@ -371,7 +386,7 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
                       }}
                       className="text-[10px] text-[#717973] hover:text-[#ba1a1a] transition-colors"
                     >
-                      Limpiar
+                      {language === 'en' ? 'Clear' : 'Limpiar'}
                     </button>
                   )}
                 </div>
@@ -380,6 +395,11 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
                 <div className="flex flex-wrap gap-1.5">
                   {SIZE_PRESETS.map((sz) => {
                     const isSelected = sz === 'Otra' ? isCustomTalla : talla === sz && !isCustomTalla;
+                    const displayLabel = sz === 'Talla única' 
+                      ? (language === 'en' ? 'One size' : 'Talla única')
+                      : sz === 'Otra'
+                      ? (language === 'en' ? 'Other' : 'Otra')
+                      : sz;
                     return (
                       <button
                         key={sz}
@@ -397,11 +417,11 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
                         }}
                         className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
                           isSelected
-                            ? 'bg-[#012d1d] text-white border-[#012d1d] shadow-xs'
-                            : 'bg-[#faf9f4] text-[#414844] border-[#c1c8c2]/50 hover:bg-[#efeee9]'
+                            ? 'bg-[#012d1d] dark:bg-[#b0f1cc] text-white dark:text-[#002113] border-[#012d1d] dark:border-[#b0f1cc] shadow-xs'
+                            : 'bg-[#faf9f4] dark:bg-[#112920] text-[#414844] dark:text-[#a7b8ae] border-[#c1c8c2]/50 dark:border-[#2b694d]/30 hover:bg-[#efeee9] dark:hover:bg-[#17382c]'
                         }`}
                       >
-                        {sz}
+                        {displayLabel}
                       </button>
                     );
                   })}
@@ -415,15 +435,15 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
                       autoFocus
                       value={talla}
                       onChange={(e) => setTalla(e.target.value)}
-                      placeholder="Escribe la talla personalizada (ej. 32, 14, Oversize, Niños...)"
-                      className="w-full px-3.5 py-2 rounded-xl border border-[#012d1d] bg-white text-xs text-[#1b1c19] outline-none shadow-2xs"
+                      placeholder={language === 'en' ? 'Enter custom size (e.g. 32, 14, Oversize, Kids...)' : 'Escribe la talla personalizada (ej. 32, 14, Oversize, Niños...)'}
+                      className="w-full px-3.5 py-2 rounded-xl border border-[#012d1d] dark:border-[#b0f1cc] bg-white dark:bg-[#112920] text-xs text-[#1b1c19] dark:text-white outline-none shadow-2xs"
                     />
                   </div>
                 )}
 
                 {!talla && (
-                  <span className="text-[10px] text-[#717973] italic block">
-                    Ninguna talla seleccionada por defecto. Por favor elige una.
+                  <span className="text-[10px] text-[#717973] dark:text-[#a7b8ae] italic block">
+                    {language === 'en' ? 'No size selected by default. Please select one.' : 'Ninguna talla seleccionada por defecto. Por favor elige una.'}
                   </span>
                 )}
               </div>
@@ -441,48 +461,48 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
 
             {/* Description */}
             <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-[#012d1d]">
-                Descripción detallada e historia de la prenda *
+              <label className="block text-xs font-bold text-[#012d1d] dark:text-white">
+                {language === 'en' ? 'Detailed description and history of the garment *' : 'Descripción detallada e historia de la prenda *'}
               </label>
               <textarea
                 rows={3}
                 required
                 value={descripcion}
                 onChange={(e) => setDescripcion(e.target.value)}
-                placeholder="Describe el tipo de tela, composición, historia o detalles especiales..."
-                className="w-full px-4 py-3 rounded-xl border border-[#c1c8c2] bg-white text-xs text-[#1b1c19] focus:border-[#012d1d] focus:ring-1 focus:ring-[#012d1d] outline-none resize-none"
+                placeholder={language === 'en' ? 'Describe fabric type, composition, history or special details...' : 'Describe el tipo de tela, composición, historia o detalles especiales...'}
+                className="w-full px-4 py-3 rounded-xl border border-[#c1c8c2] dark:border-[#2b694d]/50 bg-white dark:bg-[#112920] text-xs text-[#1b1c19] dark:text-white focus:border-[#012d1d] dark:focus:border-[#b0f1cc] focus:ring-1 focus:ring-[#012d1d] outline-none resize-none"
               />
             </div>
 
             {/* Modifications */}
             <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-[#012d1d]">
-                Idea de transformación / Modificaciones deseadas
+              <label className="block text-xs font-bold text-[#012d1d] dark:text-white">
+                {language === 'en' ? 'Transformation idea / Desired modifications' : 'Idea de transformación / Modificaciones deseadas'}
               </label>
               <textarea
                 rows={2}
                 value={modificacion}
                 onChange={(e) => setModificacion(e.target.value)}
-                placeholder="¿Qué te gustaría hacerle? Ej. Bordados florales, convertir en falda, teñir..."
-                className="w-full px-4 py-3 rounded-xl border border-[#c1c8c2] bg-white text-xs text-[#1b1c19] focus:border-[#012d1d] focus:ring-1 focus:ring-[#012d1d] outline-none resize-none"
+                placeholder={language === 'en' ? 'What would you like done? e.g. Floral embroidery, turn into skirt, dye...' : '¿Qué te gustaría hacerle? Ej. Bordados florales, convertir en falda, teñir...'}
+                className="w-full px-4 py-3 rounded-xl border border-[#c1c8c2] dark:border-[#2b694d]/50 bg-white dark:bg-[#112920] text-xs text-[#1b1c19] dark:text-white focus:border-[#012d1d] dark:focus:border-[#b0f1cc] focus:ring-1 focus:ring-[#012d1d] outline-none resize-none"
               />
             </div>
           </section>
 
           {/* Section 3: Ubicación y Modalidad */}
-          <section className="bg-white rounded-2xl shadow-sm p-6 md:p-8 border border-[#c1c8c2]/50 space-y-5">
-            <h2 className="font-headline text-base font-bold text-[#012d1d] flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#2b694d]">share_location</span>
-              <span>3. Modalidad, Precio y Ubicación en Colombia</span>
+          <section className="bg-white dark:bg-[#0e241c] rounded-2xl shadow-sm p-6 md:p-8 border border-[#c1c8c2]/50 dark:border-[#2b694d]/40 space-y-5">
+            <h2 className="font-headline text-base font-bold text-[#012d1d] dark:text-white flex items-center gap-2">
+              <span className="material-symbols-outlined text-[#2b694d] dark:text-[#b0f1cc]">share_location</span>
+              <span>{language === 'en' ? '3. Modality, Price & Location in Colombia' : '3. Modalidad, Precio y Ubicación en Colombia'}</span>
             </h2>
 
             {/* Modality Selector */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {[
-                { id: 'Transformación', label: 'Transformación', icon: 'styler' },
-                { id: 'Venta', label: 'Venta ($ COP)', icon: 'payments' },
-                { id: 'Intercambio', label: 'Intercambio / Trueque', icon: 'swap_horiz' },
-                { id: 'Donación', label: 'Donación / Gratis', icon: 'volunteer_activism' }
+                { id: 'Transformación', label: language === 'en' ? 'Redesign' : 'Transformación', icon: 'styler' },
+                { id: 'Venta', label: language === 'en' ? 'Sale ($ COP)' : 'Venta ($ COP)', icon: 'payments' },
+                { id: 'Intercambio', label: language === 'en' ? 'Swap / Barter' : 'Intercambio / Trueque', icon: 'swap_horiz' },
+                { id: 'Donación', label: language === 'en' ? 'Donation / Free' : 'Donación / Gratis', icon: 'volunteer_activism' }
               ].map((mod) => {
                 const isSelected = listingType === mod.id;
                 return (
@@ -492,8 +512,8 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
                     onClick={() => setListingType(mod.id as any)}
                     className={`p-3 rounded-xl border text-center transition-all flex flex-col items-center gap-1.5 ${
                       isSelected
-                        ? 'bg-[#012d1d] text-white border-[#012d1d] shadow-sm'
-                        : 'bg-[#faf9f4] text-[#414844] border-[#c1c8c2]/40 hover:bg-[#efeee9]'
+                        ? 'bg-[#012d1d] dark:bg-[#b0f1cc] text-white dark:text-[#002113] border-[#012d1d] dark:border-[#b0f1cc] shadow-sm'
+                        : 'bg-[#faf9f4] dark:bg-[#112920] text-[#414844] dark:text-[#a7b8ae] border-[#c1c8c2]/40 dark:border-[#2b694d]/30 hover:bg-[#efeee9] dark:hover:bg-[#17382c]'
                     }`}
                   >
                     <span className="material-symbols-outlined text-lg">{mod.icon}</span>
@@ -503,16 +523,16 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
               })}
             </div>
 
-            {/* Price / Budget (Requirement 5: sin 0 por defecto, sin flechas) */}
+            {/* Price / Budget */}
             {listingType !== 'Donación' && (
               <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-[#012d1d]">
+                <label className="block text-xs font-bold text-[#012d1d] dark:text-white">
                   {listingType === 'Transformación'
-                    ? 'Presupuesto estimado para confección ($ COP)'
-                    : 'Precio de la prenda ($ COP)'}
+                    ? (language === 'en' ? 'Estimated budget for tailoring ($ COP)' : 'Presupuesto estimado para confección ($ COP)')
+                    : (language === 'en' ? 'Garment price ($ COP)' : 'Precio de la prenda ($ COP)')}
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-[#717973]">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-[#717973] dark:text-[#a7b8ae]">
                     $ COP
                   </span>
                   <input
@@ -520,8 +540,8 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
                     inputMode="numeric"
                     value={presupuesto}
                     onChange={handlePriceChange}
-                    placeholder="Escribe el valor (ej. 45.000 ó 1.000.000)"
-                    className="w-full pl-16 pr-4 py-2.5 rounded-xl border border-[#c1c8c2] bg-white text-sm text-[#1b1c19] focus:border-[#012d1d] focus:ring-1 focus:ring-[#012d1d] outline-none"
+                    placeholder={language === 'en' ? 'Enter amount (e.g. 45,000 or 1,000,000)' : 'Escribe el valor (ej. 45.000 ó 1.000.000)'}
+                    className="w-full pl-16 pr-4 py-2.5 rounded-xl border border-[#c1c8c2] dark:border-[#2b694d]/50 bg-white dark:bg-[#112920] text-sm text-[#1b1c19] dark:text-white focus:border-[#012d1d] dark:focus:border-[#b0f1cc] focus:ring-1 focus:ring-[#012d1d] outline-none"
                   />
                 </div>
               </div>
@@ -535,17 +555,19 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
             />
 
             {/* Option Exchange / Reuse Toggle */}
-            <div className="p-4 rounded-2xl bg-[#faf9f4] border border-[#c1c8c2]/40 flex items-center justify-between gap-4">
+            <div className="p-4 rounded-2xl bg-[#faf9f4] dark:bg-[#112920] border border-[#c1c8c2]/40 dark:border-[#2b694d]/30 flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-[#b0f1cc]/40 text-[#012d1d] flex items-center justify-center shrink-0">
+                <div className="w-9 h-9 rounded-xl bg-[#b0f1cc]/40 text-[#012d1d] dark:text-[#b0f1cc] flex items-center justify-center shrink-0">
                   <span className="material-symbols-outlined text-lg">sync_alt</span>
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-[#012d1d]">
-                    Aceptar opciones de Intercambio o Reutilización
+                  <h4 className="text-xs font-bold text-[#012d1d] dark:text-white">
+                    {language === 'en' ? 'Accept Swap or Reuse options' : 'Aceptar opciones de Intercambio o Reutilización'}
                   </h4>
-                  <p className="text-[11px] text-[#717973]">
-                    Permite que otros usuarios o artesanos te propongan trueques o retazos textiles.
+                  <p className="text-[11px] text-[#717973] dark:text-[#a7b8ae]">
+                    {language === 'en'
+                      ? 'Allow other users or artisans to propose swaps or fabric remnants.'
+                      : 'Permite que otros usuarios o artesanos te propongan trueques o retazos textiles.'}
                   </p>
                 </div>
               </div>
@@ -563,16 +585,16 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
             <button
               type="button"
               onClick={handleSaveDraftClick}
-              className="w-full sm:w-auto px-6 py-3 rounded-xl border border-[#c1c8c2] text-xs font-bold text-[#414844] hover:bg-[#efeee9] transition-colors"
+              className="w-full sm:w-auto px-6 py-3 rounded-xl border border-[#c1c8c2] dark:border-[#2b694d]/50 text-xs font-bold text-[#414844] dark:text-[#a7b8ae] hover:bg-[#efeee9] dark:hover:bg-[#17382c] transition-colors"
             >
-              Guardar Borrador
+              {language === 'en' ? 'Save Draft' : 'Guardar Borrador'}
             </button>
             <button
               type="submit"
-              className="w-full sm:w-auto px-8 py-3 rounded-xl bg-[#012d1d] text-white text-xs font-bold hover:bg-[#2b694d] transition-all shadow-md flex items-center justify-center gap-2"
+              className="w-full sm:w-auto px-8 py-3 rounded-xl bg-[#012d1d] hover:bg-[#2b694d] text-white text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2"
             >
               <span className="material-symbols-outlined text-base">publish</span>
-              <span>Publicar Prenda en Reborn</span>
+              <span>{language === 'en' ? 'Publish Garment on Reborn' : 'Publicar Prenda en Reborn'}</span>
             </button>
           </div>
         </form>
@@ -580,19 +602,21 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
         {/* Live Preview Card (4 cols) */}
         <div className="lg:col-span-4 space-y-4">
           <div className="sticky top-24 space-y-4">
-            <div className="bg-white rounded-3xl p-5 border border-[#c1c8c2]/50 shadow-sm space-y-4">
-              <div className="flex items-center justify-between border-b border-[#efeee9] pb-3">
-                <span className="text-xs font-bold text-[#012d1d] flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-sm text-[#2b694d]">visibility</span>
-                  <span>Vista Previa en Vivo</span>
+            <div className="bg-white dark:bg-[#0e241c] rounded-3xl p-5 border border-[#c1c8c2]/50 dark:border-[#2b694d]/40 shadow-sm space-y-4">
+              <div className="flex items-center justify-between border-b border-[#efeee9] dark:border-[#2b694d]/30 pb-3">
+                <span className="text-xs font-bold text-[#012d1d] dark:text-white flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-sm text-[#2b694d] dark:text-[#b0f1cc]">visibility</span>
+                  <span>{language === 'en' ? 'Live Preview' : 'Vista Previa en Vivo'}</span>
                 </span>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#b0f1cc] text-[#002113]">
-                  {listingType}
+                  {language === 'en'
+                    ? (listingType === 'Transformación' ? 'Redesign' : listingType === 'Venta' ? 'Sale' : listingType === 'Intercambio' ? 'Swap' : 'Donation')
+                    : listingType}
                 </span>
               </div>
 
               {/* Garment Image */}
-              <div className="relative aspect-[4/3] rounded-2xl overflow-hidden shadow-inner bg-[#f5f4ef]">
+              <div className="relative aspect-[4/3] rounded-2xl overflow-hidden shadow-inner bg-[#f5f4ef] dark:bg-[#112920]">
                 {imageUrl ? (
                   <img
                     src={imageUrl}
@@ -600,24 +624,26 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center text-[#717973] p-4 text-center">
+                  <div className="w-full h-full flex flex-col items-center justify-center text-[#717973] dark:text-[#a7b8ae] p-4 text-center">
                     <span className="material-symbols-outlined text-4xl mb-1 text-[#a3aca5]">photo_camera</span>
-                    <span className="text-xs font-medium">Sube una foto para ver la vista previa</span>
+                    <span className="text-xs font-medium">
+                      {language === 'en' ? 'Upload a photo to see preview' : 'Sube una foto para ver la vista previa'}
+                    </span>
                   </div>
                 )}
                 <div className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-lg bg-black/60 backdrop-blur-sm text-white text-[10px] font-bold flex items-center gap-1.5">
                   <span className="material-symbols-outlined text-xs">
                     {EXPANDED_CATEGORIES.find(c => c.name.toLowerCase() === categoria.toLowerCase())?.icon || 'apparel'}
                   </span>
-                  <span>{categoria || 'Sin categoría'}</span>
+                  <span>{categoria ? tCategory(categoria) : (language === 'en' ? 'Uncategorized' : 'Sin categoría')}</span>
                 </div>
                 {talla && (
-                  <div className="absolute bottom-2.5 right-2.5 px-2.5 py-1 rounded-lg bg-white/90 backdrop-blur-sm text-[#012d1d] text-[10px] font-bold shadow-xs">
-                    Talla {talla}
+                  <div className="absolute bottom-2.5 right-2.5 px-2.5 py-1 rounded-lg bg-white/90 dark:bg-black/80 backdrop-blur-sm text-[#012d1d] dark:text-[#b0f1cc] text-[10px] font-bold shadow-xs">
+                    {language === 'en' ? 'Size' : 'Talla'} {talla === 'Talla única' ? (language === 'en' ? 'One size' : 'Talla única') : talla}
                   </div>
                 )}
                 {colorSeleccionado && (
-                  <div className="absolute bottom-2.5 left-2.5 px-2 py-1 rounded-lg bg-white/90 backdrop-blur-sm text-[#012d1d] text-[10px] font-bold shadow-xs flex items-center gap-1.5">
+                  <div className="absolute bottom-2.5 left-2.5 px-2.5 py-1 rounded-lg bg-white/90 dark:bg-black/80 backdrop-blur-sm text-[#012d1d] dark:text-[#b0f1cc] text-[10px] font-bold shadow-xs flex items-center gap-1.5">
                     <span
                       className="w-2.5 h-2.5 rounded-full border border-black/20"
                       style={{ backgroundColor: colorHex || '#1b1b1b' }}
@@ -629,34 +655,34 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
 
               {/* Garment Details */}
               <div className="space-y-2">
-                <h3 className="font-headline font-bold text-base text-[#012d1d] leading-snug">
-                  {titulo || 'Nombre de la prenda'}
+                <h3 className="font-headline font-bold text-base text-[#012d1d] dark:text-white leading-snug">
+                  {titulo || (language === 'en' ? 'Garment name' : 'Nombre de la prenda')}
                 </h3>
-                <p className="text-xs text-[#414844] line-clamp-2">
-                  {descripcion || 'Descripción del proyecto...'}
+                <p className="text-xs text-[#414844] dark:text-[#a7b8ae] line-clamp-2">
+                  {descripcion || (language === 'en' ? 'Project description...' : 'Descripción del proyecto...')}
                 </p>
 
-                <div className="flex items-center justify-between text-xs pt-2 border-t border-[#efeee9]">
-                  <div className="flex items-center gap-1.5 text-[#717973]">
-                    <span className="material-symbols-outlined text-xs text-[#2b694d]">location_on</span>
+                <div className="flex items-center justify-between text-xs pt-2 border-t border-[#efeee9] dark:border-[#2b694d]/30">
+                  <div className="flex items-center gap-1.5 text-[#717973] dark:text-[#a7b8ae]">
+                    <span className="material-symbols-outlined text-xs text-[#2b694d] dark:text-[#b0f1cc]">location_on</span>
                     <span className="truncate max-w-[140px]">
                       {colombianLocation.publicLocation || 'Colombia'}
                     </span>
                   </div>
-                  <span className="font-black text-[#012d1d]">
+                  <span className="font-black text-[#012d1d] dark:text-white">
                     {listingType === 'Donación'
-                      ? 'Gratis'
+                      ? (language === 'en' ? 'Free' : 'Gratis')
                       : listingType === 'Intercambio'
-                      ? 'Intercambio'
+                      ? (language === 'en' ? 'Swap' : 'Intercambio')
                       : presupuesto && Number(presupuesto) > 0
                       ? `$${Number(presupuesto).toLocaleString()} COP`
-                      : 'Precio por acordar'}
+                      : (language === 'en' ? 'Price to agree' : 'Precio por acordar')}
                   </span>
                 </div>
               </div>
 
               {/* Author Footer */}
-              <div className="pt-3 border-t border-[#efeee9] flex items-center justify-between">
+              <div className="pt-3 border-t border-[#efeee9] dark:border-[#2b694d]/30 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <UserAvatar
                     src={user.avatarUrl}
@@ -664,7 +690,7 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
                     size="sm"
                     borderClassName="border border-[#b0f1cc]"
                   />
-                  <span className="text-xs font-semibold text-[#012d1d]">{user.name}</span>
+                  <span className="text-xs font-semibold text-[#012d1d] dark:text-white">{user.name}</span>
                 </div>
                 <BrandLogo size="xs" variant="emblem" />
               </div>

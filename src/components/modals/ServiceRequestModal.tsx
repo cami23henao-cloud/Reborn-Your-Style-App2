@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Professional, GarmentProject } from '../../types';
+import { useThemeLanguage } from '../../context/ThemeLanguageContext';
 
 interface ServiceRequestModalProps {
   isOpen: boolean;
@@ -23,6 +24,9 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({
   garments,
   onSubmitRequest
 }) => {
+  const { language } = useThemeLanguage();
+  const isEn = language === 'en';
+
   const [selectedGarmentOption, setSelectedGarmentOption] = useState<string>('__otra_prenda__');
   const [customGarmentText, setCustomGarmentText] = useState<string>('');
   const [serviceType, setServiceType] = useState<string>('Upcycling Creativo y Transformación');
@@ -31,7 +35,6 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({
   const [errorMessage, setErrorMessage] = useState<string>('');
 
   // Whenever modal opens, reset all fields cleanly - Requirement 7:
-  // "MUY IMPORTANTE: NO debe aparecer ninguna información previa, diseño anterior, texto anterior ni indicación de otro usuario. Cada vez que se seleccione “Otra prenda nueva”, el proceso debe comenzar completamente vacío y permitir que el usuario escriba su nueva idea desde cero."
   useEffect(() => {
     if (isOpen) {
       if (garments.length > 0) {
@@ -70,14 +73,14 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({
     let finalGarmentTitle = selectedGarmentOption;
     if (isCustomGarment) {
       if (!customGarmentText.trim()) {
-        setErrorMessage('Por favor escribe qué prenda deseas crear o transformar.');
+        setErrorMessage(isEn ? 'Please describe what garment you want to create or transform.' : 'Por favor escribe qué prenda deseas crear o transformar.');
         return;
       }
       finalGarmentTitle = customGarmentText.trim();
     }
 
     if (!budget || budget <= 0) {
-      setErrorMessage('Por favor ingresa un presupuesto válido.');
+      setErrorMessage(isEn ? 'Please enter a valid budget.' : 'Por favor ingresa un presupuesto válido.');
       return;
     }
 
@@ -95,9 +98,9 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden border border-[#efeee9] flex flex-col max-h-[90vh]">
+      <div className="bg-white dark:bg-[#0e241c] rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden border border-[#efeee9] dark:border-[#2b694d]/40 flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="p-6 border-b border-[#efeee9] flex items-center justify-between bg-[#faf9f4]">
+        <div className="p-6 border-b border-[#efeee9] dark:border-[#2b694d]/30 flex items-center justify-between bg-[#faf9f4] dark:bg-[#002113]/50">
           <div className="flex items-center gap-3">
             <img
               src={professional.imageUrl}
@@ -105,15 +108,15 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({
               className="w-11 h-11 rounded-full object-cover border border-[#c1c8c2]/50"
             />
             <div>
-              <h3 className="font-headline font-bold text-base text-[#012d1d]">
-                Solicitar Cotización a {professional.name}
+              <h3 className="font-headline font-bold text-base text-[#012d1d] dark:text-white">
+                {isEn ? `Request Quote from ${professional.name}` : `Solicitar Cotización a ${professional.name}`}
               </h3>
-              <p className="text-xs text-[#717973]">{professional.specialty} • {professional.location}</p>
+              <p className="text-xs text-[#717973] dark:text-[#a0a5a1]">{professional.specialty} • {professional.location}</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-[#efeee9] hover:bg-[#e3e3de] text-[#1b1c19] flex items-center justify-center transition-colors"
+            className="w-8 h-8 rounded-full bg-[#efeee9] dark:bg-[#002113] hover:bg-[#e3e3de] text-[#1b1c19] dark:text-white flex items-center justify-center transition-colors cursor-pointer"
           >
             <span className="material-symbols-outlined text-lg">close</span>
           </button>
@@ -130,29 +133,29 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({
 
           {/* Garment Selection / "Otra prenda nueva" */}
           <div>
-            <label className="block text-xs font-bold text-[#012d1d] mb-1">
-              Prenda para el trabajo
+            <label className="block text-xs font-bold text-[#012d1d] dark:text-white mb-1">
+              {isEn ? 'Garment for tailoring' : 'Prenda para el trabajo'}
             </label>
             <select
               value={selectedGarmentOption}
               onChange={(e) => handleGarmentOptionChange(e.target.value)}
-              className="w-full bg-[#f5f4ef] border border-[#c1c8c2] rounded-xl p-2.5 text-xs sm:text-sm text-[#1b1c19] focus:bg-white focus:border-[#012d1d] outline-none"
+              className="w-full bg-[#f5f4ef] dark:bg-[#002113]/60 border border-[#c1c8c2] dark:border-[#2b694d]/50 rounded-xl p-2.5 text-xs sm:text-sm text-[#1b1c19] dark:text-white focus:bg-white dark:focus:bg-[#002113] focus:border-[#012d1d] outline-none"
             >
               {garments.map((g) => (
                 <option key={g.id} value={g.title}>
                   {g.title} ({g.condition})
                 </option>
               ))}
-              <option value="__otra_prenda__">+ Otra prenda nueva</option>
+              <option value="__otra_prenda__">{isEn ? '+ Another new garment' : '+ Otra prenda nueva'}</option>
             </select>
           </div>
 
           {/* Dedicated Text Box for "Otra prenda nueva" - Requirement 7 */}
           {isCustomGarment && (
-            <div className="p-4 rounded-xl bg-[#f5f4ef] border-2 border-dashed border-[#2b694d]/40 space-y-2 animate-in fade-in">
-              <label className="block text-xs font-bold text-[#012d1d] flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-sm text-[#2b694d]">edit_note</span>
-                <span>Escribe desde cero qué prenda o diseño quieres crear *</span>
+            <div className="p-4 rounded-xl bg-[#f5f4ef] dark:bg-[#002113]/40 border-2 border-dashed border-[#2b694d]/40 space-y-2 animate-in fade-in">
+              <label className="block text-xs font-bold text-[#012d1d] dark:text-[#b0f1cc] flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-sm text-[#2b694d] dark:text-[#b0f1cc]">edit_note</span>
+                <span>{isEn ? 'Describe from scratch what garment or design you want to create *' : 'Escribe desde cero qué prenda o diseño quieres crear *'}</span>
               </label>
               <textarea
                 rows={3}
@@ -162,36 +165,36 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({
                   setCustomGarmentText(e.target.value);
                   if (errorMessage) setErrorMessage('');
                 }}
-                placeholder="Ej: Quiero transformar esta camisa en una falda."
-                className="w-full bg-white border border-[#c1c8c2] rounded-lg p-3 text-xs sm:text-sm text-[#1b1c19] focus:border-[#012d1d] outline-none resize-none placeholder:text-[#8e9690]"
+                placeholder={isEn ? 'E.g.: I want to transform this shirt into an asymmetrical skirt with embroidery.' : 'Ej: Quiero transformar esta camisa en una falda.'}
+                className="w-full bg-white dark:bg-[#0e241c] border border-[#c1c8c2] dark:border-[#2b694d]/40 rounded-lg p-3 text-xs sm:text-sm text-[#1b1c19] dark:text-white focus:border-[#012d1d] outline-none resize-none placeholder:text-[#8e9690]"
               />
-              <p className="text-[11px] text-[#717973]">
-                Escribe tu idea con total libertad. El diseñador responderá con su propuesta técnica y patronaje.
+              <p className="text-[11px] text-[#717973] dark:text-[#a0a5a1]">
+                {isEn ? 'Describe your idea freely. The designer will respond with technical advice and pattern-making proposal.' : 'Escribe tu idea con total libertad. El diseñador responderá con su propuesta técnica y patronaje.'}
               </p>
             </div>
           )}
 
           <div>
-            <label className="block text-xs font-bold text-[#012d1d] mb-1">
-              Tipo de servicio requerido
+            <label className="block text-xs font-bold text-[#012d1d] dark:text-white mb-1">
+              {isEn ? 'Type of service required' : 'Tipo de servicio requerido'}
             </label>
             <select
               value={serviceType}
               onChange={(e) => setServiceType(e.target.value)}
-              className="w-full bg-[#f5f4ef] border border-[#c1c8c2] rounded-xl p-2.5 text-xs sm:text-sm text-[#1b1c19] focus:bg-white focus:border-[#012d1d] outline-none"
+              className="w-full bg-[#f5f4ef] dark:bg-[#002113]/60 border border-[#c1c8c2] dark:border-[#2b694d]/50 rounded-xl p-2.5 text-xs sm:text-sm text-[#1b1c19] dark:text-white focus:bg-white dark:focus:bg-[#002113] focus:border-[#012d1d] outline-none"
             >
-              <option value="Upcycling Creativo y Transformación">Upcycling Creativo y Transformación</option>
-              <option value="Ajuste, Entalle y Modistería">Ajuste, Entalle y Modistería</option>
-              <option value="Bordado Artesanal Personalizado">Bordado Artesanal Personalizado</option>
-              <option value="Teñido Natural con Tintes Botánicos">Teñido Natural con Tintes Botánicos</option>
-              <option value="Confección y Patronaje desde Cero">Confección y Patronaje desde Cero</option>
-              <option value="Reparación Visible y Zurcido (Sashiko)">Reparación Visible y Zurcido (Sashiko)</option>
+              <option value="Upcycling Creativo y Transformación">{isEn ? 'Creative Upcycling & Transformation' : 'Upcycling Creativo y Transformación'}</option>
+              <option value="Ajuste, Entalle y Modistería">{isEn ? 'Alterations, Fitting & Tailoring' : 'Ajuste, Entalle y Modistería'}</option>
+              <option value="Bordado Artesanal Personalizado">{isEn ? 'Custom Hand Embroidery' : 'Bordado Artesanal Personalizado'}</option>
+              <option value="Teñido Natural con Tintes Botánicos">{isEn ? 'Natural Botanical Dyeing' : 'Teñido Natural con Tintes Botánicos'}</option>
+              <option value="Confección y Patronaje desde Cero">{isEn ? 'Custom Garment & Pattern Making from Scratch' : 'Confección y Patronaje desde Cero'}</option>
+              <option value="Reparación Visible y Zurcido (Sashiko)">{isEn ? 'Visible Mending & Sashiko Darning' : 'Reparación Visible y Zurcido (Sashiko)'}</option>
             </select>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-[#012d1d] mb-1">
-              Presupuesto propuesto ($ COP) *
+            <label className="block text-xs font-bold text-[#012d1d] dark:text-white mb-1">
+              {isEn ? 'Proposed budget ($ COP) *' : 'Presupuesto propuesto ($ COP) *'}
             </label>
             <div className="relative">
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#717973] text-sm">
@@ -204,48 +207,48 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({
                 min={10000}
                 step={5000}
                 required
-                className="w-full bg-[#f5f4ef] border border-[#c1c8c2] rounded-xl py-2.5 pl-10 pr-3 text-xs sm:text-sm text-[#1b1c19] focus:bg-white focus:border-[#012d1d] outline-none"
+                className="w-full bg-[#f5f4ef] dark:bg-[#002113]/60 border border-[#c1c8c2] dark:border-[#2b694d]/50 rounded-xl py-2.5 pl-10 pr-3 text-xs sm:text-sm text-[#1b1c19] dark:text-white focus:bg-white dark:focus:bg-[#002113] focus:border-[#012d1d] outline-none"
               />
             </div>
-            <p className="text-[11px] text-[#717973] mt-1">
-              Tarifa base sugerida para este taller: Desde ${(professional.startingPrice).toLocaleString('es-CO')}
+            <p className="text-[11px] text-[#717973] dark:text-[#a0a5a1] mt-1">
+              {isEn ? `Suggested starting fee for this workshop: From $${(professional.startingPrice).toLocaleString('es-CO')}` : `Tarifa base sugerida para este taller: Desde $${(professional.startingPrice).toLocaleString('es-CO')}`}
             </p>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-[#012d1d] mb-1">
-              Detalles adicionales y notas del proyecto (Opcional)
+            <label className="block text-xs font-bold text-[#012d1d] dark:text-white mb-1">
+              {isEn ? 'Additional details & project notes (Optional)' : 'Detalles adicionales y notas del proyecto (Opcional)'}
             </label>
             <textarea
               rows={3}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Medidas, colores que prefieres, detalles que te gustaría añadir..."
-              className="w-full bg-[#f5f4ef] border border-[#c1c8c2] rounded-xl p-2.5 text-xs sm:text-sm text-[#1b1c19] focus:bg-white focus:border-[#012d1d] outline-none resize-none placeholder:text-[#8e9690]"
+              placeholder={isEn ? 'Measurements, preferred colors, specific details you want added...' : 'Medidas, colores que prefieres, detalles que te gustaría añadir...'}
+              className="w-full bg-[#f5f4ef] dark:bg-[#002113]/60 border border-[#c1c8c2] dark:border-[#2b694d]/50 rounded-xl p-2.5 text-xs sm:text-sm text-[#1b1c19] dark:text-white focus:bg-white dark:focus:bg-[#002113] focus:border-[#012d1d] outline-none resize-none placeholder:text-[#8e9690]"
             />
           </div>
 
-          <div className="bg-[#b0f1cc]/30 p-3 rounded-xl border border-[#2b694d]/20 text-xs text-[#012d1d] flex items-start gap-2">
-            <span className="material-symbols-outlined text-[#2b694d] text-base shrink-0 mt-0.5">verified</span>
+          <div className="bg-[#b0f1cc]/30 dark:bg-[#002113]/60 p-3 rounded-xl border border-[#2b694d]/20 dark:border-[#2b694d]/40 text-xs text-[#012d1d] dark:text-[#b0f1cc] flex items-start gap-2">
+            <span className="material-symbols-outlined text-[#2b694d] dark:text-[#b0f1cc] text-base shrink-0 mt-0.5">verified</span>
             <p className="text-[11px] leading-relaxed">
-              Al enviar tu solicitud, el taller recibirá tu propuesta y te responderá directamente con los detalles de confección.
+              {isEn ? 'When you submit your request, the workshop will receive your proposal and reply directly with tailoring details.' : 'Al enviar tu solicitud, el taller recibirá tu propuesta y te responderá directamente con los detalles de confección.'}
             </p>
           </div>
 
-          <div className="flex justify-end gap-3 pt-3 border-t border-[#efeee9]">
+          <div className="flex justify-end gap-3 pt-3 border-t border-[#efeee9] dark:border-[#2b694d]/30">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-semibold text-[#414844] hover:bg-[#efeee9] rounded-xl transition-colors"
+              className="px-4 py-2 text-xs font-semibold text-[#414844] dark:text-[#c1c8c2] hover:bg-[#efeee9] dark:hover:bg-[#2b694d]/30 rounded-xl transition-colors cursor-pointer"
             >
-              Cancelar
+              {isEn ? 'Cancel' : 'Cancelar'}
             </button>
             <button
               type="submit"
-              className="px-6 py-2.5 text-xs font-bold bg-[#012d1d] hover:bg-[#1b4332] text-white rounded-xl shadow-md transition-all flex items-center gap-1.5"
+              className="px-6 py-2.5 text-xs font-bold bg-[#012d1d] hover:bg-[#1b4332] text-white rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
             >
               <span className="material-symbols-outlined text-base">send</span>
-              <span>Enviar Solicitud</span>
+              <span>{isEn ? 'Send Request' : 'Enviar Solicitud'}</span>
             </button>
           </div>
         </form>

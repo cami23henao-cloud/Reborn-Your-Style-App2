@@ -4,6 +4,7 @@ import { EXPANDED_CATEGORIES } from '../../data/categoriesData';
 import { COLOMBIA_DEPARTMENTS } from '../../data/colombiaData';
 import { BrandLogo } from '../BrandLogo';
 import { UserAvatar } from '../common/UserAvatar';
+import { useThemeLanguage } from '../../context/ThemeLanguageContext';
 
 interface ExploraViewProps {
   professionals: Professional[];
@@ -27,6 +28,7 @@ export const ExploraView: React.FC<ExploraViewProps> = ({
   initialCategory = 'Todas',
   onSelectCategory,
 }) => {
+  const { t, tCategory, language } = useThemeLanguage();
   const [activeTab, setActiveTab] = useState<'profesionales' | 'prendas'>(initialTab);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory);
@@ -136,42 +138,44 @@ export const ExploraView: React.FC<ExploraViewProps> = ({
   return (
     <div className="w-full max-w-7xl mx-auto px-4 md:px-12 py-10 md:py-12 flex flex-col gap-8 animate-in fade-in">
       {/* Header Tabs (Prendas vs Diseñadores) */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#efeee9] pb-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#efeee9] dark:border-[#2b694d]/30 pb-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <BrandLogo size="xs" variant="emblem" />
-            <h1 className="font-headline text-2xl md:text-3xl font-bold text-[#012d1d] animate-title-entry">
-              Explorar Catálogo y Diseñadores
+            <h1 className="font-headline text-2xl md:text-3xl font-bold text-[#012d1d] dark:text-white animate-title-entry text-hover-lift">
+              {language === 'en' ? 'Explore Catalog & Designers' : 'Explorar Catálogo y Diseñadores'}
             </h1>
           </div>
-          <p className="text-xs md:text-sm text-[#414844]">
-            Prendas para suprareciclaje, venta, intercambio y directorio de diseñadores en Colombia.
+          <p className="text-xs md:text-sm text-[#414844] dark:text-[#a7b8ae]">
+            {language === 'en'
+              ? 'Garments for upcycling, sale, exchange and tailors directory in Colombia.'
+              : 'Prendas para suprareciclaje, venta, intercambio y directorio de diseñadores en Colombia.'}
           </p>
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex items-center gap-2 bg-[#f5f4ef] p-1.5 rounded-2xl border border-[#c1c8c2]/50 self-start md:self-auto">
+        <div className="flex items-center gap-2 bg-[#f5f4ef] dark:bg-[#112920] p-1.5 rounded-2xl border border-[#c1c8c2]/50 dark:border-[#2b694d]/40 self-start md:self-auto">
           <button
             onClick={() => setActiveTab('prendas')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'prendas'
-                ? 'bg-white text-[#012d1d] shadow-sm'
-                : 'text-[#717973] hover:text-[#012d1d]'
+                ? 'bg-white dark:bg-[#012d1d] text-[#012d1d] dark:text-[#b0f1cc] shadow-sm'
+                : 'text-[#717973] dark:text-[#a7b8ae] hover:text-[#012d1d] dark:hover:text-white'
             }`}
           >
             <span className="material-symbols-outlined text-sm">checkroom</span>
-            <span>Prendas en Circulación ({garments.length})</span>
+            <span>{language === 'en' ? 'Circulating Garments' : 'Prendas en Circulación'} ({garments.length})</span>
           </button>
           <button
             onClick={() => setActiveTab('profesionales')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'profesionales'
-                ? 'bg-white text-[#012d1d] shadow-sm'
-                : 'text-[#717973] hover:text-[#012d1d]'
+                ? 'bg-white dark:bg-[#012d1d] text-[#012d1d] dark:text-[#b0f1cc] shadow-sm'
+                : 'text-[#717973] dark:text-[#a7b8ae] hover:text-[#012d1d] dark:hover:text-white'
             }`}
           >
             <span className="material-symbols-outlined text-sm">design_services</span>
-            <span>Diseñadores y Modistas ({professionals.length})</span>
+            <span>{language === 'en' ? 'Designers & Tailors' : 'Diseñadores y Modistas'} ({professionals.length})</span>
           </button>
         </div>
       </div>
@@ -180,29 +184,29 @@ export const ExploraView: React.FC<ExploraViewProps> = ({
       {activeTab === 'prendas' && (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-[#012d1d] uppercase tracking-wider">
-              Categorías ({EXPANDED_CATEGORIES.length})
+            <span className="text-xs font-bold text-[#012d1d] dark:text-white uppercase tracking-wider">
+              {language === 'en' ? 'Categories' : 'Categorías'} ({EXPANDED_CATEGORIES.length})
             </span>
             {selectedCategory !== 'Todas' && (
               <button
                 onClick={() => handleCategorySelect('Todas')}
-                className="text-xs text-[#2b694d] hover:underline font-bold"
+                className="text-xs text-[#2b694d] dark:text-[#b0f1cc] hover:underline font-bold cursor-pointer"
               >
-                Ver todas las prendas
+                {language === 'en' ? 'View all garments' : 'Ver todas las prendas'}
               </button>
             )}
           </div>
           <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
             <button
               onClick={() => handleCategorySelect('Todas')}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border flex items-center gap-1.5 ${
+              className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border flex items-center gap-1.5 cursor-pointer ${
                 selectedCategory === 'Todas'
                   ? 'bg-[#012d1d] text-white border-[#012d1d]'
                   : 'bg-white text-[#414844] border-[#c1c8c2]/50 hover:bg-[#efeee9]'
               }`}
             >
               <span className="material-symbols-outlined text-sm">grid_view</span>
-              <span>Todas ({garments.length})</span>
+              <span>{language === 'en' ? 'All' : 'Todas'} ({garments.length})</span>
             </button>
             {EXPANDED_CATEGORIES.map((cat) => {
               const count = garments.filter(g => g.category.toLowerCase() === cat.name.toLowerCase()).length;
@@ -210,14 +214,14 @@ export const ExploraView: React.FC<ExploraViewProps> = ({
                 <button
                   key={cat.id}
                   onClick={() => handleCategorySelect(cat.name)}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border flex items-center gap-1.5 ${
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border flex items-center gap-1.5 cursor-pointer ${
                     selectedCategory.toLowerCase() === cat.name.toLowerCase()
                       ? 'bg-[#012d1d] text-white border-[#012d1d]'
                       : 'bg-white text-[#414844] border-[#c1c8c2]/50 hover:bg-[#efeee9]'
                   }`}
                 >
                   <span className="material-symbols-outlined text-sm">{cat.icon}</span>
-                  <span>{cat.name}</span>
+                  <span>{tCategory(cat.name)}</span>
                   {count > 0 && <span className="opacity-75 text-[10px]">({count})</span>}
                 </button>
               );
@@ -231,10 +235,10 @@ export const ExploraView: React.FC<ExploraViewProps> = ({
                 <div className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-2xl text-[#2b694d]">{currentCategoryInfo.icon}</span>
                   <h2 className="font-headline text-base sm:text-lg font-bold text-[#012d1d]">
-                    Categoría: {currentCategoryInfo.name}
+                    {language === 'en' ? 'Category:' : 'Categoría:'} {tCategory(currentCategoryInfo.name)}
                   </h2>
                   <span className="px-2.5 py-0.5 rounded-full bg-[#b0f1cc] text-[#002113] text-[11px] font-bold">
-                    {filteredGarments.length} {filteredGarments.length === 1 ? 'prenda' : 'prendas'}
+                    {filteredGarments.length} {filteredGarments.length === 1 ? (language === 'en' ? 'item' : 'prenda') : (language === 'en' ? 'items' : 'prendas')}
                   </span>
                 </div>
                 <p className="text-xs text-[#414844]">
@@ -242,7 +246,7 @@ export const ExploraView: React.FC<ExploraViewProps> = ({
                 </p>
                 {currentCategoryInfo.popularIdeas && currentCategoryInfo.popularIdeas.length > 0 && (
                   <div className="flex items-center gap-1.5 flex-wrap pt-1">
-                    <span className="text-[11px] font-bold text-[#717973]">Ideas sugeridas:</span>
+                    <span className="text-[11px] font-bold text-[#717973]">{language === 'en' ? 'Suggested ideas:' : 'Ideas sugeridas:'}</span>
                     {currentCategoryInfo.popularIdeas.map((idea, idx) => (
                       <span key={idx} className="text-[10px] bg-white px-2 py-0.5 rounded-md border border-[#c1c8c2]/50 text-[#012d1d]">
                         {idea}
@@ -254,16 +258,16 @@ export const ExploraView: React.FC<ExploraViewProps> = ({
               <div className="flex items-center gap-2 shrink-0">
                 <button
                   onClick={() => handleCategorySelect('Todas')}
-                  className="px-3.5 py-2 rounded-xl bg-white border border-[#c1c8c2] text-xs font-bold text-[#717973] hover:text-[#012d1d] transition-colors"
+                  className="px-3.5 py-2 rounded-xl bg-white border border-[#c1c8c2] text-xs font-bold text-[#717973] hover:text-[#012d1d] transition-colors cursor-pointer"
                 >
-                  Ver todas
+                  {language === 'en' ? 'View all' : 'Ver todas'}
                 </button>
                 <button
                   onClick={() => onNavigate('publicar-prenda')}
-                  className="px-4 py-2 rounded-xl bg-[#012d1d] text-white text-xs font-bold hover:bg-[#2b694d] shadow-sm flex items-center gap-1.5 transition-colors"
+                  className="px-4 py-2 rounded-xl bg-[#012d1d] text-white text-xs font-bold hover:bg-[#2b694d] shadow-sm flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-sm">add</span>
-                  <span>Publicar en {currentCategoryInfo.name}</span>
+                  <span>{language === 'en' ? `Post in ${tCategory(currentCategoryInfo.name)}` : `Publicar en ${currentCategoryInfo.name}`}</span>
                 </button>
               </div>
             </div>
@@ -279,26 +283,28 @@ export const ExploraView: React.FC<ExploraViewProps> = ({
             <div className="flex items-center justify-between">
               <h2 className="font-headline font-bold text-base text-[#012d1d] flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-sm text-[#2b694d]">tune</span>
-                <span>Filtros</span>
+                <span>{language === 'en' ? 'Filters' : 'Filtros'}</span>
               </h2>
               <button
                 onClick={handleResetFilters}
-                className="text-xs text-[#717973] hover:text-[#012d1d] underline"
+                className="text-xs text-[#717973] hover:text-[#012d1d] underline cursor-pointer"
               >
-                Limpiar
+                {language === 'en' ? 'Clear' : 'Limpiar'}
               </button>
             </div>
 
             {/* Search Input */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-[#012d1d] block">Búsqueda</label>
+              <label className="text-xs font-bold text-[#012d1d] block">
+                {language === 'en' ? 'Search' : 'Búsqueda'}
+              </label>
               <div className="relative">
                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-sm text-[#717973]">
                   search
                 </span>
                 <input
                   type="text"
-                  placeholder="Buscar..."
+                  placeholder={language === 'en' ? 'Search...' : 'Buscar...'}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-9 pr-3 py-2 rounded-xl border border-[#c1c8c2] bg-white text-xs text-[#1b1c19] outline-none focus:border-[#012d1d]"
@@ -309,14 +315,16 @@ export const ExploraView: React.FC<ExploraViewProps> = ({
             {/* Colombia Department Selector */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-[#012d1d] block">
-                Ubicación en Colombia
+                {language === 'en' ? 'Location in Colombia' : 'Ubicación en Colombia'}
               </label>
               <select
                 value={selectedDepartment}
                 onChange={(e) => setSelectedDepartment(e.target.value)}
                 className="w-full px-3 py-2 rounded-xl border border-[#c1c8c2] bg-white text-xs text-[#1b1c19] outline-none focus:border-[#012d1d] cursor-pointer"
               >
-                <option value="Todos los departamentos">Todos los departamentos</option>
+                <option value="Todos los departamentos">
+                  {language === 'en' ? 'All departments' : 'Todos los departamentos'}
+                </option>
                 {COLOMBIA_DEPARTMENTS.map((dept) => (
                   <option key={dept.id} value={dept.name}>
                     {dept.name}
@@ -328,12 +336,12 @@ export const ExploraView: React.FC<ExploraViewProps> = ({
             {/* Price Range */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-[#012d1d] block">
-                Presupuesto ($ COP)
+                {language === 'en' ? 'Budget ($ COP)' : 'Presupuesto ($ COP)'}
               </label>
               <div className="flex items-center gap-2">
                 <input
                   type="number"
-                  placeholder="Mín"
+                  placeholder={language === 'en' ? 'Min' : 'Mín'}
                   value={minPrice}
                   onChange={(e) => setMinPrice(e.target.value)}
                   className="w-full px-2.5 py-1.5 rounded-xl border border-[#c1c8c2] text-xs text-[#1b1c19] outline-none"
@@ -341,7 +349,7 @@ export const ExploraView: React.FC<ExploraViewProps> = ({
                 <span className="text-[#717973] text-xs">-</span>
                 <input
                   type="number"
-                  placeholder="Máx"
+                  placeholder={language === 'en' ? 'Max' : 'Máx'}
                   value={maxPrice}
                   onChange={(e) => setMaxPrice(e.target.value)}
                   className="w-full px-2.5 py-1.5 rounded-xl border border-[#c1c8c2] text-xs text-[#1b1c19] outline-none"
@@ -354,16 +362,18 @@ export const ExploraView: React.FC<ExploraViewProps> = ({
           <div className="p-5 rounded-3xl bg-[#faf9f4] border border-[#c1c8c2]/50 text-center space-y-3">
             <span className="material-symbols-outlined text-3xl text-[#2b694d]">add_circle</span>
             <h4 className="font-headline font-bold text-xs text-[#012d1d]">
-              ¿Tienes una prenda para transformar?
+              {language === 'en' ? 'Have a garment to transform?' : '¿Tienes una prenda para transformar?'}
             </h4>
             <p className="text-[11px] text-[#717973] leading-relaxed">
-              Publica con fotos y conecta con artesanos locales para cotizar tu rediseño.
+              {language === 'en'
+                ? 'Publish with photos and connect with local artisans to quote your redesign.'
+                : 'Publica con fotos y conecta con artesanos locales para cotizar tu rediseño.'}
             </p>
             <button
               onClick={() => onNavigate('publicar-prenda')}
-              className="w-full py-2.5 rounded-xl bg-[#012d1d] text-white text-xs font-bold hover:bg-[#2b694d] transition-colors shadow-sm"
+              className="w-full py-2.5 rounded-xl bg-[#012d1d] text-white text-xs font-bold hover:bg-[#2b694d] transition-colors shadow-sm cursor-pointer"
             >
-              Publicar Prenda
+              {language === 'en' ? 'Post Garment' : 'Publicar Prenda'}
             </button>
           </div>
         </aside>
@@ -374,26 +384,26 @@ export const ExploraView: React.FC<ExploraViewProps> = ({
           <div className="flex items-center justify-between">
             <span className="text-xs text-[#717973] font-medium">
               {activeTab === 'prendas'
-                ? `Mostrando ${filteredGarments.length} prendas`
-                : `Mostrando ${filteredProfessionals.length} modistas y talleres`}
+                ? (language === 'en' ? `Showing ${filteredGarments.length} garments` : `Mostrando ${filteredGarments.length} prendas`)
+                : (language === 'en' ? `Showing ${filteredProfessionals.length} tailors and workshops` : `Mostrando ${filteredProfessionals.length} modistas y talleres`)}
             </span>
 
             <div className="flex items-center gap-2">
-              <span className="text-xs text-[#414844] font-medium">Ordenar:</span>
+              <span className="text-xs text-[#414844] font-medium">{language === 'en' ? 'Sort:' : 'Ordenar:'}</span>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as any)}
-                className="bg-white border border-[#c1c8c2] rounded-xl px-3 py-1.5 text-xs font-bold text-[#012d1d] outline-none"
+                className="bg-white border border-[#c1c8c2] rounded-xl px-3 py-1.5 text-xs font-bold text-[#012d1d] outline-none cursor-pointer"
               >
                 {activeTab === 'prendas' ? (
                   <>
-                    <option value="recent">Más recientes</option>
-                    <option value="price-asc">Menor precio</option>
+                    <option value="recent">{language === 'en' ? 'Most recent' : 'Más recientes'}</option>
+                    <option value="price-asc">{language === 'en' ? 'Lowest price' : 'Menor precio'}</option>
                   </>
                 ) : (
                   <>
-                    <option value="rating">Mejor calificación</option>
-                    <option value="price-asc">Precio más bajo</option>
+                    <option value="rating">{language === 'en' ? 'Highest rating' : 'Mejor calificación'}</option>
+                    <option value="price-asc">{language === 'en' ? 'Lowest price' : 'Precio más bajo'}</option>
                   </>
                 )}
               </select>
@@ -419,10 +429,12 @@ export const ExploraView: React.FC<ExploraViewProps> = ({
                         />
                         <div className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-lg bg-black/60 backdrop-blur-sm text-white text-[10px] font-bold flex items-center gap-1.5">
                           <span className="material-symbols-outlined text-xs">apparel</span>
-                          <span>{garment.category}</span>
+                          <span>{tCategory(garment.category)}</span>
                         </div>
                         <div className="absolute bottom-2.5 right-2.5 px-2 py-0.5 rounded-lg bg-white/90 backdrop-blur-sm text-[#012d1d] text-[10px] font-bold shadow-xs">
-                          {garment.listingType || 'Transformación'}
+                          {language === 'en'
+                            ? (garment.listingType === 'Transformación' ? 'Redesign' : garment.listingType === 'Venta' ? 'Sale' : garment.listingType === 'Intercambio' ? 'Swap' : 'Donation')
+                            : (garment.listingType || 'Transformación')}
                         </div>
                       </div>
 
@@ -461,12 +473,12 @@ export const ExploraView: React.FC<ExploraViewProps> = ({
                         <div className="text-right">
                           <span className="text-xs font-black text-[#012d1d] block">
                             {garment.listingType === 'Donación'
-                              ? 'Gratis'
+                              ? (language === 'en' ? 'Free' : 'Gratis')
                               : garment.listingType === 'Intercambio'
-                              ? 'Intercambio'
+                              ? (language === 'en' ? 'Swap' : 'Intercambio')
                               : garment.budget && garment.budget > 0
                               ? `$${garment.budget.toLocaleString()} COP`
-                              : 'Por acordar'}
+                              : (language === 'en' ? 'To agree' : 'Por acordar')}
                           </span>
                         </div>
                       </div>
@@ -477,16 +489,18 @@ export const ExploraView: React.FC<ExploraViewProps> = ({
                 <div className="bg-white rounded-3xl p-12 text-center border border-[#c1c8c2]/50 shadow-xs space-y-3">
                   <span className="material-symbols-outlined text-4xl text-[#717973]">search_off</span>
                   <h3 className="font-headline font-bold text-base text-[#012d1d]">
-                    No se encontraron prendas con estos filtros
+                    {language === 'en' ? 'No garments found with these filters' : 'No se encontraron prendas con estos filtros'}
                   </h3>
                   <p className="text-xs text-[#717973] max-w-sm mx-auto">
-                    Prueba seleccionando otra categoría o limpiando la búsqueda.
+                    {language === 'en'
+                      ? 'Try selecting another category or clearing your search.'
+                      : 'Prueba seleccionando otra categoría o limpiando la búsqueda.'}
                   </p>
                   <button
                     onClick={handleResetFilters}
-                    className="px-4 py-2 rounded-xl bg-[#012d1d] text-white text-xs font-bold hover:bg-[#2b694d]"
+                    className="px-4 py-2 rounded-xl bg-[#012d1d] text-white text-xs font-bold hover:bg-[#2b694d] cursor-pointer"
                   >
-                    Restablecer filtros
+                    {language === 'en' ? 'Reset filters' : 'Restablecer filtros'}
                   </button>
                 </div>
               )}
@@ -532,14 +546,14 @@ export const ExploraView: React.FC<ExploraViewProps> = ({
 
                       <div className="pt-3 border-t border-[#efeee9] flex items-center justify-between">
                         <div>
-                          <span className="text-[10px] text-[#717973] block">Desde</span>
+                          <span className="text-[10px] text-[#717973] block">{language === 'en' ? 'From' : 'Desde'}</span>
                           <span className="text-xs font-black text-[#012d1d]">${pro.startingPrice.toLocaleString()} COP</span>
                         </div>
                         <button
                           type="button"
-                          className="px-3.5 py-1.5 rounded-xl bg-[#faf9f4] text-[#012d1d] text-xs font-bold border border-[#c1c8c2]/50 group-hover:bg-[#b0f1cc] transition-colors"
+                          className="px-3.5 py-1.5 rounded-xl bg-[#faf9f4] text-[#012d1d] text-xs font-bold border border-[#c1c8c2]/50 group-hover:bg-[#b0f1cc] transition-colors cursor-pointer"
                         >
-                          Ver perfil
+                          {language === 'en' ? 'View profile' : 'Ver perfil'}
                         </button>
                       </div>
                     </div>
@@ -549,13 +563,13 @@ export const ExploraView: React.FC<ExploraViewProps> = ({
                 <div className="bg-white rounded-3xl p-12 text-center border border-[#c1c8c2]/50 shadow-xs space-y-3">
                   <span className="material-symbols-outlined text-4xl text-[#717973]">search_off</span>
                   <h3 className="font-headline font-bold text-base text-[#012d1d]">
-                    No se encontraron modistas con estos filtros
+                    {language === 'en' ? 'No tailors found with these filters' : 'No se encontraron modistas con estos filtros'}
                   </h3>
                   <button
                     onClick={handleResetFilters}
-                    className="px-4 py-2 rounded-xl bg-[#012d1d] text-white text-xs font-bold hover:bg-[#2b694d]"
+                    className="px-4 py-2 rounded-xl bg-[#012d1d] text-white text-xs font-bold hover:bg-[#2b694d] cursor-pointer"
                   >
-                    Restablecer filtros
+                    {language === 'en' ? 'Reset filters' : 'Restablecer filtros'}
                   </button>
                 </div>
               )}

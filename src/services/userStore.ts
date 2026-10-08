@@ -66,6 +66,99 @@ export const INITIAL_PERSISTED_ACCOUNTS: StoredUserAccount[] = [
     createdAt: '2025-03-01T00:00:00.000Z',
     isVerified: true,
   },
+  {
+    id: 'usr-camila-henao',
+    email: 'cami23henao@gmail.com',
+    name: 'Camila Henao',
+    role: 'cliente',
+    profile: {
+      id: 'usr-camila-henao',
+      name: 'Camila Henao',
+      email: 'cami23henao@gmail.com',
+      role: 'cliente',
+      avatarUrl: '',
+      username: '@camilahenao',
+      bio: 'Comprometida con el reciclaje textil y la moda sostenible.',
+      location: 'Medellín, Antioquia',
+      department: 'Antioquia',
+      municipality: 'Medellín',
+      phone: '+57 310 456 7890',
+      instagram: '@cami_upcycle',
+      joinedDate: 'Marzo 2026',
+      publishedCount: 2,
+      upcycledCount: 1,
+      waterSavedLiters: 1800,
+      co2SavedKg: 6.2,
+    },
+    garments: [],
+    services: [],
+    requests: [],
+    conversations: [],
+    createdAt: '2026-03-01T00:00:00.000Z',
+    isVerified: true,
+  },
+  {
+    id: 'usr-g-1790549609943',
+    email: 'sofia.disenadora@gmail.com',
+    name: 'Sofía Diseñadora',
+    role: 'profesional',
+    profile: {
+      id: 'usr-g-1790549609943',
+      name: 'Sofía Diseñadora',
+      email: 'sofia.disenadora@gmail.com',
+      role: 'profesional',
+      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+      username: '@sofiadisenadora',
+      bio: 'Diseñadora textil sostenible especializada en denim suprareciclado.',
+      location: 'Medellín, Antioquia',
+      department: 'Antioquia',
+      municipality: 'Medellín',
+      phone: '',
+      instagram: '@sofia_upcycling',
+      joinedDate: 'Septiembre 2026',
+      publishedCount: 4,
+      upcycledCount: 12,
+      waterSavedLiters: 4800,
+      co2SavedKg: 18.2,
+    },
+    garments: [],
+    services: [],
+    requests: [],
+    conversations: [],
+    createdAt: '2026-09-27T22:53:29.944Z',
+    isVerified: true,
+  },
+  {
+    id: 'usr-g-1790690335006',
+    email: 'test.user@gmail.com',
+    name: 'Test User',
+    role: 'cliente',
+    profile: {
+      id: 'usr-g-1790690335006',
+      name: 'Test User',
+      email: 'test.user@gmail.com',
+      role: 'cliente',
+      avatarUrl: '',
+      username: '@testuser',
+      bio: 'Usuario entusiasta de Reborn Your Style.',
+      location: 'Colombia',
+      department: 'Cundinamarca',
+      municipality: 'Bogotá',
+      phone: '',
+      instagram: '',
+      joinedDate: 'Septiembre 2026',
+      publishedCount: 0,
+      upcycledCount: 0,
+      waterSavedLiters: 0,
+      co2SavedKg: 0,
+    },
+    garments: [],
+    services: [],
+    requests: [],
+    conversations: [],
+    createdAt: '2026-09-29T13:58:55.006Z',
+    isVerified: true,
+  },
 ];
 
 /**
@@ -681,7 +774,16 @@ export async function loginWithGoogleExistingOnly(email: string, name?: string, 
     });
     const data = await res.json();
     if (data.success && data.exists) {
-      return loginOrRegisterWithGoogle({ email: cleanEmail, name, avatarUrl, role: 'cliente' });
+      const backendUser = data.user;
+      const role: UserRole = backendUser?.role === 'profesional' ? 'profesional' : 'cliente';
+      const userName = backendUser?.name || name || cleanEmail.split('@')[0];
+      const userAvatar = backendUser?.avatarUrl || avatarUrl || '';
+      return loginOrRegisterWithGoogle({
+        email: cleanEmail,
+        name: userName,
+        avatarUrl: userAvatar,
+        role,
+      });
     }
   } catch (e) {
     console.warn('Backend check-user error:', e);
@@ -696,22 +798,85 @@ export async function loginWithGoogleExistingOnly(email: string, name?: string, 
 
 
 /**
+ * Finds a user account by email or phone number in local persistent database.
+ */
+export function findAccountByIdentifier(query: string): StoredUserAccount | null {
+  const clean = (query || '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim().toLowerCase();
+  if (!clean) return null;
+  const digits = clean.replace(/\D/g, '');
+
+  const db = getUsersDatabase();
+  for (const acc of db) {
+    if ((acc.email || '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim().toLowerCase() === clean) {
+      return acc;
+    }
+    if (digits && digits.length >= 7) {
+      const uPhone = (acc.profile?.phone || (acc as any).phone || '').replace(/\D/g, '');
+      if (uPhone && (uPhone.includes(digits) || digits.includes(uPhone))) {
+        return acc;
+      }
+    }
+  }
+
+  if (
+    clean === EXCLUSIVE_ADMIN_EMAIL.toLowerCase() ||
+    clean === 'admin@rebornstyle.co' ||
+    clean === 'admin@rebornyourstyle.com'
+  ) {
+    return {
+      id: 'usr-admin',
+      name: 'Administrador Reborn',
+      email: clean,
+      role: 'admin',
+      profile: {
+        id: 'usr-admin',
+        name: 'Administrador Reborn',
+        email: clean,
+        role: 'admin',
+        avatarUrl: '',
+        username: '@admin',
+        bio: 'Administración de la plataforma',
+        location: 'Bogotá, Colombia',
+        department: 'Cundinamarca',
+        municipality: 'Bogotá',
+        phone: '+57 300 123 4567',
+        instagram: '',
+        joinedDate: 'Enero 2025',
+        publishedCount: 0,
+        upcycledCount: 0,
+        waterSavedLiters: 0,
+        co2SavedKg: 0,
+      },
+      garments: [],
+      services: [],
+      requests: [],
+      conversations: [],
+      createdAt: '2025-01-01T00:00:00.000Z',
+      isVerified: true,
+    };
+  }
+
+  return null;
+}
+
+/**
  * Verifies if an email corresponds to an existing, valid registered account.
  * Used during password recovery to ensure only registered accounts can request codes.
  */
 export function isAccountRegistered(email: string): boolean {
-  const cleanEmail = (email || '').trim().toLowerCase();
+  const cleanEmail = (email || '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim().toLowerCase();
   if (!cleanEmail) return false;
   if (
     cleanEmail === EXCLUSIVE_ADMIN_EMAIL.toLowerCase() ||
     cleanEmail === 'admin@rebornstyle.co' ||
     cleanEmail === 'admin@rebornyourstyle.com' ||
-    cleanEmail === 'alex.moreno@rebornyourstyle.co'
+    cleanEmail === 'alex.moreno@rebornyourstyle.co' ||
+    cleanEmail === 'cami23henao@gmail.com'
   ) {
     return true;
   }
   const db = getUsersDatabase();
-  return db.some((u) => (u.email || '').trim().toLowerCase() === cleanEmail);
+  return db.some((u) => (u.email || '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim().toLowerCase() === cleanEmail);
 }
 
 /**

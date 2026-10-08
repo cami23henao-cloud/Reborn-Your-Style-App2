@@ -6,6 +6,13 @@ import {defineConfig} from 'vite';
 export default defineConfig(() => {
   return {
     plugins: [react(), tailwindcss()],
+    define: {
+      'import.meta.env.VITE_GOOGLE_CLIENT_ID': JSON.stringify(
+        process.env.VITE_GOOGLE_CLIENT_ID ||
+        process.env.GOOGLE_CLIENT_ID ||
+        '1058802324996-kpvh92i36sj8q70f011sie09p22bolp9.apps.googleusercontent.com'
+      ),
+    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),

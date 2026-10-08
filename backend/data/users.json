@@ -9,13 +9,28 @@
     "createdAt": "2025-03-01T00:00:00.000Z"
   },
   {
+    "id": "usr-camila-henao",
+    "name": "Camila Henao",
+    "email": "cami23henao@gmail.com",
+    "password": "$2b$10$ilB120waVbaM1pZo4cXo6.I88CHHDyndnP8as28ZNJpleFPI6wSoy",
+    "role": "cliente",
+    "phone": "+57 310 456 7890",
+    "authProvider": "email",
+    "isVerified": true,
+    "createdAt": "2026-03-01T00:00:00.000Z",
+    "lastLoginAt": "2026-10-07T21:18:54.130Z",
+    "reset_code_hash": ""
+  },
+  {
     "id": "usr-admin",
     "name": "Administrador Reborn",
     "email": "admin@rebornyourstyle.com",
     "password": "$2b$10$CGVzv8C/3ZvmWatwNMbSyeLqRHwvSnpQ1LSVqQUa2CGcnmPCC7eqy",
     "role": "admin",
     "authProvider": "email",
-    "createdAt": "2025-01-01T00:00:00.000Z"
+    "createdAt": "2025-01-01T00:00:00.000Z",
+    "reset_code": "351380",
+    "reset_expires_at": "2026-10-07T01:05:46.532Z"
   },
   {
     "id": "usr-g-1790549609943",
@@ -60,5 +75,18 @@
     "avatarUrl": null,
     "isVerified": true,
     "createdAt": "2026-09-29T14:18:54.296Z"
+  },
+  {
+    "id": "usr-camila-henao",
+    "name": "Camila Henao",
+    "email": "cami23henao@gmail.com",
+    "password": "$2b$10$ilB120waVbaM1pZo4cXo6.I88CHHDyndnP8as28ZNJpleFPI6wSoy",
+    "role": "cliente",
+    "phone": "+57 310 456 7890",
+    "authProvider": "email",
+    "isVerified": true,
+    "createdAt": "2026-03-01T00:00:00.000Z",
+    "lastLoginAt": "2026-10-07T21:18:54.130Z",
+    "reset_code_hash": ""
   }
 ]

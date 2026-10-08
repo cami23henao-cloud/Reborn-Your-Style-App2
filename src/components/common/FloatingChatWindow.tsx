@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChatConversation } from '../../types';
 import { UserAvatar } from './UserAvatar';
+import { useThemeLanguage } from '../../context/ThemeLanguageContext';
 
 interface FloatingChatWindowProps {
   conversation: ChatConversation | null;
@@ -18,6 +19,9 @@ export const FloatingChatWindow: React.FC<FloatingChatWindowProps> = ({
   onSendMessage,
   onOpenFullScreen,
 }) => {
+  const { language } = useThemeLanguage();
+  const isEn = language === 'en';
+
   const [inputText, setInputText] = useState('');
   const [isMinimized, setIsMinimized] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -53,7 +57,7 @@ export const FloatingChatWindow: React.FC<FloatingChatWindowProps> = ({
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 40, scale: 0.95 }}
         transition={{ duration: 0.25, ease: 'easeOut' }}
-        className="fixed bottom-4 right-4 sm:right-6 z-50 w-[calc(100vw-32px)] sm:w-96 bg-white rounded-2xl shadow-2xl border border-[#c1c8c2]/50 overflow-hidden flex flex-col font-sans"
+        className="fixed bottom-4 right-4 sm:right-6 z-50 w-[calc(100vw-32px)] sm:w-96 bg-white dark:bg-[#0e241c] rounded-2xl shadow-2xl border border-[#c1c8c2]/50 dark:border-[#2b694d]/40 overflow-hidden flex flex-col font-sans"
         style={{ height: isMinimized ? 'auto' : '500px', maxHeight: '82vh' }}
       >
         {/* Chat Header */}
@@ -73,7 +77,7 @@ export const FloatingChatWindow: React.FC<FloatingChatWindowProps> = ({
                 {conversation.participantName}
               </h4>
               <p className="text-[10px] text-[#b0f1cc] truncate">
-                {conversation.participantRole || 'Costurero / Modista'}
+                {conversation.participantRole || (isEn ? 'Tailor / Designer' : 'Costurero / Modista')}
               </p>
             </div>
           </div>
@@ -83,8 +87,8 @@ export const FloatingChatWindow: React.FC<FloatingChatWindowProps> = ({
               <button
                 type="button"
                 onClick={onOpenFullScreen}
-                className="p-1 rounded-md text-white/80 hover:text-white hover:bg-white/10 transition-colors"
-                title="Abrir en pantalla completa de mensajes"
+                className="p-1 rounded-md text-white/80 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                title={isEn ? 'Open full screen messages' : 'Abrir en pantalla completa de mensajes'}
               >
                 <span className="material-symbols-outlined text-base">open_in_full</span>
               </button>
@@ -93,8 +97,8 @@ export const FloatingChatWindow: React.FC<FloatingChatWindowProps> = ({
             <button
               type="button"
               onClick={() => setIsMinimized(!isMinimized)}
-              className="p-1 rounded-md text-white/80 hover:text-white hover:bg-white/10 transition-colors"
-              title={isMinimized ? 'Expandir chat' : 'Minimizar chat'}
+              className="p-1 rounded-md text-white/80 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+              title={isMinimized ? (isEn ? 'Expand chat' : 'Expandir chat') : (isEn ? 'Minimize chat' : 'Minimizar chat')}
             >
               <span className="material-symbols-outlined text-base">
                 {isMinimized ? 'expand_less' : 'remove'}
@@ -104,8 +108,8 @@ export const FloatingChatWindow: React.FC<FloatingChatWindowProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="p-1 rounded-md text-white/80 hover:text-white hover:bg-white/10 transition-colors"
-              title="Cerrar chat"
+              className="p-1 rounded-md text-white/80 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+              title={isEn ? 'Close chat' : 'Cerrar chat'}
             >
               <span className="material-symbols-outlined text-base">close</span>
             </button>
@@ -115,19 +119,19 @@ export const FloatingChatWindow: React.FC<FloatingChatWindowProps> = ({
         {/* Chat Body (hidden when minimized) */}
         {!isMinimized && (
           <>
-            <div className="flex-1 p-4 overflow-y-auto bg-[#faf9f4] space-y-3">
+            <div className="flex-1 p-4 overflow-y-auto bg-[#faf9f4] dark:bg-[#001b10] space-y-3">
               {/* If no messages: Empty State (Requirement 8) */}
               {messages.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-3">
-                  <div className="w-12 h-12 rounded-full bg-[#e8f5ed] text-[#2b694d] flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-full bg-[#e8f5ed] dark:bg-[#002113] text-[#2b694d] dark:text-[#b0f1cc] flex items-center justify-center">
                     <span className="material-symbols-outlined text-2xl">chat</span>
                   </div>
                   <div>
-                    <h5 className="font-bold text-xs text-[#012d1d]">
-                      Conversación con {conversation.participantName}
+                    <h5 className="font-bold text-xs text-[#012d1d] dark:text-white">
+                      {isEn ? `Conversation with ${conversation.participantName}` : `Conversación con ${conversation.participantName}`}
                     </h5>
-                    <p className="text-[11px] text-[#717973] mt-1 leading-relaxed">
-                      El chat está listo. Escribe tu primer mensaje abajo para consultar disponibilidad, precios o ajustes.
+                    <p className="text-[11px] text-[#717973] dark:text-[#a0a5a1] mt-1 leading-relaxed">
+                      {isEn ? 'The chat is ready. Type your first message below to ask about availability, prices, or alterations.' : 'El chat está listo. Escribe tu primer mensaje abajo para consultar disponibilidad, precios o ajustes.'}
                     </p>
                   </div>
                 </div>
@@ -146,13 +150,13 @@ export const FloatingChatWindow: React.FC<FloatingChatWindowProps> = ({
                         className={`max-w-[80%] rounded-2xl px-3.5 py-2.5 text-xs shadow-xs leading-relaxed ${
                           isUser
                             ? 'bg-[#012d1d] text-white rounded-br-xs'
-                            : 'bg-white text-[#1b1c19] border border-[#efeee9] rounded-bl-xs'
+                            : 'bg-white dark:bg-[#0e241c] text-[#1b1c19] dark:text-white border border-[#efeee9] dark:border-[#2b694d]/30 rounded-bl-xs'
                         }`}
                       >
                         <p>{msg.text}</p>
                         <span
                           className={`text-[9px] block mt-1 text-right ${
-                            isUser ? 'text-[#b0f1cc]/80' : 'text-[#717973]'
+                            isUser ? 'text-[#b0f1cc]/80' : 'text-[#717973] dark:text-[#a0a5a1]'
                           }`}
                         >
                           {msg.time}
@@ -168,21 +172,21 @@ export const FloatingChatWindow: React.FC<FloatingChatWindowProps> = ({
             {/* Chat Input */}
             <form
               onSubmit={handleSend}
-              className="p-3 bg-white border-t border-[#efeee9] flex items-center gap-2"
+              className="p-3 bg-white dark:bg-[#0e241c] border-t border-[#efeee9] dark:border-[#2b694d]/30 flex items-center gap-2"
             >
               <input
                 ref={inputRef}
                 type="text"
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
-                placeholder="Escribe un mensaje..."
-                className="flex-1 text-xs px-3.5 py-2.5 rounded-xl bg-[#f5f4ef] border border-[#c1c8c2]/50 text-[#1b1c19] focus:outline-none focus:border-[#012d1d] focus:bg-white transition-all"
+                placeholder={isEn ? 'Type a message...' : 'Escribe un mensaje...'}
+                className="flex-1 text-xs px-3.5 py-2.5 rounded-xl bg-[#f5f4ef] dark:bg-[#002113]/50 border border-[#c1c8c2]/50 dark:border-[#2b694d]/40 text-[#1b1c19] dark:text-white focus:outline-none focus:border-[#012d1d] focus:bg-white transition-all"
               />
               <button
                 type="submit"
                 disabled={!inputText.trim()}
                 className="p-2.5 rounded-xl bg-[#012d1d] text-white hover:bg-[#2b694d] disabled:opacity-40 disabled:hover:bg-[#012d1d] transition-all cursor-pointer flex items-center justify-center shrink-0"
-                title="Enviar mensaje"
+                title={isEn ? 'Send message' : 'Enviar mensaje'}
               >
                 <span className="material-symbols-outlined text-base">send</span>
               </button>

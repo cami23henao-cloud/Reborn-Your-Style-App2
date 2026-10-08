@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { Professional, AppView } from '../../types';
 import { UserAvatar } from '../common/UserAvatar';
+import { useThemeLanguage } from '../../context/ThemeLanguageContext';
 
 interface ProfessionalProfileViewProps {
   professional: Professional;
@@ -18,6 +19,8 @@ export const ProfessionalProfileView: React.FC<ProfessionalProfileViewProps> = (
   onSendMessage,
   onNavigate,
 }) => {
+  const { language } = useThemeLanguage();
+  const isEn = language === 'en';
   const [copiedAddress, setCopiedAddress] = useState(false);
 
   // Address and location handling
@@ -52,7 +55,7 @@ export const ProfessionalProfileView: React.FC<ProfessionalProfileViewProps> = (
         <span className="material-symbols-outlined text-base group-hover:-translate-x-1 transition-transform">
           arrow_back
         </span>
-        <span>Volver a Encuentra tu costurero</span>
+        <span>{isEn ? 'Back to Find your tailor' : 'Volver a Encuentra tu costurero'}</span>
       </button>
 
       {/* Main Profile Header Section */}
@@ -62,7 +65,7 @@ export const ProfessionalProfileView: React.FC<ProfessionalProfileViewProps> = (
           initial={{ opacity: 0, x: -16 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.35, delay: 0.05 }}
-          className="w-full md:w-1/3 flex flex-col items-center md:items-start text-center md:text-left bg-white p-6 sm:p-8 rounded-3xl shadow-[0_4px_20px_rgba(1,45,29,0.05)] border border-[#efeee9]"
+          className="w-full md:w-1/3 flex flex-col items-center md:items-start text-center md:text-left bg-white dark:bg-[#0e241c] p-6 sm:p-8 rounded-3xl shadow-[0_4px_20px_rgba(1,45,29,0.05)] border border-[#efeee9] dark:border-[#2b694d]/40"
         >
           <div className="relative mb-5">
             <UserAvatar
@@ -78,15 +81,15 @@ export const ProfessionalProfileView: React.FC<ProfessionalProfileViewProps> = (
             )}
           </div>
 
-          <h1 className="font-headline text-2xl md:text-3xl font-bold text-[#012d1d] mb-1">
+          <h1 className="font-headline text-2xl md:text-3xl font-bold text-[#012d1d] dark:text-white mb-1">
             {professional.name}
           </h1>
 
-          <p className="text-sm font-medium text-[#414844] mb-2">{professional.specialty}</p>
+          <p className="text-sm font-medium text-[#414844] dark:text-[#c1c8c2] mb-2">{professional.specialty}</p>
 
           {/* Location Badge (only if provided) */}
           {professional.location ? (
-            <div className="flex items-center gap-1 text-[#717973] text-xs mb-3">
+            <div className="flex items-center gap-1 text-[#717973] dark:text-[#a0a5a1] text-xs mb-3">
               <span className="material-symbols-outlined text-base text-[#2b694d]">location_on</span>
               <span>{professional.location}</span>
             </div>
@@ -94,7 +97,7 @@ export const ProfessionalProfileView: React.FC<ProfessionalProfileViewProps> = (
 
           {/* Physical Address (only if provided) */}
           {professional.address ? (
-            <div className="flex items-center gap-1 text-[#414844] text-xs font-semibold mb-3 bg-[#f5f4ef] px-2.5 py-1 rounded-lg border border-[#c1c8c2]/40">
+            <div className="flex items-center gap-1 text-[#414844] dark:text-[#e2e0d8] text-xs font-semibold mb-3 bg-[#f5f4ef] dark:bg-[#002113]/60 px-2.5 py-1 rounded-lg border border-[#c1c8c2]/40">
               <span className="material-symbols-outlined text-sm text-[#2b694d]">storefront</span>
               <span className="truncate">{professional.address}</span>
             </div>
@@ -115,8 +118,8 @@ export const ProfessionalProfileView: React.FC<ProfessionalProfileViewProps> = (
                 </span>
               ))}
             </div>
-            <span className="text-xs font-semibold text-[#414844]">
-              ({professional.rating} - {professional.reviewsCount} reseñas)
+            <span className="text-xs font-semibold text-[#414844] dark:text-[#c1c8c2]">
+              ({professional.rating} - {professional.reviewsCount} {isEn ? 'reviews' : 'reseñas'})
             </span>
           </div>
 
@@ -127,7 +130,7 @@ export const ProfessionalProfileView: React.FC<ProfessionalProfileViewProps> = (
               className="w-full font-semibold text-sm bg-[#e37b5e] text-white hover:bg-[#c9664b] py-3.5 px-5 rounded-xl transition-all shadow-[0_8px_24px_rgba(227,123,94,0.25)] flex items-center justify-center gap-2 active:scale-98 cursor-pointer"
             >
               <span className="material-symbols-outlined text-lg">shopping_bag</span>
-              <span>Solicitar servicio</span>
+              <span>{isEn ? 'Request Service' : 'Solicitar servicio'}</span>
             </button>
 
             <button
@@ -135,7 +138,7 @@ export const ProfessionalProfileView: React.FC<ProfessionalProfileViewProps> = (
               className="w-full font-semibold text-sm bg-[#012d1d] text-[#b0f1cc] hover:bg-[#2b694d] hover:text-white py-3.5 px-5 rounded-xl transition-colors shadow-xs flex items-center justify-center gap-2 active:scale-98 cursor-pointer"
             >
               <span className="material-symbols-outlined text-lg">chat_bubble</span>
-              <span>Iniciar conversación</span>
+              <span>{isEn ? 'Start Conversation' : 'Iniciar conversación'}</span>
             </button>
           </div>
         </motion.div>
@@ -147,21 +150,23 @@ export const ProfessionalProfileView: React.FC<ProfessionalProfileViewProps> = (
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35, delay: 0.1 }}
-            className="bg-white rounded-3xl p-6 sm:p-8 shadow-[0_4px_20px_rgba(1,45,29,0.05)] border border-[#efeee9]"
+            className="bg-white dark:bg-[#0e241c] rounded-3xl p-6 sm:p-8 shadow-[0_4px_20px_rgba(1,45,29,0.05)] border border-[#efeee9] dark:border-[#2b694d]/40"
           >
-            <h2 className="font-headline text-xl font-bold text-[#012d1d] mb-3">Sobre Mí</h2>
-            <p className="text-sm md:text-base text-[#1b1c19] leading-relaxed mb-6">
+            <h2 className="font-headline text-xl font-bold text-[#012d1d] dark:text-white mb-3">
+              {isEn ? 'About Me' : 'Sobre Mí'}
+            </h2>
+            <p className="text-sm md:text-base text-[#1b1c19] dark:text-[#c1c8c2] leading-relaxed mb-6">
               {professional.bio}
             </p>
 
-            <h3 className="font-headline text-xs font-bold text-[#012d1d] uppercase tracking-wider mb-3">
-              Especialidades y Técnicas
+            <h3 className="font-headline text-xs font-bold text-[#012d1d] dark:text-[#b0f1cc] uppercase tracking-wider mb-3">
+              {isEn ? 'Specialties & Techniques' : 'Especialidades y Técnicas'}
             </h3>
             <div className="flex flex-wrap gap-2">
               {professional.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="bg-[#e4ece7] text-[#012d1d] font-semibold text-xs px-4 py-2 rounded-full border border-[#94d4b1]/40"
+                  className="bg-[#e4ece7] dark:bg-[#002113] text-[#012d1d] dark:text-[#b0f1cc] font-semibold text-xs px-4 py-2 rounded-full border border-[#94d4b1]/40"
                 >
                   {tag}
                 </span>
@@ -175,19 +180,19 @@ export const ProfessionalProfileView: React.FC<ProfessionalProfileViewProps> = (
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.35, delay: 0.15 }}
-              className="bg-white rounded-3xl p-6 sm:p-8 shadow-[0_4px_20px_rgba(1,45,29,0.05)] border border-[#efeee9] space-y-4"
+              className="bg-white dark:bg-[#0e241c] rounded-3xl p-6 sm:p-8 shadow-[0_4px_20px_rgba(1,45,29,0.05)] border border-[#efeee9] dark:border-[#2b694d]/40 space-y-4"
             >
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#efeee9]">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#efeee9] dark:border-[#2b694d]/30">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-xl text-[#2b694d]">
+                    <span className="material-symbols-outlined text-xl text-[#2b694d] dark:text-[#b0f1cc]">
                       pin_drop
                     </span>
-                    <h3 className="font-headline text-lg font-bold text-[#012d1d]">
-                      Ubicación y Taller en Google Maps
+                    <h3 className="font-headline text-lg font-bold text-[#012d1d] dark:text-white">
+                      {isEn ? 'Location & Workshop on Google Maps' : 'Ubicación y Taller en Google Maps'}
                     </h3>
                   </div>
-                  <p className="text-xs text-[#717973] mt-0.5">
+                  <p className="text-xs text-[#717973] dark:text-[#a0a5a1] mt-0.5">
                     {professional.address ? `${professional.address} • ` : ''}
                     {professional.location}
                   </p>
@@ -198,13 +203,13 @@ export const ProfessionalProfileView: React.FC<ProfessionalProfileViewProps> = (
                     <button
                       type="button"
                       onClick={handleCopyAddress}
-                      className="px-3 py-1.5 rounded-xl border border-[#c1c8c2]/50 text-xs font-semibold text-[#414844] hover:text-[#012d1d] hover:bg-[#efeee9] transition-colors flex items-center gap-1"
-                      title="Copiar dirección exacta"
+                      className="px-3 py-1.5 rounded-xl border border-[#c1c8c2]/50 text-xs font-semibold text-[#414844] dark:text-[#e2e0d8] hover:text-[#012d1d] hover:bg-[#efeee9] transition-colors flex items-center gap-1 cursor-pointer"
+                      title={isEn ? 'Copy address' : 'Copiar dirección exacta'}
                     >
                       <span className="material-symbols-outlined text-sm">
                         {copiedAddress ? 'check' : 'content_copy'}
                       </span>
-                      <span>{copiedAddress ? 'Copiada' : 'Copiar'}</span>
+                      <span>{copiedAddress ? (isEn ? 'Copied' : 'Copiada') : (isEn ? 'Copy' : 'Copiar')}</span>
                     </button>
                   )}
 
@@ -213,12 +218,12 @@ export const ProfessionalProfileView: React.FC<ProfessionalProfileViewProps> = (
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-[#012d1d] hover:bg-[#2b694d] text-white text-xs font-bold transition-all shadow-xs"
-                    title="Abrir ubicación directamente en la aplicación o web de Google Maps"
+                    title={isEn ? 'Open in Google Maps' : 'Abrir ubicación directamente en Google Maps'}
                   >
                     <span className="material-symbols-outlined text-sm text-[#b0f1cc]">
                       open_in_new
                     </span>
-                    <span>Abrir en Google Maps</span>
+                    <span>{isEn ? 'Open in Google Maps' : 'Abrir en Google Maps'}</span>
                   </a>
                 </div>
               </div>
@@ -226,7 +231,7 @@ export const ProfessionalProfileView: React.FC<ProfessionalProfileViewProps> = (
               {/* Functional Embedded Interactive Google Map */}
               <div className="w-full h-64 sm:h-72 rounded-2xl overflow-hidden border border-[#c1c8c2]/60 shadow-inner relative bg-[#f5f4ef]">
                 <iframe
-                  title={`Google Maps - Taller de ${professional.name}`}
+                  title={`Google Maps - ${professional.name}`}
                   src={googleMapsEmbedUrl}
                   width="100%"
                   height="100%"
@@ -237,18 +242,18 @@ export const ProfessionalProfileView: React.FC<ProfessionalProfileViewProps> = (
                 />
               </div>
 
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs text-[#717973] pt-1">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs text-[#717973] dark:text-[#a0a5a1] pt-1">
                 <span className="flex items-center gap-1">
                   <span className="material-symbols-outlined text-sm text-[#2b694d]">check_circle</span>
-                  <span>Ubicación verificada mediante Google Maps Platform</span>
+                  <span>{isEn ? 'Location verified via Google Maps Platform' : 'Ubicación verificada mediante Google Maps Platform'}</span>
                 </span>
                 <a
                   href={googleMapsExternalUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs font-semibold text-[#2b694d] hover:underline flex items-center gap-0.5 mt-1 sm:mt-0"
+                  className="text-xs font-semibold text-[#2b694d] dark:text-[#b0f1cc] hover:underline flex items-center gap-0.5 mt-1 sm:mt-0"
                 >
-                  <span>Cómo llegar con GPS</span>
+                  <span>{isEn ? 'Directions with GPS' : 'Cómo llegar con GPS'}</span>
                   <span className="material-symbols-outlined text-xs">arrow_forward</span>
                 </a>
               </div>
@@ -260,17 +265,17 @@ export const ProfessionalProfileView: React.FC<ProfessionalProfileViewProps> = (
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35, delay: 0.2 }}
-            className="bg-white rounded-3xl p-6 sm:p-8 shadow-[0_4px_20px_rgba(1,45,29,0.05)] border border-[#efeee9]"
+            className="bg-white dark:bg-[#0e241c] rounded-3xl p-6 sm:p-8 shadow-[0_4px_20px_rgba(1,45,29,0.05)] border border-[#efeee9] dark:border-[#2b694d]/40"
           >
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-headline text-lg font-bold text-[#012d1d]">
-                Trabajos y Proyectos Recientes
+              <h3 className="font-headline text-lg font-bold text-[#012d1d] dark:text-white">
+                {isEn ? 'Recent Works & Projects' : 'Trabajos y Proyectos Recientes'}
               </h3>
               <button
                 onClick={() => onNavigate('inspiracion')}
-                className="text-xs font-semibold text-[#2b694d] hover:underline cursor-pointer"
+                className="text-xs font-semibold text-[#2b694d] dark:text-[#b0f1cc] hover:underline cursor-pointer"
               >
-                Ver en galería
+                {isEn ? 'View in gallery' : 'Ver en galería'}
               </button>
             </div>
 
@@ -278,15 +283,15 @@ export const ProfessionalProfileView: React.FC<ProfessionalProfileViewProps> = (
               {professional.portfolio.map((item) => (
                 <div
                   key={item.id}
-                  className="group rounded-2xl overflow-hidden border border-[#efeee9] bg-[#f5f4ef] relative"
+                  className="group rounded-2xl overflow-hidden border border-[#efeee9] dark:border-[#2b694d]/30 bg-[#f5f4ef] dark:bg-[#002113]/40 relative"
                 >
                   <img
                     src={item.imageUrl}
                     alt={item.title}
                     className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                   />
-                  <div className="p-3.5 bg-white">
-                    <p className="text-xs font-bold text-[#012d1d] truncate">{item.title}</p>
+                  <div className="p-3.5 bg-white dark:bg-[#0e241c]">
+                    <p className="text-xs font-bold text-[#012d1d] dark:text-[#e2e0d8] truncate">{item.title}</p>
                   </div>
                 </div>
               ))}
@@ -298,19 +303,19 @@ export const ProfessionalProfileView: React.FC<ProfessionalProfileViewProps> = (
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35, delay: 0.25 }}
-            className="bg-white rounded-3xl p-6 sm:p-8 shadow-[0_4px_20px_rgba(1,45,29,0.05)] border border-[#efeee9]"
+            className="bg-white dark:bg-[#0e241c] rounded-3xl p-6 sm:p-8 shadow-[0_4px_20px_rgba(1,45,29,0.05)] border border-[#efeee9] dark:border-[#2b694d]/40"
           >
-            <h3 className="font-headline text-lg font-bold text-[#012d1d] mb-4">
-              Opiniones de Clientes ({professional.reviews.length})
+            <h3 className="font-headline text-lg font-bold text-[#012d1d] dark:text-white mb-4">
+              {isEn ? 'Customer Reviews' : 'Opiniones de Clientes'} ({professional.reviews.length})
             </h3>
             <div className="space-y-4">
               {professional.reviews.map((rev) => (
-                <div key={rev.id} className="p-4 rounded-2xl bg-[#f5f4ef] border border-[#efeee9]">
+                <div key={rev.id} className="p-4 rounded-2xl bg-[#f5f4ef] dark:bg-[#002113]/40 border border-[#efeee9] dark:border-[#2b694d]/30">
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex items-center gap-2">
                       <UserAvatar name={rev.author} size="sm" />
                       <div>
-                        <h4 className="font-semibold text-xs text-[#012d1d]">{rev.author}</h4>
+                        <h4 className="font-semibold text-xs text-[#012d1d] dark:text-white">{rev.author}</h4>
                         <div className="flex text-[#FFB400] text-xs mt-0.5">
                           {[...Array(rev.rating)].map((_, i) => (
                             <span
@@ -324,9 +329,9 @@ export const ProfessionalProfileView: React.FC<ProfessionalProfileViewProps> = (
                         </div>
                       </div>
                     </div>
-                    <span className="text-[11px] text-[#717973]">{rev.date}</span>
+                    <span className="text-[11px] text-[#717973] dark:text-[#a0a5a1]">{rev.date}</span>
                   </div>
-                  <p className="text-xs text-[#414844] italic">"{rev.comment}"</p>
+                  <p className="text-xs text-[#414844] dark:text-[#c1c8c2] italic">"{rev.comment}"</p>
                 </div>
               ))}
             </div>

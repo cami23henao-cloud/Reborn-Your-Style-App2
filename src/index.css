@@ -196,6 +196,21 @@ body,
   animation: titleEntry 0.65s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-down {
+  animation: fadeInDown 0.65s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 @keyframes fadeUpSubtle {
   from {
     opacity: 0;
@@ -209,6 +224,18 @@ body,
 
 .animate-fade-up {
   animation: fadeUpSubtle 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Microinteracciones en textos y títulos interactivos */
+.text-hover-lift {
+  display: inline-block;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s ease, text-shadow 0.25s ease;
+  will-change: transform;
+}
+
+.text-hover-lift:hover {
+  transform: translateY(-2px);
+  text-shadow: 0 2px 10px rgba(176, 241, 204, 0.25);
 }
 
 /* ==========================================================================
@@ -435,6 +462,27 @@ body,
 
 .animate-stagger-3 {
   animation: staggeredFadeIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both;
+}
+
+@keyframes shimmerSweep {
+  0% {
+    transform: translateX(-120%) rotate(25deg);
+    opacity: 0;
+  }
+  35% {
+    opacity: 0.8;
+  }
+  70% {
+    opacity: 0.4;
+  }
+  100% {
+    transform: translateX(220%) rotate(25deg);
+    opacity: 0;
+  }
+}
+
+.animate-shimmer-sweep {
+  animation: shimmerSweep 1.8s cubic-bezier(0.16, 1, 0.3, 1) infinite;
 }
 
 /* Reduced motion support */

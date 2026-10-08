@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useThemeLanguage } from '../../context/ThemeLanguageContext';
 
 interface InfoModalProps {
   type:
@@ -20,6 +21,7 @@ export const InfoModals: React.FC<InfoModalProps> = ({
   onClose,
   onSendMessage
 }) => {
+  const { t, language } = useThemeLanguage();
   const [contactName, setContactName] = useState('');
   const [contactEmail, setContactEmail] = useState('');
   const [contactSubject, setContactSubject] = useState('Consulta general sobre suprareciclaje');
@@ -169,56 +171,56 @@ export const InfoModals: React.FC<InfoModalProps> = ({
             {type === 'privacidad' && (
               <>
                 <span className="material-symbols-outlined text-[#2b694d]">security</span>
-                <span>Política de Privacidad</span>
+                <span>{language === 'en' ? 'Privacy Policy' : 'Política de Privacidad'}</span>
               </>
             )}
             {type === 'terminos' && (
               <>
                 <span className="material-symbols-outlined text-[#2b694d]">gavel</span>
-                <span>Términos y Condiciones</span>
+                <span>{language === 'en' ? 'Terms & Conditions' : 'Términos y Condiciones'}</span>
               </>
             )}
             {type === 'contacto' && (
               <>
                 <span className="material-symbols-outlined text-[#2b694d]">mail</span>
-                <span>Contáctanos</span>
+                <span>{language === 'en' ? 'Contact & Help Center' : 'Centro de Ayuda y Contacto'}</span>
               </>
             )}
             {type === 'sostenibilidad' && (
               <>
                 <span className="material-symbols-outlined text-[#2b694d]">nature_people</span>
-                <span>Impacto y Sostenibilidad</span>
+                <span>{language === 'en' ? 'Impact & Sustainability' : 'Impacto y Sostenibilidad'}</span>
               </>
             )}
             {type === 'quienes-somos' && (
               <>
                 <span className="material-symbols-outlined text-[#2b694d]">groups</span>
-                <span>Quiénes Somos - Reborn Your Style</span>
+                <span>{language === 'en' ? 'About Us - Reborn Your Style' : 'Quiénes Somos - Reborn Your Style'}</span>
               </>
             )}
             {type === 'mision' && (
               <>
                 <span className="material-symbols-outlined text-[#2b694d]">target</span>
-                <span>Nuestra Misión Circular</span>
+                <span>{language === 'en' ? 'Our Circular Mission' : 'Nuestra Misión Circular'}</span>
               </>
             )}
             {type === 'vision' && (
               <>
                 <span className="material-symbols-outlined text-[#2b694d]">visibility</span>
-                <span>Nuestra Visión Sostenible</span>
+                <span>{language === 'en' ? 'Our Sustainable Vision' : 'Nuestra Visión Sostenible'}</span>
               </>
             )}
             {type === 'tutoriales' && (
               <>
                 <span className="material-symbols-outlined text-[#2b694d]">school</span>
-                <span>Tutoriales y Técnicas de Suprareciclaje</span>
+                <span>{language === 'en' ? 'Tutorials & Upcycling Techniques' : 'Tutoriales y Técnicas de Suprareciclaje'}</span>
               </>
             )}
           </h2>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-[#efeee9] hover:bg-[#e3e3de] text-[#1b1c19] flex items-center justify-center transition-colors"
-            aria-label="Cerrar"
+            className="w-8 h-8 rounded-full bg-[#efeee9] hover:bg-[#e3e3de] text-[#1b1c19] flex items-center justify-center transition-colors cursor-pointer"
+            aria-label={t('common.cerrar')}
           >
             <span className="material-symbols-outlined text-lg">close</span>
           </button>
@@ -460,25 +462,29 @@ export const InfoModals: React.FC<InfoModalProps> = ({
                     <span className="material-symbols-outlined text-3xl">check</span>
                   </div>
                   <h3 className="font-headline font-bold text-[#012d1d] text-lg mb-1">
-                    ¡Mensaje enviado con éxito!
+                    {language === 'en' ? 'Message sent successfully!' : '¡Mensaje enviado con éxito!'}
                   </h3>
                   <p className="text-xs text-[#414844]">
-                    Nuestro equipo se pondrá en contacto contigo en menos de 24 horas.
+                    {language === 'en'
+                      ? 'Our team will contact you in less than 24 hours.'
+                      : 'Nuestro equipo se pondrá en contacto contigo en menos de 24 horas.'}
                   </p>
                 </div>
               ) : (
                 <form onSubmit={handleContactSubmit} className="flex flex-col gap-4">
                   <p className="text-xs text-[#414844]">
-                    ¿Tienes dudas, sugerencias o deseas unirte a nuestra red de talleres? Escríbenos directamente:
+                    {language === 'en'
+                      ? 'Have questions, suggestions, or wish to join our tailoring network? Write directly to us:'
+                      : '¿Tienes dudas, sugerencias o deseas unirte a nuestra red de talleres? Escríbenos directamente:'}
                   </p>
                   <div>
                     <label className="block text-xs font-semibold text-[#012d1d] mb-1">
-                      Nombre completo
+                      {language === 'en' ? 'Full name *' : 'Nombre completo *'}
                     </label>
                     <input
                       type="text"
                       required
-                      placeholder="Tu nombre"
+                      placeholder={language === 'en' ? 'Your name' : 'Tu nombre'}
                       value={contactName}
                       onChange={(e) => setContactName(e.target.value)}
                       className="w-full bg-[#f5f4ef] border border-[#c1c8c2] rounded-lg p-2.5 text-sm focus:bg-white focus:border-[#012d1d] outline-none"
@@ -486,7 +492,7 @@ export const InfoModals: React.FC<InfoModalProps> = ({
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-[#012d1d] mb-1">
-                      Correo electrónico
+                      {language === 'en' ? 'Email address *' : 'Correo electrónico *'}
                     </label>
                     <input
                       type="email"
@@ -499,28 +505,40 @@ export const InfoModals: React.FC<InfoModalProps> = ({
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-[#012d1d] mb-1">
-                      Motivo de contacto *
+                      {language === 'en' ? 'Contact reason *' : 'Motivo de contacto *'}
                     </label>
                     <select
                       value={contactSubject}
                       onChange={(e) => setContactSubject(e.target.value)}
                       className="w-full bg-[#f5f4ef] border border-[#c1c8c2] rounded-lg p-2.5 text-sm focus:bg-white focus:border-[#012d1d] outline-none"
                     >
-                      <option value="Consulta general sobre suprareciclaje">Consulta general sobre suprareciclaje</option>
-                      <option value="Quiero unirme como taller o costurero">Quiero unirme como taller o costurero</option>
-                      <option value="Dudas sobre mi solicitud o prenda">Dudas sobre mi solicitud o prenda</option>
-                      <option value="Soporte técnico o reporte de error">Soporte técnico o reporte de error</option>
-                      <option value="Alianzas y sostenibilidad">Alianzas y sostenibilidad</option>
+                      {language === 'en' ? (
+                        <>
+                          <option value="General inquiry about upcycling">General inquiry about upcycling</option>
+                          <option value="I want to join as a workshop or tailor">I want to join as a workshop or tailor</option>
+                          <option value="Questions about my project or garment">Questions about my project or garment</option>
+                          <option value="Technical support or bug report">Technical support or bug report</option>
+                          <option value="Partnerships & sustainability">Partnerships & sustainability</option>
+                        </>
+                      ) : (
+                        <>
+                          <option value="Consulta general sobre suprareciclaje">Consulta general sobre suprareciclaje</option>
+                          <option value="Quiero unirme como taller o costurero">Quiero unirme como taller o costurero</option>
+                          <option value="Dudas sobre mi solicitud o prenda">Dudas sobre mi solicitud o prenda</option>
+                          <option value="Soporte técnico o reporte de error">Soporte técnico o reporte de error</option>
+                          <option value="Alianzas y sostenibilidad">Alianzas y sostenibilidad</option>
+                        </>
+                      )}
                     </select>
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-[#012d1d] mb-1">
-                      Mensaje
+                      {language === 'en' ? 'Message *' : 'Mensaje *'}
                     </label>
                     <textarea
                       rows={4}
                       required
-                      placeholder="¿En qué te podemos ayudar?"
+                      placeholder={language === 'en' ? 'How can we help you?' : '¿En qué te podemos ayudar?'}
                       value={contactMsg}
                       onChange={(e) => setContactMsg(e.target.value)}
                       className="w-full bg-[#f5f4ef] border border-[#c1c8c2] rounded-lg p-2.5 text-sm focus:bg-white focus:border-[#012d1d] outline-none"
@@ -536,16 +554,17 @@ export const InfoModals: React.FC<InfoModalProps> = ({
                     <button
                       type="button"
                       onClick={onClose}
-                      className="px-4 py-2 text-xs font-semibold text-[#414844] hover:bg-[#efeee9] rounded-lg transition-colors"
+                      className="px-4 py-2 text-xs font-semibold text-[#414844] hover:bg-[#efeee9] rounded-lg transition-colors cursor-pointer"
                     >
-                      Cancelar
+                      {t('common.cancelar')}
                     </button>
                     <button
                       type="submit"
-                      className="px-6 py-2 text-xs font-semibold bg-[#012d1d] text-white rounded-lg hover:bg-[#1b4332] transition-colors flex items-center gap-1.5 shadow-sm"
+                      disabled={isSubmittingContact}
+                      className="px-6 py-2 text-xs font-semibold bg-[#012d1d] text-white rounded-lg hover:bg-[#1b4332] transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-50"
                     >
                       <span className="material-symbols-outlined text-sm">send</span>
-                      <span>Enviar mensaje</span>
+                      <span>{language === 'en' ? 'Send message' : 'Enviar mensaje'}</span>
                     </button>
                   </div>
                 </form>
@@ -559,9 +578,9 @@ export const InfoModals: React.FC<InfoModalProps> = ({
           <div className="p-4 border-t border-[#efeee9] bg-[#faf9f4] flex justify-end">
             <button
               onClick={onClose}
-              className="px-5 py-2 text-xs font-semibold bg-[#012d1d] text-white rounded-lg hover:bg-[#1b4332] transition-colors"
+              className="px-5 py-2 text-xs font-semibold bg-[#012d1d] text-white rounded-lg hover:bg-[#1b4332] transition-colors cursor-pointer"
             >
-              Entendido
+              {t('common.entendido')}
             </button>
           </div>
         )}

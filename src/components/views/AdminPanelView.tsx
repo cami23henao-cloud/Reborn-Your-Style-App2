@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { GarmentProject, ServiceItem, UserProfile } from '../../types';
 import { verifyAdminCredentials, EXCLUSIVE_ADMIN_EMAIL } from '../../services/securityService';
+import { useThemeLanguage } from '../../context/ThemeLanguageContext';
 import {
   getUsersDatabase,
   StoredUserAccount,
@@ -65,6 +66,7 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({
   onDeleteService,
   onNavigate,
 }) => {
+  const { language } = useThemeLanguage();
   // Authentication & Session State
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => {
     if (user.role === 'admin') return true;
@@ -150,10 +152,12 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({
               <span className="material-symbols-outlined text-2xl">shield_lock</span>
             </div>
             <h1 className="font-headline text-2xl font-bold text-[#012d1d]">
-              Acceso Administrativo Exclusivo
+              {language === 'en' ? 'Exclusive Administrative Access' : 'Acceso Administrativo Exclusivo'}
             </h1>
             <p className="text-xs text-[#414844] leading-relaxed max-w-xs mx-auto">
-              Panel reservado para la moderación, soporte y supervisión de la plataforma Reborn Your Style.
+              {language === 'en'
+                ? 'Panel reserved for moderation, support, and platform supervision.'
+                : 'Panel reservado para la moderación, soporte y supervisión de la plataforma Reborn Your Style.'}
             </p>
           </div>
 
@@ -167,7 +171,7 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({
           <form onSubmit={handlePasswordSubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-[#012d1d] uppercase tracking-wider mb-1.5">
-                Correo Administrativo
+                {language === 'en' ? 'Administrative Email' : 'Correo Administrativo'}
               </label>
               <input
                 type="email"
@@ -184,7 +188,7 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({
 
             <div>
               <label className="block text-xs font-bold text-[#012d1d] uppercase tracking-wider mb-1.5">
-                Contraseña Administrativa
+                {language === 'en' ? 'Administrative Password' : 'Contraseña Administrativa'}
               </label>
               <div className="relative">
                 <input
@@ -194,13 +198,13 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({
                     setPasswordInput(e.target.value);
                     if (authError) setAuthError('');
                   }}
-                  placeholder="Introduce la contraseña asignada..."
+                  placeholder={language === 'en' ? 'Enter assigned password...' : 'Introduce la contraseña asignada...'}
                   className="w-full pl-4 pr-10 py-2.5 rounded-xl border border-[#c1c8c2] bg-[#faf9f4] text-xs text-[#012d1d] focus:bg-white focus:border-[#012d1d] outline-none"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#717973] hover:text-[#012d1d] text-xs"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#717973] hover:text-[#012d1d] text-xs cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-base">
                     {showPassword ? 'visibility_off' : 'visibility'}
@@ -215,7 +219,7 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({
               className="w-full py-2.5 px-4 rounded-xl bg-[#012d1d] hover:bg-[#1b4332] text-white font-bold text-xs transition-colors flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 cursor-pointer"
             >
               <span className="material-symbols-outlined text-base">key</span>
-              <span>{isVerifying ? 'Verificando con SHA-256...' : 'Ingresar al Panel de Control'}</span>
+              <span>{isVerifying ? (language === 'en' ? 'Verifying with SHA-256...' : 'Verificando con SHA-256...') : (language === 'en' ? 'Access Control Panel' : 'Ingresar al Panel de Control')}</span>
             </button>
           </form>
 
@@ -223,10 +227,10 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({
             <button
               type="button"
               onClick={() => onNavigate('inicio')}
-              className="text-xs text-[#717973] hover:text-[#012d1d] font-semibold transition-colors inline-flex items-center gap-1"
+              className="text-xs text-[#717973] hover:text-[#012d1d] font-semibold transition-colors inline-flex items-center gap-1 cursor-pointer"
             >
               <span className="material-symbols-outlined text-sm">arrow_back</span>
-              <span>Regresar al portal principal</span>
+              <span>{language === 'en' ? 'Return to main portal' : 'Regresar al portal principal'}</span>
             </button>
           </div>
         </div>
@@ -242,15 +246,17 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({
         <div className="relative z-10 space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-xs font-semibold backdrop-blur-sm border border-white/15 text-[#b0f1cc]">
             <span className="material-symbols-outlined text-sm">admin_panel_settings</span>
-            <span>Panel de Administración Centralizado</span>
+            <span>{language === 'en' ? 'Centralized Administration Panel' : 'Panel de Administración Centralizado'}</span>
           </div>
 
           <h1 className="font-headline text-2xl md:text-3xl font-bold tracking-tight">
-            Administración General Reborn Your Style
+            {language === 'en' ? 'General Administration Reborn Your Style' : 'Administración General Reborn Your Style'}
           </h1>
 
           <p className="text-xs text-white/80 max-w-xl">
-            Gestión de usuarios, moderación de prendas, fiscalización de talleres, resolución de disputas y auditoría forense.
+            {language === 'en'
+              ? 'User management, garment moderation, workshop oversight, dispute resolution, and forensic auditing.'
+              : 'Gestión de usuarios, moderación de prendas, fiscalización de talleres, resolución de disputas y auditoría forense.'}
           </p>
         </div>
 
@@ -260,7 +266,7 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({
             className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-[#ba1a1a] hover:text-white border border-white/20 text-white text-xs font-bold transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer"
           >
             <span className="material-symbols-outlined text-base">logout</span>
-            <span>Cerrar Sesión Administrador</span>
+            <span>{language === 'en' ? 'Sign Out Admin' : 'Cerrar Sesión Administrador'}</span>
           </button>
         </div>
 
@@ -277,9 +283,9 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({
           </div>
           <button
             onClick={() => setActionNotice(null)}
-            className="text-xs hover:underline text-[#934b00]"
+            className="text-xs hover:underline text-[#934b00] cursor-pointer"
           >
-            Cerrar
+            {language === 'en' ? 'Close' : 'Cerrar'}
           </button>
         </div>
       )}
@@ -289,98 +295,98 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({
         <div className="flex items-center gap-1.5 min-w-max">
           <button
             onClick={() => setActiveTab('dashboard')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'dashboard'
                 ? 'bg-[#012d1d] text-white shadow-xs'
                 : 'text-[#414844] hover:text-[#012d1d] hover:bg-[#faf9f4]'
             }`}
           >
             <span className="material-symbols-outlined text-sm">dashboard</span>
-            <span>Dashboard / Inicio</span>
+            <span>{language === 'en' ? 'Dashboard / Home' : 'Dashboard / Inicio'}</span>
           </button>
 
           <button
             onClick={() => setActiveTab('usuarios')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'usuarios'
                 ? 'bg-[#012d1d] text-white shadow-xs'
                 : 'text-[#414844] hover:text-[#012d1d] hover:bg-[#faf9f4]'
             }`}
           >
             <span className="material-symbols-outlined text-sm">group</span>
-            <span>Usuarios ({usersDb.length})</span>
+            <span>{language === 'en' ? 'Users' : 'Usuarios'} ({usersDb.length})</span>
           </button>
 
           <button
             onClick={() => setActiveTab('baneos')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'baneos'
                 ? 'bg-[#ba1a1a] text-white shadow-xs'
                 : 'text-[#ba1a1a] hover:bg-[#ffdad6]/40'
             }`}
           >
             <span className="material-symbols-outlined text-sm">gavel</span>
-            <span>Baneos y Bloqueos</span>
+            <span>{language === 'en' ? 'Bans & Blocks' : 'Baneos y Bloqueos'}</span>
           </button>
 
           <button
             onClick={() => setActiveTab('publicaciones')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'publicaciones'
                 ? 'bg-[#012d1d] text-white shadow-xs'
                 : 'text-[#414844] hover:text-[#012d1d] hover:bg-[#faf9f4]'
             }`}
           >
             <span className="material-symbols-outlined text-sm">apparel</span>
-            <span>Publicaciones ({garments.length})</span>
+            <span>{language === 'en' ? 'Listings' : 'Publicaciones'} ({garments.length})</span>
           </button>
 
           <button
             onClick={() => setActiveTab('costureros')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'costureros'
                 ? 'bg-[#012d1d] text-white shadow-xs'
                 : 'text-[#414844] hover:text-[#012d1d] hover:bg-[#faf9f4]'
             }`}
           >
             <span className="material-symbols-outlined text-sm">handyman</span>
-            <span>Costureros & Modistas</span>
+            <span>{language === 'en' ? 'Tailors & Workshops' : 'Costureros & Modistas'}</span>
           </button>
 
           <button
             onClick={() => setActiveTab('reportes')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'reportes'
                 ? 'bg-[#012d1d] text-white shadow-xs'
                 : 'text-[#414844] hover:text-[#012d1d] hover:bg-[#faf9f4]'
             }`}
           >
             <span className="material-symbols-outlined text-sm">report_problem</span>
-            <span>Reportes ({reports.filter((r) => r.status === 'pendiente').length})</span>
+            <span>{language === 'en' ? 'Reports' : 'Reportes'} ({reports.filter((r) => r.status === 'pendiente').length})</span>
           </button>
 
           <button
             onClick={() => setActiveTab('soporte')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'soporte'
                 ? 'bg-[#012d1d] text-white shadow-xs'
                 : 'text-[#414844] hover:text-[#012d1d] hover:bg-[#faf9f4]'
             }`}
           >
             <span className="material-symbols-outlined text-sm">support_agent</span>
-            <span>Soporte ({supportTickets.length})</span>
+            <span>{language === 'en' ? 'Support' : 'Soporte'} ({supportTickets.length})</span>
           </button>
 
           <button
             onClick={() => setActiveTab('seguridad')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'seguridad'
                 ? 'bg-[#012d1d] text-white shadow-xs'
                 : 'text-[#414844] hover:text-[#012d1d] hover:bg-[#faf9f4]'
             }`}
           >
             <span className="material-symbols-outlined text-sm">security</span>
-            <span>Seguridad & Parámetros</span>
+            <span>{language === 'en' ? 'Security & Settings' : 'Seguridad & Parámetros'}</span>
           </button>
         </div>
       </div>

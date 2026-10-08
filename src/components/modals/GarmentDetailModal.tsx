@@ -1,5 +1,6 @@
 import React from 'react';
 import { GarmentProject, Professional } from '../../types';
+import { useThemeLanguage } from '../../context/ThemeLanguageContext';
 
 interface GarmentDetailModalProps {
   garment: GarmentProject | null;
@@ -16,6 +17,7 @@ export const GarmentDetailModal: React.FC<GarmentDetailModalProps> = ({
   onFindCosturero,
   professionals = []
 }) => {
+  const { t, language } = useThemeLanguage();
   if (!garment) return null;
 
   // Resolve assigned or recommended tailor
@@ -91,11 +93,11 @@ export const GarmentDetailModal: React.FC<GarmentDetailModalProps> = ({
           {/* Metadata Strip: Talla, Color, Ubicación, Presupuesto */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-2xl bg-[#faf9f4] dark:bg-[#112920] border border-[#efeee9] dark:border-[#2b694d]/30 text-xs">
             <div>
-              <span className="text-[#717973] dark:text-[#a7b8ae] block font-medium">Talla:</span>
-              <span className="font-bold text-[#012d1d] dark:text-white text-sm">{garment.size || 'Única'}</span>
+              <span className="text-[#717973] dark:text-[#a7b8ae] block font-medium">{t('detail.talla')}:</span>
+              <span className="font-bold text-[#012d1d] dark:text-white text-sm">{garment.size || (language === 'en' ? 'One size' : 'Única')}</span>
             </div>
             <div>
-              <span className="text-[#717973] dark:text-[#a7b8ae] block font-medium">Color:</span>
+              <span className="text-[#717973] dark:text-[#a7b8ae] block font-medium">{t('detail.color')}:</span>
               <div className="flex items-center gap-1.5 mt-0.5">
                 {garment.colorHex && (
                   <span
@@ -103,19 +105,19 @@ export const GarmentDetailModal: React.FC<GarmentDetailModalProps> = ({
                     style={{ backgroundColor: garment.colorHex }}
                   />
                 )}
-                <span className="font-bold text-[#012d1d] dark:text-white text-sm truncate">{garment.color || 'Multicolor'}</span>
+                <span className="font-bold text-[#012d1d] dark:text-white text-sm truncate">{garment.color || (language === 'en' ? 'Multicolor' : 'Multicolor')}</span>
               </div>
             </div>
             <div>
-              <span className="text-[#717973] dark:text-[#a7b8ae] block font-medium">Ubicación:</span>
+              <span className="text-[#717973] dark:text-[#a7b8ae] block font-medium">{t('detail.ubicacion')}:</span>
               <span className="font-bold text-[#012d1d] dark:text-white text-sm truncate block" title={cleanLocation}>
                 {cleanLocation}
               </span>
             </div>
             <div>
-              <span className="text-[#717973] dark:text-[#a7b8ae] block font-medium">Precio / Presupuesto:</span>
+              <span className="text-[#717973] dark:text-[#a7b8ae] block font-medium">{t('detail.valor')}:</span>
               <span className="font-bold text-[#2b694d] dark:text-[#b0f1cc] text-sm">
-                {garment.budget ? `$${garment.budget.toLocaleString('es-CO')} COP` : 'A convenir'}
+                {garment.budget ? `$${garment.budget.toLocaleString('es-CO')} COP` : (language === 'en' ? 'To be agreed' : 'A convenir')}
               </span>
             </div>
           </div>
@@ -123,7 +125,7 @@ export const GarmentDetailModal: React.FC<GarmentDetailModalProps> = ({
           {/* Description */}
           <div className="space-y-2">
             <h3 className="font-headline text-xs font-bold text-[#012d1d] dark:text-[#b0f1cc] uppercase tracking-wider">
-              Descripción de la prenda
+              {t('detail.descripcion')}
             </h3>
             <p className="text-sm text-[#414844] dark:text-[#e8f2ec] leading-relaxed">
               {garment.description}
@@ -135,7 +137,7 @@ export const GarmentDetailModal: React.FC<GarmentDetailModalProps> = ({
             <div className="p-4 rounded-2xl bg-[#b0f1cc]/20 dark:bg-[#112920] border border-[#b0f1cc]/60 dark:border-[#2b694d]/40 space-y-1.5">
               <div className="flex items-center gap-2 text-xs font-bold text-[#002113] dark:text-[#b0f1cc]">
                 <span className="material-symbols-outlined text-base">content_cut</span>
-                <span>Transformación propuesta o upcycling deseado:</span>
+                <span>{t('detail.transformacion')}:</span>
               </div>
               <p className="text-xs sm:text-sm text-[#012d1d] dark:text-[#e8f2ec] leading-relaxed pl-6">
                 {garment.modifications}
@@ -154,13 +156,13 @@ export const GarmentDetailModal: React.FC<GarmentDetailModalProps> = ({
                 />
                 <div>
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[#2b694d] dark:text-[#b0f1cc] block">
-                    Costurero / Diseñador asignado
+                    {t('detail.costurero_asignado')}
                   </span>
                   <p className="text-sm font-bold text-[#012d1d] dark:text-white">
                     {assignedTailor?.name || garment.assignedTailorName}
                   </p>
                   <p className="text-xs text-[#717973] dark:text-[#a7b8ae]">
-                    {assignedTailor?.specialty || 'Especialista en Confección y Upcycling Textil'}
+                    {assignedTailor?.specialty || (language === 'en' ? 'Specialist in Tailoring and Textile Upcycling' : 'Especialista en Confección y Upcycling Textil')}
                   </p>
                 </div>
               </div>
@@ -171,15 +173,15 @@ export const GarmentDetailModal: React.FC<GarmentDetailModalProps> = ({
                   onClose();
                   onFindCosturero(garment);
                 }}
-                className="px-4 py-2 bg-[#012d1d] hover:bg-[#1b4332] text-white text-xs font-bold rounded-xl transition-colors shadow-xs flex items-center gap-1.5 self-start sm:self-center cursor-pointer whitespace-nowrap"
+                className="btn-interactive px-4 py-2 bg-[#012d1d] hover:bg-[#1b4332] text-white text-xs font-bold rounded-xl transition-colors shadow-xs flex items-center gap-1.5 self-start sm:self-center cursor-pointer whitespace-nowrap"
               >
                 <span className="material-symbols-outlined text-sm">visibility</span>
-                <span>Ver perfil del costurero</span>
+                <span>{t('detail.ver_perfil')}</span>
               </button>
             </div>
           )}
 
-          {/* Publisher Card: Removed duplicate "Escribir" button per Requirement 6 */}
+          {/* Publisher Card */}
           <div className="flex items-center justify-between p-4 rounded-2xl bg-[#faf9f4] dark:bg-[#112920] border border-[#efeee9] dark:border-[#2b694d]/30">
             <div className="flex items-center gap-3">
               <img
@@ -188,7 +190,7 @@ export const GarmentDetailModal: React.FC<GarmentDetailModalProps> = ({
                 className="w-12 h-12 rounded-full object-cover border-2 border-white dark:border-[#0e241c] shadow-xs"
               />
               <div>
-                <p className="text-xs text-[#717973] dark:text-[#a7b8ae]">Publicado por</p>
+                <p className="text-xs text-[#717973] dark:text-[#a7b8ae]">{t('detail.publicado_por')}</p>
                 <p className="text-sm font-bold text-[#012d1d] dark:text-white">{garment.authorName}</p>
                 <p className="text-xs text-[#2b694d] dark:text-[#b0f1cc] flex items-center gap-1">
                   <span className="material-symbols-outlined text-xs">place</span>
@@ -198,7 +200,7 @@ export const GarmentDetailModal: React.FC<GarmentDetailModalProps> = ({
             </div>
 
             <span className="text-[11px] font-semibold text-[#717973] dark:text-[#a7b8ae] bg-white dark:bg-[#0e241c] px-3 py-1.5 rounded-full border border-[#efeee9] dark:border-[#2b694d]/30">
-              {garment.createdAt || 'Publicada recientemente'}
+              {garment.createdAt || (language === 'en' ? 'Recently posted' : 'Publicada recientemente')}
             </span>
           </div>
 
@@ -209,10 +211,10 @@ export const GarmentDetailModal: React.FC<GarmentDetailModalProps> = ({
                 onClose();
                 onStartChat(garment.authorName, garment.authorAvatar, garment.title);
               }}
-              className="flex-1 py-3.5 px-6 rounded-2xl bg-[#012d1d] hover:bg-[#1b4332] text-white text-xs sm:text-sm font-bold transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+              className="btn-interactive flex-1 py-3.5 px-6 rounded-2xl bg-[#012d1d] hover:bg-[#1b4332] text-white text-xs sm:text-sm font-bold transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
             >
               <span className="material-symbols-outlined text-base text-[#b0f1cc]">chat_bubble</span>
-              <span>Iniciar conversación sobre esta prenda</span>
+              <span>{t('detail.iniciar_conversacion')}</span>
             </button>
 
             <button
@@ -220,10 +222,10 @@ export const GarmentDetailModal: React.FC<GarmentDetailModalProps> = ({
                 onClose();
                 onFindCosturero(garment);
               }}
-              className="py-3.5 px-6 rounded-2xl bg-[#faf9f4] dark:bg-[#112920] hover:bg-[#efeee9] dark:hover:bg-[#17382c] text-[#012d1d] dark:text-[#b0f1cc] border border-[#c1c8c2] dark:border-[#2b694d]/40 text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
+              className="btn-interactive py-3.5 px-6 rounded-2xl bg-[#faf9f4] dark:bg-[#112920] hover:bg-[#efeee9] dark:hover:bg-[#17382c] text-[#012d1d] dark:text-[#b0f1cc] border border-[#c1c8c2] dark:border-[#2b694d]/40 text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
             >
               <span className="material-symbols-outlined text-base">person_search</span>
-              <span>Encontrar costurero</span>
+              <span>{t('detail.encontrar_costurero')}</span>
             </button>
           </div>
         </div>

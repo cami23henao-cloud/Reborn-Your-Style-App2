@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChatConversation, AppView } from '../../types';
 import { UserAvatar } from '../common/UserAvatar';
+import { useThemeLanguage } from '../../context/ThemeLanguageContext';
 
 interface MensajesViewProps {
   conversations: ChatConversation[];
@@ -18,6 +19,7 @@ export const MensajesView: React.FC<MensajesViewProps> = ({
   onSendMessage,
   onNavigate,
 }) => {
+  const { language } = useThemeLanguage();
   const [inputText, setInputText] = useState('');
   const [showMobileChat, setShowMobileChat] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -68,27 +70,29 @@ export const MensajesView: React.FC<MensajesViewProps> = ({
             <span className="material-symbols-outlined text-4xl">chat_bubble_outline</span>
           </div>
           <h2 className="font-headline font-bold text-2xl sm:text-3xl text-[#012d1d] mb-2.5">
-            No tienes conversaciones todavía
+            {language === 'en' ? 'No conversations yet' : 'No tienes conversaciones todavía'}
           </h2>
           <p className="text-xs sm:text-sm text-[#717973] max-w-md leading-relaxed mb-8">
-            Aquí aparecerán tus mensajes tan pronto inicies una conversación con un taller, modista o artesano para transformar o ajustar tus prendas.
+            {language === 'en'
+              ? 'Your messages will appear here as soon as you start a conversation with a workshop, tailor or artisan to transform or adjust your garments.'
+              : 'Aquí aparecerán tus mensajes tan pronto inicies una conversación con un taller, modista o artesano para transformar o ajustar tus prendas.'}
           </p>
           <div className="flex flex-wrap gap-3.5 justify-center">
             <button
               type="button"
-              onClick={() => onNavigate('explora')}
+              onClick={() => onNavigate('costureros')}
               className="px-6 py-3 rounded-full bg-[#012d1d] hover:bg-[#1b4332] text-white text-xs sm:text-sm font-bold transition-all shadow-sm flex items-center gap-2 cursor-pointer active:scale-98"
             >
               <span className="material-symbols-outlined text-base">explore</span>
-              <span>Explorar Costureros y Talleres</span>
+              <span>{language === 'en' ? 'Explore Tailors & Workshops' : 'Explorar Costureros y Talleres'}</span>
             </button>
             <button
               type="button"
-              onClick={() => onNavigate('publicar')}
+              onClick={() => onNavigate('publicar-prenda')}
               className="px-6 py-3 rounded-full bg-[#f5f4ef] hover:bg-[#e9e8e3] text-[#012d1d] text-xs sm:text-sm font-bold transition-all border border-[#c1c8c2]/60 flex items-center gap-2 cursor-pointer active:scale-98"
             >
               <span className="material-symbols-outlined text-base">add_circle</span>
-              <span>Publicar una Prenda</span>
+              <span>{language === 'en' ? 'Post a Garment' : 'Publicar una Prenda'}</span>
             </button>
           </div>
         </div>
@@ -280,7 +284,7 @@ export const MensajesView: React.FC<MensajesViewProps> = ({
                 type="text"
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
-                placeholder="Escribe un mensaje para coordinar la confección o medidas..."
+                placeholder={language === 'en' ? 'Type a message to coordinate tailoring or measurements...' : 'Escribe un mensaje para coordinar la confección o medidas...'}
                 className="flex-1 bg-[#f5f4ef] border border-[#c1c8c2]/70 rounded-xl px-4 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-sm text-[#1b1c19] outline-none focus:bg-white focus:border-[#012d1d] transition-all"
               />
               <button
@@ -288,14 +292,18 @@ export const MensajesView: React.FC<MensajesViewProps> = ({
                 disabled={!inputText.trim()}
                 className="px-4 py-2.5 sm:py-3 rounded-xl bg-[#012d1d] text-white font-bold text-xs sm:text-sm hover:bg-[#2b694d] disabled:opacity-40 disabled:hover:bg-[#012d1d] transition-all cursor-pointer flex items-center gap-1.5 shrink-0 active:scale-98"
               >
-                <span className="hidden sm:inline">Enviar</span>
+                <span className="hidden sm:inline">{language === 'en' ? 'Send' : 'Enviar'}</span>
                 <span className="material-symbols-outlined text-base">send</span>
               </button>
             </form>
           </div>
         ) : (
           <div className="hidden md:flex flex-1 items-center justify-center p-8 text-center text-[#717973] bg-[#faf9f4]">
-            <p className="text-sm">Selecciona una conversación de la lista para ver los mensajes.</p>
+            <p className="text-sm">
+              {language === 'en'
+                ? 'Select a conversation from the list to view messages.'
+                : 'Selecciona una conversación de la lista para ver los mensajes.'}
+            </p>
           </div>
         )}
       </div>

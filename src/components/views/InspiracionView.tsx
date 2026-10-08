@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { InspirationItem, AppView, Professional } from '../../types';
 import { BrandLogo } from '../BrandLogo';
+import { useThemeLanguage } from '../../context/ThemeLanguageContext';
 
 interface InspiracionViewProps {
   inspirations: InspirationItem[];
@@ -17,12 +18,15 @@ export const InspiracionView: React.FC<InspiracionViewProps> = ({
   onNavigate,
   onLikeInspiration,
 }) => {
-  const [selectedTag, setSelectedTag] = useState('Todos');
+  const { language } = useThemeLanguage();
+  const [selectedTag, setSelectedTag] = useState(language === 'en' ? 'All' : 'Todos');
   const [activeItem, setActiveItem] = useState<InspirationItem | null>(null);
 
-  const tags = ['Todos', 'Denim Upcycling', 'Bordados', 'Patchwork', 'Botánica', 'Sastrería'];
+  const tags = language === 'en'
+    ? ['All', 'Denim Upcycling', 'Bordados', 'Patchwork', 'Botánica', 'Sastrería']
+    : ['Todos', 'Denim Upcycling', 'Bordados', 'Patchwork', 'Botánica', 'Sastrería'];
 
-  const filteredItems = selectedTag === 'Todos'
+  const filteredItems = selectedTag === 'Todos' || selectedTag === 'All'
     ? inspirations
     : inspirations.filter((item) => item.category === selectedTag || item.tags.includes(selectedTag));
 
@@ -40,36 +44,38 @@ export const InspiracionView: React.FC<InspiracionViewProps> = ({
   return (
     <div className="w-full max-w-7xl mx-auto px-4 md:px-12 py-10 md:py-12 animate-in fade-in">
       {/* Header with Brand Logo */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4 bg-white p-6 rounded-3xl border border-[#c1c8c2]/50 shadow-xs">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4 bg-white dark:bg-[#0e241c] p-6 rounded-3xl border border-[#c1c8c2]/50 dark:border-[#2b694d]/40 shadow-xs">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <BrandLogo size="xs" variant="emblem" />
-            <span className="text-xs font-bold uppercase tracking-wider text-[#2b694d]">
-              Galería Comunitaria Reborn
+            <span className="text-xs font-bold uppercase tracking-wider text-[#2b694d] dark:text-[#b0f1cc]">
+              {language === 'en' ? 'Reborn Community Gallery' : 'Galería Comunitaria Reborn'}
             </span>
           </div>
-          <h1 className="font-headline text-2xl md:text-3xl font-bold text-[#012d1d]">
-            Inspiración y Proyectos de Suprareciclaje
+          <h1 className="font-headline text-2xl md:text-3xl font-bold text-[#012d1d] dark:text-white animate-title-entry text-hover-lift">
+            {language === 'en' ? 'Upcycling Inspiration & Projects' : 'Inspiración y Proyectos de Suprareciclaje'}
           </h1>
-          <p className="text-xs md:text-sm text-[#414844] mt-1 max-w-xl">
-            Descubre transformaciones reales creadas por artesanos y modistas colombianos.
+          <p className="text-xs md:text-sm text-[#414844] dark:text-[#a7b8ae] mt-1 max-w-xl animate-fade-up">
+            {language === 'en'
+              ? 'Discover real transformations created by Colombian artisans and tailors.'
+              : 'Descubre transformaciones reales creadas por artesanos y modistas colombianos.'}
           </p>
         </div>
 
         <div className="flex items-center gap-3">
           <button
-            onClick={() => onNavigate('explora')}
-            className="bg-[#b0f1cc] text-[#002113] text-xs font-bold px-4 py-2.5 rounded-full hover:bg-white transition-all flex items-center gap-1.5 border border-[#2b694d]/30"
+            onClick={() => onNavigate('costureros')}
+            className="btn-interactive bg-[#b0f1cc] text-[#002113] text-xs font-bold px-4 py-2.5 rounded-full hover:bg-white transition-all flex items-center gap-1.5 border border-[#2b694d]/30 cursor-pointer"
           >
             <span className="material-symbols-outlined text-base">groups</span>
-            <span>Ver Diseñadores</span>
+            <span>{language === 'en' ? 'Explore Tailors' : 'Ver Diseñadores'}</span>
           </button>
           <button
             onClick={() => onNavigate('publicar-prenda')}
-            className="bg-[#012d1d] text-white text-xs font-bold px-5 py-2.5 rounded-full hover:bg-[#1b4332] transition-all flex items-center gap-1.5 shadow-sm"
+            className="btn-interactive bg-[#012d1d] hover:bg-[#1b4332] text-white text-xs font-bold px-5 py-2.5 rounded-full transition-all flex items-center gap-1.5 shadow-sm cursor-pointer"
           >
             <span className="material-symbols-outlined text-base">add_circle</span>
-            <span>Publicar mi prenda</span>
+            <span>{language === 'en' ? 'Post my garment' : 'Publicar mi prenda'}</span>
           </button>
         </div>
       </div>
