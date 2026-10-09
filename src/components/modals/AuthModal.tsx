@@ -306,33 +306,41 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         rawPicture ||
         `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName)}&backgroundColor=012d1d&textColor=b0f1cc`;
 
-      // Requirement 2:
-      // "4. Después de autenticarse, Reborn Your Style debe comprobar si ese correo ya tiene una cuenta registrada en nuestra base de datos.
-      //  5. Si la cuenta existe, iniciar sesión normalmente.
-      //  6. Si el correo de Google NO está registrado en Reborn Your Style, NO crear automáticamente una cuenta ni permitir el acceso. Mostrar un mensaje indicando que primero debe registrarse."
-      const verifyRes = await loginWithGoogleExistingOnly(cleanEmail, displayName, avatarUrl);
-      if (verifyRes.notRegistered) {
-        setIsLoading(false);
-        setErrorMsg(
-          isEn
-            ? `This Google account (${cleanEmail}) is not registered in Reborn Your Style. Please create an account first to access.`
-            : `Esta cuenta de Google (${cleanEmail}) no está registrada en Reborn Your Style. Por favor, crea una cuenta primero para poder acceder.`
-        );
-        return;
+      // Requirement:
+      // "No exijas que la cuenta de Google esté previamente vinculada a una cuenta específica de Reborn Your Style:
+      //  si la cuenta de Google es válida y real, debe crearse o iniciarse sesión automáticamente."
+      try {
+        await safeApiCall('/api/auth/google/login', 'POST', {
+          email: cleanEmail,
+          name: displayName,
+          picture: avatarUrl,
+        });
+      } catch (backendErr) {
+        console.warn('Backend Google account sync:', backendErr);
       }
 
-      if (verifyRes.success && verifyRes.user) {
+      const authRes = await loginOrRegisterWithGoogle({
+        email: cleanEmail,
+        name: displayName,
+        avatarUrl,
+      });
+
+      if (authRes.success && authRes.user) {
         setIsLoading(false);
-        setSuccessMsg(isEn ? `Welcome back, ${verifyRes.user.name}!` : `¡Bienvenido(a) de nuevo, ${verifyRes.user.name}!`);
+        setSuccessMsg(
+          authRes.isNewUser
+            ? (isEn ? `Welcome to Reborn Your Style, ${authRes.user.name}!` : `¡Te damos la bienvenida a Reborn Your Style, ${authRes.user.name}!`)
+            : (isEn ? `Welcome back, ${authRes.user.name}!` : `¡Bienvenido(a) de nuevo, ${authRes.user.name}!`)
+        );
         setTimeout(() => {
-          onLoginAccount(verifyRes.user!);
+          onLoginAccount(authRes.user!);
           onClose();
         }, 400);
         return;
       }
 
       setIsLoading(false);
-      setErrorMsg(verifyRes.error || (isEn ? 'Could not sign in with Google.' : 'No fue posible iniciar sesión con Google.'));
+      setErrorMsg(authRes.error || (isEn ? 'Could not sign in with Google.' : 'No fue posible iniciar sesión con Google.'));
     } catch {
       setIsLoading(false);
       setErrorMsg(
@@ -352,6 +360,29 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     try {
       const credential = await signInWithGooglePopup();
       if (credential?.user?.email) {
+        // Backend verification: validate ID token on backend (signature, issuer, expiration)
+        try {
+          const idToken = await credential.user.getIdToken();
+          if (idToken) {
+            const verifyRes = await safeApiCall<{
+              success: boolean;
+              user?: { email: string; name?: string; picture?: string };
+              error?: string;
+            }>('/api/auth/google/verify', 'POST', { idToken });
+
+            if (verifyRes.success && verifyRes.data?.user?.email) {
+              await processGoogleEmail(
+                verifyRes.data.user.email,
+                verifyRes.data.user.name || credential.user.displayName || undefined,
+                verifyRes.data.user.picture || credential.user.photoURL || undefined
+              );
+              return;
+            }
+          }
+        } catch (verifyErr) {
+          console.warn('Backend Google token verification notice:', verifyErr);
+        }
+
         await processGoogleEmail(
           credential.user.email,
           credential.user.displayName || undefined,
@@ -369,7 +400,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         setIsLoading(false);
         return;
       }
-      console.warn('Firebase Google popup fallback:', popupErr);
+      console.warn('Firebase Google popup notice, trying GIS / OAuth fallback:', popupErr);
     }
 
     // 2. Secondary: Google Identity Services (GIS) Token Client Flow
@@ -399,6 +430,23 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
             if (tokenRes?.access_token) {
               try {
+                // Backend verification of Google access token
+                const verifyRes = await safeApiCall<{
+                  success: boolean;
+                  user?: { email: string; name?: string; picture?: string };
+                  error?: string;
+                }>('/api/auth/google/verify', 'POST', { token: tokenRes.access_token });
+
+                if (verifyRes.success && verifyRes.data?.user?.email) {
+                  await processGoogleEmail(
+                    verifyRes.data.user.email,
+                    verifyRes.data.user.name,
+                    verifyRes.data.user.picture
+                  );
+                  return;
+                }
+
+                // Fallback to Google UserInfo API
                 const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
                   headers: { Authorization: `Bearer ${tokenRes.access_token}` },
                 });

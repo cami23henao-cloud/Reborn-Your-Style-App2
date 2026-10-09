@@ -63,6 +63,81 @@ export const generateToken = (user: any) => {
   );
 };
 
+const BLOCKED_DISPOSABLE_DOMAINS = new Set([
+  'test.com',
+  'test.co',
+  'fake.com',
+  'fake.co',
+  'prueba.com',
+  'prueba.co',
+  'ejemplo.com',
+  'example.com',
+  'asdf.com',
+  '123.com',
+  'abc.com',
+  'xyz.com',
+  'correo.com',
+  'email.com',
+  'mailinator.com',
+  'tempmail.com',
+  'yopmail.com',
+  '10minutemail.com',
+  'trashmail.com',
+  'guerrillamail.com',
+  'dispostable.com',
+  'throwawaymail.com',
+  'getairmail.com',
+  'mohmal.com',
+  'sharklasers.com',
+  'fakemailgenerator.com',
+  'burnermail.io',
+  'dropmail.me',
+  'inboxbear.com',
+  'mytemp.email',
+  'crazymailing.com',
+]);
+
+/**
+ * Validates strict RFC 5322 email syntax and blocks disposable / dummy email providers
+ */
+export function validateEmailStrict(email: string): { isValid: boolean; error?: string } {
+  const clean = (email || '').trim().toLowerCase();
+  if (!clean) {
+    return { isValid: false, error: 'Por favor ingresa un correo electrónico.' };
+  }
+
+  const rfcRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
+  if (!rfcRegex.test(clean) || clean.includes('..') || clean.startsWith('.') || clean.endsWith('.')) {
+    return { isValid: false, error: 'Por favor ingresa un correo electrónico válido.' };
+  }
+
+  const [username, domain] = clean.split('@');
+  if (!username || !domain || username.length < 3) {
+    return { isValid: false, error: 'El identificador de usuario antes del @ debe tener al menos 3 caracteres.' };
+  }
+
+  const isBlocked =
+    BLOCKED_DISPOSABLE_DOMAINS.has(domain) ||
+    Array.from(BLOCKED_DISPOSABLE_DOMAINS).some((b) => domain.endsWith(`.${b}`));
+
+  if (isBlocked) {
+    return {
+      isValid: false,
+      error: 'Por favor utiliza un correo electrónico válido o corporativo (ej. Gmail, Outlook, Yahoo).',
+    };
+  }
+
+  const randomSequences = ['asdfgh', 'qwerty', 'zxcvbn', '123456', 'abcdef'];
+  if (randomSequences.some((seq) => username.includes(seq) || domain.includes(seq))) {
+    return {
+      isValid: false,
+      error: 'Por favor utiliza un correo electrónico válido o corporativo (ej. Gmail, Outlook, Yahoo).',
+    };
+  }
+
+  return { isValid: true };
+}
+
 /**
  * User Registration Controller
  * POST /api/auth/register
@@ -83,10 +158,12 @@ export const register = async (req: Request, res: Response) => {
       });
     }
 
-    if (!cleanEmail || !cleanEmail.includes('@') || !cleanEmail.includes('.')) {
+    const emailCheck = validateEmailStrict(cleanEmail);
+    if (!emailCheck.isValid) {
       return res.status(200).json({
         success: false,
-        message: 'Por favor ingresa un correo electrónico válido.',
+        error: emailCheck.error,
+        message: emailCheck.error,
       });
     }
 
@@ -101,7 +178,8 @@ export const register = async (req: Request, res: Response) => {
     if (usersStore.has(cleanEmail)) {
       return res.status(200).json({
         success: false,
-        message: 'Este correo electrónico ya está registrado. Por favor inicia sesión.',
+        error: 'Este correo electrónico ya está registrado.',
+        message: 'Este correo electrónico ya está registrado.',
       });
     }
 
@@ -118,6 +196,8 @@ export const register = async (req: Request, res: Response) => {
       password: passwordHash,
       role: userRole,
       isVerified: true,
+      email_confirmed: true,
+      status: 'active',
       createdAt: nowIso,
       lastLoginAt: nowIso,
     };
@@ -673,24 +753,9 @@ export const googleLogin = async (req: Request, res: Response) => {
       savePersistedUsers();
       console.log(`[Google Auth] Linked and authenticated existing user: ${cleanEmail}`);
     } else {
-      // If user is not registered and request did not explicitly confirm account creation:
-      // Requirement 3: "Si no está registrada: no crear automáticamente una cuenta; mostrar la opción de crear una cuenta."
-      const { createAccount } = req.body;
+      // New user authenticated through Google: create active profile immediately
       const derivedName = cleanEmail.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
       const userName = (name && name.trim()) ? name.trim() : derivedName;
-
-      if (!createAccount) {
-        return res.status(200).json({
-          success: false,
-          notRegistered: true,
-          email: cleanEmail,
-          name: userName,
-          picture: picture || null,
-          message: 'Esta cuenta de Google todavía no está registrada en Reborn Your Style.',
-        });
-      }
-
-      // User confirmed creation: create profile
       const userRole = role === 'profesional' ? 'profesional' : 'cliente';
       user = {
         id: `usr-g-${Date.now()}`,
@@ -701,13 +766,15 @@ export const googleLogin = async (req: Request, res: Response) => {
         picture: picture || null,
         avatarUrl: picture || null,
         isVerified: true,
+        email_confirmed: true,
+        status: 'active',
         createdAt: new Date().toISOString(),
       };
 
       isNewUser = true;
       usersStore.set(cleanEmail, user);
       savePersistedUsers();
-      console.log(`[Google Auth] Created new profile upon user confirmation for ${cleanEmail}`);
+      console.log(`[Google Auth] Created new profile for verified Google account ${cleanEmail}`);
     }
 
     // Update last access timestamp

@@ -71,14 +71,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
               <span className="material-symbols-outlined text-xl text-[#2b694d] dark:text-[#b0f1cc]">add_circle</span>
               <span>{t('hero.btn_publicar')}</span>
             </button>
-
-            <button
-              onClick={() => onNavigate('catalogos')}
-              className="link-animated w-full sm:w-auto text-[#2b694d] dark:text-[#b0f1cc] hover:text-[#012d1d] dark:hover:text-white font-bold text-sm sm:text-base px-4 py-3 flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
-            >
-              <span>{t('hero.btn_explorar')}</span>
-              <span className="material-symbols-outlined text-base">arrow_forward</span>
-            </button>
           </div>
         </div>
 

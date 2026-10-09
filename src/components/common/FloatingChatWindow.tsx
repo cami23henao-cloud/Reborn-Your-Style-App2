@@ -76,8 +76,9 @@ export const FloatingChatWindow: React.FC<FloatingChatWindowProps> = ({
               <h4 className="font-bold text-xs truncate text-[#faf9f4]">
                 {conversation.participantName}
               </h4>
-              <p className="text-[10px] text-[#b0f1cc] truncate">
-                {conversation.participantRole || (isEn ? 'Tailor / Designer' : 'Costurero / Modista')}
+              <p className="text-[10px] text-[#b0f1cc] truncate flex items-center gap-1">
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#4ade80] animate-pulse"></span>
+                <span>{isEn ? 'Online' : 'En línea'} • {conversation.participantRole || (isEn ? 'Tailor' : 'Costurero')}</span>
               </p>
             </div>
           </div>

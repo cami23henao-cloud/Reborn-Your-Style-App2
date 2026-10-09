@@ -212,7 +212,22 @@ export const ContinuousColorWheel: React.FC<ContinuousColorWheelProps> = ({
       }
     }
 
-    ctx.putImageData(imgData, 0, 0);
+    // Render via offscreen canvas so putImageData is scaled correctly onto high-DPI display
+    const offscreen = document.createElement('canvas');
+    offscreen.width = WHEEL_SIZE;
+    offscreen.height = WHEEL_SIZE;
+    const offCtx = offscreen.getContext('2d');
+    if (!offCtx) return;
+
+    offCtx.putImageData(imgData, 0, 0);
+
+    // Draw clipped circle on main scaled canvas
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(CENTER, CENTER, RADIUS, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.drawImage(offscreen, 0, 0, WHEEL_SIZE, WHEEL_SIZE);
+    ctx.restore();
 
     // Draw anti-aliased border rings
     ctx.strokeStyle = '#c1c8c2';
@@ -222,7 +237,7 @@ export const ContinuousColorWheel: React.FC<ContinuousColorWheelProps> = ({
     ctx.stroke();
 
     // Subtle inner neutral demarcation ring
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.arc(CENTER, CENTER, RADIUS * 0.22, 0, Math.PI * 2);
@@ -239,8 +254,11 @@ export const ContinuousColorWheel: React.FC<ContinuousColorWheelProps> = ({
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
 
-    let x = clientX - rect.left;
-    let y = clientY - rect.top;
+    const scaleX = WHEEL_SIZE / rect.width;
+    const scaleY = WHEEL_SIZE / rect.height;
+
+    let x = (clientX - rect.left) * scaleX;
+    let y = (clientY - rect.top) * scaleY;
 
     // Clamp coordinates to disk
     const dx = x - CENTER;
@@ -340,18 +358,16 @@ export const ContinuousColorWheel: React.FC<ContinuousColorWheelProps> = ({
       {/* Main Wheel Area */}
       <div className="bg-[#faf9f4] p-5 rounded-2xl border border-[#c1c8c2]/40 grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
         {/* Continuous Color Wheel Canvas (7 cols) */}
-        <div className="md:col-span-7 flex flex-col items-center justify-center select-none relative">
+        <div className="md:col-span-7 flex flex-col items-center justify-center select-none relative w-full">
           <div
-            className="relative cursor-crosshair touch-none"
-            style={{ width: `${WHEEL_SIZE}px`, height: `${WHEEL_SIZE}px` }}
+            className="relative cursor-crosshair touch-none w-full max-w-[260px] aspect-square mx-auto flex items-center justify-center"
           >
             <canvas
               ref={canvasRef}
-              style={{ width: `${WHEEL_SIZE}px`, height: `${WHEEL_SIZE}px` }}
+              className="w-full h-full rounded-full shadow-md transition-shadow hover:shadow-lg block"
               onPointerDown={handlePointerDown}
               onPointerMove={handlePointerMove}
               onPointerUp={handlePointerUp}
-              className="rounded-full shadow-md transition-shadow hover:shadow-lg"
             />
 
             {/* Draggable Indicator Pointer Knob */}
@@ -359,8 +375,8 @@ export const ContinuousColorWheel: React.FC<ContinuousColorWheelProps> = ({
               <div
                 className="absolute pointer-events-none -translate-x-1/2 -translate-y-1/2 transition-transform duration-75"
                 style={{
-                  left: `${pointerPos.x}px`,
-                  top: `${pointerPos.y}px`,
+                  left: `${(pointerPos.x / WHEEL_SIZE) * 100}%`,
+                  top: `${(pointerPos.y / WHEEL_SIZE) * 100}%`,
                 }}
               >
                 <div

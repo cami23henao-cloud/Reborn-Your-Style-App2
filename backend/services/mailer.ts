@@ -84,9 +84,6 @@ export const sendRecoveryCodeEmail = async (toEmail: string, code: string) => {
     return { success: true, messageId: info.messageId };
   } catch (error: any) {
     console.error('[SMTP Mailer Error]', error?.message || 'Error al conectar con servidor SMTP');
-    console.log("==========================================");
-    console.log("CÓDIGO OTP PARA GMAIL (" + toEmail + "):", code);
-    console.log("==========================================");
     return { success: true, messageId: 'dev-fallback' };
   }
 };

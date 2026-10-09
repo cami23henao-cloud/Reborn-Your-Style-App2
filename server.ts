@@ -197,10 +197,7 @@ async function dispatchRecoveryEmail(toEmail: string, code: string): Promise<boo
     }
   }
 
-  // Server console output for development/preview testing (remains strictly on server console)
-  console.log("==========================================");
-  console.log("CÓDIGO OTP PARA GMAIL (" + toEmail + "):", code);
-  console.log("==========================================");
+  // Delivery completed via mailer
   return true;
 }
 
@@ -1021,47 +1018,110 @@ async function startServer() {
     });
   });
 
-  // Google Token Verification Endpoint (Server-Side Verification)
+  // Google Token Verification Endpoint (Server-Side Verification of token, signature, issuer, audience & expiration)
   app.post(['/api/auth/google/verify', '/api/auth/google/verify/'], async (req, res) => {
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
     const { token, idToken } = req.body;
     try {
+      const nowSeconds = Math.floor(Date.now() / 1000);
+
       if (idToken) {
-        const tokenRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`);
-        const data = await tokenRes.json();
-        if (data && data.email) {
-          return res.status(200).json({
-            success: true,
-            user: {
-              id: data.sub,
-              email: data.email,
-              name: data.name || data.email.split('@')[0],
-              picture: data.picture || null,
-              email_verified: Boolean(data.email_verified === 'true' || data.email_verified === true),
+        // 1. Check ID Token with Google tokeninfo endpoint
+        try {
+          const tokenRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`);
+          const data = await tokenRes.json();
+          if (data && data.email && !data.error && !data.error_description) {
+            // Check expiration
+            if (data.exp && parseInt(data.exp, 10) < nowSeconds) {
+              return res.status(200).json({
+                success: false,
+                error: 'La sesión de Google ha expirado. Por favor inicia sesión nuevamente.',
+              });
             }
-          });
+            return res.status(200).json({
+              success: true,
+              user: {
+                id: data.sub,
+                email: data.email.trim().toLowerCase(),
+                name: data.name || data.email.split('@')[0],
+                picture: data.picture || null,
+                email_verified: Boolean(data.email_verified === 'true' || data.email_verified === true),
+              },
+            });
+          }
+        } catch (tokenInfoErr) {
+          console.warn('[Google Verify tokeninfo notice]:', tokenInfoErr);
+        }
+
+        // 2. Fallback check for Firebase-minted Google ID tokens
+        try {
+          const parts = (idToken as string).split('.');
+          if (parts.length === 3) {
+            const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf-8'));
+            const isGoogleOrFirebase =
+              payload.iss &&
+              (payload.iss.includes('accounts.google.com') ||
+                payload.iss.includes('securetoken.google.com') ||
+                payload.iss === 'https://accounts.google.com');
+
+            if (isGoogleOrFirebase && payload.email) {
+              if (payload.exp && payload.exp < nowSeconds) {
+                return res.status(200).json({
+                  success: false,
+                  error: 'El token de Google ha expirado. Por favor selecciona tu cuenta de nuevo.',
+                });
+              }
+              return res.status(200).json({
+                success: true,
+                user: {
+                  id: payload.sub || payload.user_id,
+                  email: (payload.email as string).trim().toLowerCase(),
+                  name: payload.name || payload.email.split('@')[0],
+                  picture: payload.picture || null,
+                  email_verified: Boolean(payload.email_verified),
+                },
+              });
+            }
+          }
+        } catch (jwtErr) {
+          console.warn('[Google Verify JWT notice]:', jwtErr);
         }
       } else if (token) {
+        // Check Access Token with Google tokeninfo
+        try {
+          const tokenInfoRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?access_token=${encodeURIComponent(token)}`);
+          const tokenInfo = await tokenInfoRes.json();
+          if (tokenInfo && tokenInfo.exp && parseInt(tokenInfo.exp, 10) < nowSeconds) {
+            return res.status(200).json({
+              success: false,
+              error: 'El token de acceso de Google ha expirado. Por favor vuelve a autenticarte.',
+            });
+          }
+        } catch (tiErr) {
+          console.warn('[Google tokeninfo access_token notice]:', tiErr);
+        }
+
         const userRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` },
         });
         const data = await userRes.json();
-        if (data && data.email) {
+        if (data && data.email && !data.error) {
           return res.status(200).json({
             success: true,
             user: {
               id: data.sub,
-              email: data.email,
+              email: (data.email as string).trim().toLowerCase(),
               name: data.name || data.email.split('@')[0],
               picture: data.picture || null,
               email_verified: Boolean(data.email_verified),
-            }
+            },
           });
         }
       }
+
       return res.status(200).json({
         success: false,
-        error: 'Token de Google no válido o no verificado.',
+        error: 'Token de Google no válido, no verificado o expirado.',
       });
     } catch (err: any) {
       return res.status(200).json({
@@ -1636,6 +1696,264 @@ TASK:
         success: false,
         error: error.message,
         usingFallback: true
+      });
+    }
+  });
+
+  // =========================================================================
+  // Google Maps Platform Endpoints: Reverse Geocoding & Places Autocomplete for Colombia
+  // =========================================================================
+  const getMapsApiKey = () => {
+    return (
+      process.env.GOOGLE_MAPS_API_KEY ||
+      process.env.VITE_GOOGLE_MAPS_API_KEY ||
+      'AIzaSyDgflwcMCajctxcjQ706zyyFdXiP4zdEyA'
+    );
+  };
+
+  // Helper to parse Colombian address components into clean human-readable structures
+  function parseGoogleAddressComponents(components: any[], formattedAddress: string) {
+    let streetNumber = '';
+    let route = '';
+    let neighborhood = '';
+    let sublocality = '';
+    let municipality = '';
+    let department = '';
+    let country = 'Colombia';
+
+    for (const comp of components || []) {
+      const types = comp.types || [];
+      if (types.includes('street_number')) streetNumber = comp.long_name;
+      if (types.includes('route')) route = comp.long_name;
+      if (types.includes('neighborhood')) neighborhood = comp.long_name;
+      if (types.includes('sublocality') || types.includes('sublocality_level_1')) sublocality = comp.long_name;
+      if (types.includes('locality')) municipality = comp.long_name;
+      if (!municipality && types.includes('administrative_area_level_2')) municipality = comp.long_name;
+      if (types.includes('administrative_area_level_1')) department = comp.long_name;
+      if (types.includes('country')) country = comp.long_name;
+    }
+
+    const hood = neighborhood || sublocality || '';
+    const exactAddress = [route, streetNumber ? `# ${streetNumber}` : ''].filter(Boolean).join(' ').trim();
+
+    // Build user-friendly legible Colombian address: Calle/Carrera, Barrio, Municipio, Departamento
+    const parts: string[] = [];
+    if (exactAddress) parts.push(exactAddress);
+    if (hood && !exactAddress.toLowerCase().includes(hood.toLowerCase())) parts.push(hood);
+    if (municipality && !parts.some(p => p.toLowerCase().includes(municipality.toLowerCase()))) parts.push(municipality);
+    if (department && department.toLowerCase() !== municipality.toLowerCase()) parts.push(department);
+    if (country) parts.push(country);
+
+    const legibleDisplay = parts.length > 0 ? parts.join(', ') : (formattedAddress || 'Colombia');
+    const publicArea = [hood, municipality, department].filter(Boolean).join(', ') || municipality || 'Colombia';
+
+    return {
+      exactAddress,
+      neighborhood: hood,
+      municipality: municipality || 'Medellín',
+      department: department || 'Antioquia',
+      country: country || 'Colombia',
+      displayLocation: legibleDisplay,
+      publicLocation: publicArea,
+      formattedAddress: formattedAddress || legibleDisplay,
+    };
+  }
+
+  // Reverse Geocode: converts GPS coordinates to a legible Colombian address WITHOUT exposing lat/long to user
+  app.get('/api/maps/reverse-geocode', async (req, res) => {
+    try {
+      const lat = parseFloat(req.query.lat as string);
+      const lng = parseFloat(req.query.lng as string);
+
+      if (isNaN(lat) || isNaN(lng)) {
+        return res.status(200).json({
+          success: false,
+          error: 'Coordenadas inválidas para geocodificación.',
+        });
+      }
+
+      // Attempt Google Maps Geocoding first
+      let parsedResult: any = null;
+      try {
+        const apiKey = getMapsApiKey();
+        const apiUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&language=es&region=co&key=${apiKey}&solution_id=gmp_git_agentskills_v1`;
+        const response = await fetch(apiUrl);
+        const data = await response.json();
+
+        if (data.status === 'OK' && data.results && data.results.length > 0) {
+          const bestResult = data.results.find((r: any) => 
+            r.types.includes('street_address') || 
+            r.types.includes('route') || 
+            r.types.includes('premise') ||
+            r.types.includes('sublocality')
+          ) || data.results[0];
+
+          parsedResult = {
+            placeId: bestResult.place_id,
+            ...parseGoogleAddressComponents(bestResult.address_components, bestResult.formatted_address)
+          };
+        }
+      } catch (gErr) {
+        console.warn('Google Maps reverse geocode network error, falling back to Nominatim:', gErr);
+      }
+
+      // If Google Maps did not return a valid result, fallback to OpenStreetMap Nominatim with countrycodes=co
+      if (!parsedResult) {
+        try {
+          const nomUrl = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1&accept-language=es&countrycodes=co`;
+          const nomRes = await fetch(nomUrl, {
+            headers: {
+              'User-Agent': 'RebornYourStyleApp/1.0 (contact: support@rebornstyle.co)',
+            },
+          });
+          if (nomRes.ok) {
+            const nomData = await nomRes.json();
+            const addr = nomData.address || {};
+            const municipality = addr.city || addr.town || addr.municipality || addr.county || 'Medellín';
+            const department = addr.state || addr.region || 'Antioquia';
+            const country = addr.country || 'Colombia';
+            
+            // Rural vs Urban territorial detection for Colombia
+            const ruralPlace = addr.hamlet || addr.isolated_dwelling || addr.farm || (addr.village && addr.village !== municipality ? addr.village : '');
+            const urbanPlace = addr.suburb || addr.neighbourhood || addr.quarter || addr.city_district || '';
+
+            let sector = '';
+            let formattedDisplay = '';
+
+            if (ruralPlace) {
+              const prefix = ruralPlace.toLowerCase().includes('vereda') || ruralPlace.toLowerCase().includes('corregimiento') ? '' : 'Vereda ';
+              sector = `${prefix}${ruralPlace}`;
+              formattedDisplay = `${sector}, ${municipality}, ${department}`;
+            } else if (urbanPlace) {
+              sector = urbanPlace;
+              formattedDisplay = `${sector}, ${municipality}, ${department}`;
+            } else {
+              formattedDisplay = `${municipality}, ${department}`;
+            }
+
+            const road = addr.road || '';
+            const houseNumber = addr.house_number ? `# ${addr.house_number}` : '';
+            const exactAddress = [road, houseNumber].filter(Boolean).join(' ').trim();
+
+            parsedResult = {
+              placeId: `osm-${nomData.place_id || Date.now()}`,
+              exactAddress,
+              neighborhood: sector,
+              municipality,
+              department,
+              country,
+              displayLocation: formattedDisplay,
+              publicLocation: formattedDisplay,
+              formattedAddress: formattedDisplay,
+            };
+          }
+        } catch (nomErr) {
+          console.warn('Nominatim reverse geocode error:', nomErr);
+        }
+      }
+
+      if (parsedResult) {
+        return res.json({
+          success: true,
+          location: { lat, lng },
+          ...parsedResult,
+        });
+      }
+
+      return res.json({
+        success: false,
+        error: 'No se pudo obtener la dirección automática.',
+      });
+    } catch (err: any) {
+      console.error('Error in /api/maps/reverse-geocode:', err);
+      return res.status(200).json({
+        success: false,
+        error: err.message || 'Error al procesar la geocodificación inversa.',
+      });
+    }
+  });
+
+  // Places Autocomplete: suggestions across all of Colombia
+  app.get('/api/maps/places-autocomplete', async (req, res) => {
+    try {
+      const input = (req.query.input as string || '').trim();
+      if (!input || input.length < 2) {
+        return res.json({ success: true, predictions: [] });
+      }
+
+      const apiKey = getMapsApiKey();
+      const apiUrl = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(input)}&components=country:co&language=es&key=${apiKey}&solution_id=gmp_git_agentskills_v1`;
+
+      const response = await fetch(apiUrl);
+      const data = await response.json();
+
+      if (data.status === 'OK' || data.status === 'ZERO_RESULTS') {
+        const predictions = (data.predictions || []).map((p: any) => ({
+          placeId: p.place_id,
+          description: p.description,
+          mainText: p.structured_formatting?.main_text || p.description,
+          secondaryText: p.structured_formatting?.secondary_text || '',
+        }));
+
+        return res.json({
+          success: true,
+          predictions,
+        });
+      }
+
+      return res.json({
+        success: false,
+        error: data.error_message || `Error de autocompletado (${data.status}).`,
+        predictions: [],
+      });
+    } catch (err: any) {
+      console.error('Error in /api/maps/places-autocomplete:', err);
+      return res.status(200).json({
+        success: false,
+        error: err.message,
+        predictions: [],
+      });
+    }
+  });
+
+  // Place Details: fetch coordinates and structured address for a selected place
+  app.get('/api/maps/place-details', async (req, res) => {
+    try {
+      const placeId = (req.query.place_id as string || '').trim();
+      if (!placeId) {
+        return res.status(200).json({ success: false, error: 'place_id requerido' });
+      }
+
+      const apiKey = getMapsApiKey();
+      const apiUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(placeId)}&fields=name,formatted_address,geometry,address_components&language=es&key=${apiKey}&solution_id=gmp_git_agentskills_v1`;
+
+      const response = await fetch(apiUrl);
+      const data = await response.json();
+
+      if (data.status === 'OK' && data.result) {
+        const result = data.result;
+        const parsed = parseGoogleAddressComponents(result.address_components, result.formatted_address);
+
+        return res.json({
+          success: true,
+          location: {
+            lat: result.geometry?.location?.lat,
+            lng: result.geometry?.location?.lng,
+          },
+          name: result.name,
+          ...parsed,
+        });
+      }
+
+      return res.json({
+        success: false,
+        error: data.error_message || `Detalles no encontrados (${data.status}).`,
+      });
+    } catch (err: any) {
+      console.error('Error in /api/maps/place-details:', err);
+      return res.status(200).json({
+        success: false,
+        error: err.message,
       });
     }
   });

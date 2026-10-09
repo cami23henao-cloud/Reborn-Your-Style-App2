@@ -309,7 +309,7 @@ export const CosturerosView: React.FC<CosturerosViewProps> = ({
                 </div>
               </div>
 
-              {/* Action Buttons: "Ver perfil" and "Contactar / Iniciar conversación" */}
+              {/* Action Buttons: "Ver perfil" and [ 💬 Chatear en vivo ] */}
               <div className="pt-3 border-t border-[#efeee9] dark:border-[#173328] grid grid-cols-2 gap-2">
                 <button
                   onClick={() => onSelectProfessional(pro)}
@@ -322,9 +322,13 @@ export const CosturerosView: React.FC<CosturerosViewProps> = ({
                 <button
                   onClick={() => onSendMessage(pro)}
                   className="btn-interactive w-full py-2.5 px-3 rounded-xl bg-[#012d1d] hover:bg-[#2b694d] text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+                  title="Iniciar sala de chat en vivo y en tiempo real"
                 >
-                  <span className="material-symbols-outlined text-base">chat_bubble</span>
-                  <span>{t('tailors.contact_btn')}</span>
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#4ade80] opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-[#4ade80]"></span>
+                  </span>
+                  <span>💬 Chatear en vivo</span>
                 </button>
               </div>
             </div>

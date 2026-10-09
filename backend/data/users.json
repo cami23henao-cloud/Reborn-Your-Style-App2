@@ -77,16 +77,15 @@
     "createdAt": "2026-09-29T14:18:54.296Z"
   },
   {
-    "id": "usr-camila-henao",
-    "name": "Camila Henao",
-    "email": "cami23henao@gmail.com",
-    "password": "$2b$10$ilB120waVbaM1pZo4cXo6.I88CHHDyndnP8as28ZNJpleFPI6wSoy",
-    "role": "cliente",
-    "phone": "+57 310 456 7890",
-    "authProvider": "email",
+    "id": "usr_1791574224397_5vybe",
+    "name": "Costurero Real",
+    "email": "costurero.poblado@gmail.com",
+    "password": "$2b$10$2xFUCkLEunSxUGJvCqrWfuTTVRYisLVFBXXHgZB5q/HE3v9LmoTLC",
+    "role": "profesional",
     "isVerified": true,
-    "createdAt": "2026-03-01T00:00:00.000Z",
-    "lastLoginAt": "2026-10-07T21:18:54.130Z",
-    "reset_code_hash": ""
+    "email_confirmed": true,
+    "status": "active",
+    "createdAt": "2026-10-09T19:30:24.397Z",
+    "lastLoginAt": "2026-10-09T19:30:24.397Z"
   }
 ]

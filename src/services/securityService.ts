@@ -214,6 +214,17 @@ const BLOCKED_FAKE_DOMAINS = new Set([
   '10minutemail.com',
   'trashmail.com',
   'guerrillamail.com',
+  'dispostable.com',
+  'throwawaymail.com',
+  'getairmail.com',
+  'mohmal.com',
+  'sharklasers.com',
+  'fakemailgenerator.com',
+  'burnermail.io',
+  'dropmail.me',
+  'inboxbear.com',
+  'mytemp.email',
+  'crazymailing.com',
 ]);
 
 const OBVIOUS_FAKE_USERNAMES = new Set([
@@ -240,8 +251,8 @@ export function validateEmailFormat(email: string): { isValid: boolean; error?: 
     return { isValid: false, error: 'El correo electrónico es obligatorio.' };
   }
 
-  // RFC compliant email regex requiring a valid domain and TLD of at least 2 chars
-  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,10}$/;
+  // RFC 5322 strict regex requiring valid local-part and domain with valid TLD
+  const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
   if (!emailRegex.test(clean)) {
     return {
       isValid: false,
@@ -275,10 +286,24 @@ export function validateEmailFormat(email: string): { isValid: boolean; error?: 
     };
   }
 
-  if (BLOCKED_FAKE_DOMAINS.has(domainPart)) {
+  // Check disposable domains and subdomains
+  const isBlockedDomain =
+    BLOCKED_FAKE_DOMAINS.has(domainPart) ||
+    Array.from(BLOCKED_FAKE_DOMAINS).some((blocked) => domainPart.endsWith(`.${blocked}`));
+
+  if (isBlockedDomain) {
     return {
       isValid: false,
-      error: 'El dominio de correo ingresado no es válido o es temporal. Usa un proveedor real (ej. Gmail, Outlook, Yahoo o tu dominio corporativo).',
+      error: 'Por favor utiliza un correo electrónico válido o corporativo (ej. Gmail, Outlook, Yahoo).',
+    };
+  }
+
+  // Suspicious random strings detection: e.g. "asdfghjkl", "qwertyuiop", "12345678"
+  const randomSequences = ['asdfgh', 'qwerty', 'zxcvbn', '123456', 'abcdef'];
+  if (randomSequences.some((seq) => usernamePart.includes(seq) || domainPart.includes(seq))) {
+    return {
+      isValid: false,
+      error: 'Por favor utiliza un correo electrónico válido o corporativo (ej. Gmail, Outlook, Yahoo).',
     };
   }
 

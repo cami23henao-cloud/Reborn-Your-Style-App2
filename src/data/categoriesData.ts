@@ -78,13 +78,6 @@ export const EXPANDED_CATEGORIES: GarmentCategoryItem[] = [
     popularUpcyclingIdeas: ['Compartimento para portátil', 'Bolsillos modulares cargo', 'Refuerzo de lona']
   },
   {
-    id: 'calzones',
-    name: 'Calzones',
-    icon: 'spa',
-    description: 'Calzones, panties, bralettes, culottes y prendas íntimas sostenibles de algodón orgánico.',
-    popularUpcyclingIdeas: ['Calzones en Algodón Pima', 'Bralette y Panty de Encaje', 'Culotte Anatómico']
-  },
-  {
     id: 'accesorios',
     name: 'Accesorios',
     icon: 'auto_fix_high',
@@ -104,13 +97,6 @@ export const EXPANDED_CATEGORIES: GarmentCategoryItem[] = [
     icon: 'interests',
     description: 'Calcetines de algodón, calentadores de punto rústico y medias térmicas.',
     popularUpcyclingIdeas: ['Calentadores de punto', 'Muñecos artesanales', 'Protectores térmicos']
-  },
-  {
-    id: 'ropa',
-    name: 'Ropa',
-    icon: 'checkroom',
-    description: 'Prendas de vestir compuestas, conjuntos textiles coordinados y trajes de dos piezas.',
-    popularUpcyclingIdeas: ['Chaqueta Bomber Reversible', 'Conjunto de 2 Piezas', 'Chaleco Patchwork']
   },
   {
     id: 'otras-prendas',

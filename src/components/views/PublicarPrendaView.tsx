@@ -3,7 +3,8 @@ import { GarmentProject, AppView, UserProfile } from '../../types';
 import { EXPANDED_CATEGORIES } from '../../data/categoriesData';
 import { BrandLogo } from '../BrandLogo';
 import { ContinuousColorWheel } from '../common/ContinuousColorWheel';
-import { ColombianLocationSelector, ComprehensiveLocation } from '../common/ColombianLocationSelector';
+import { ComprehensiveLocation } from '../common/ColombianLocationSelector';
+import { GoogleMapsGarmentLocation } from '../common/GoogleMapsGarmentLocation';
 import { UserAvatar } from '../common/UserAvatar';
 import { useThemeLanguage } from '../../context/ThemeLanguageContext';
 
@@ -317,10 +318,10 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
               />
             </div>
 
-            {/* Expanded 16 Categories */}
+            {/* Categories */}
             <div className="space-y-2">
               <label className="block text-xs font-bold text-[#012d1d] dark:text-white flex items-center justify-between">
-                <span>{language === 'en' ? 'Garment Category (16 Categories) *' : 'Categoría de la Prenda (16 Categorías) *'}</span>
+                <span>{language === 'en' ? 'Garment Category *' : 'Categoría de la Prenda *'}</span>
                 <span className="text-[10px] text-[#2b694d] dark:text-[#b0f1cc] font-normal">
                   {language === 'en' ? 'Circular fashion' : 'Moda circular'}
                 </span>
@@ -547,8 +548,8 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
               </div>
             )}
 
-            {/* Requirement 9: Sistema de Ubicación Comprensible y Familiar en Colombia */}
-            <ColombianLocationSelector
+            {/* Sistema de Ubicación Profesional con Google Maps (Colombia) */}
+            <GoogleMapsGarmentLocation
               initialLocation={colombianLocation}
               onChange={(loc) => setColombianLocation(loc)}
               required={true}

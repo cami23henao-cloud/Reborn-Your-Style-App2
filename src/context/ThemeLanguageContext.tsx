@@ -98,7 +98,7 @@ const DICTIONARY: Record<Language, Record<string, string>> = {
     // Catalog & Category Views
     'catalog.title': 'Catálogos por Categoría',
     'catalog.desc': 'Cada botón abre una sección exclusiva con productos que pertenecen únicamente a esa categoría. Haz clic en la categoría que deseas explorar para ver sus prendas disponibles.',
-    'catalog.search_placeholder': 'Buscar categoría (ej. Bolsos, Calzones, Pantalones...)',
+    'catalog.search_placeholder': 'Buscar categoría (ej. Bolsos, Chaquetas, Pantalones...)',
     'catalog.shortcuts': 'Accesos directos:',
     'catalog.garments_count': 'prendas',
     'catalog.garment_count': 'prenda',

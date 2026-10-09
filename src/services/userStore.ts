@@ -1,6 +1,7 @@
 import {
   UserProfile,
   UserRole,
+  Professional,
   GarmentProject,
   ServiceItem,
   ServiceRequest,
@@ -29,6 +30,9 @@ export interface StoredUserAccount {
   createdAt?: string;
   lastLoginAt?: string;
   isVerified?: boolean;
+  email_confirmed?: boolean;
+  status?: string;
+  authProvider?: string;
 }
 
 const STORAGE_KEY_USERS_DB = 'reborn_verified_accounts_v5';
@@ -302,7 +306,7 @@ export async function registerVerifiedUser(params: {
   if (existing) {
     return {
       success: false,
-      error: 'Este correo electrónico ya está registrado. Por favor inicia sesión.',
+      error: 'Este correo electrónico ya está registrado.',
     };
   }
 
@@ -348,6 +352,8 @@ export async function registerVerifiedUser(params: {
     createdAt: nowIso,
     lastLoginAt: nowIso,
     isVerified: true,
+    email_confirmed: true,
+    status: 'active',
   };
 
   db.push(newAccount);
@@ -992,4 +998,37 @@ export function removeDeviceGoogleAccount(email: string): void {
     console.error('Error removing device Google account:', err);
   }
 }
+
+/**
+ * Returns registered tailors/professionals from the database formatted as Professional[]
+ */
+export function getRegisteredTailorsAsProfessionals(): Professional[] {
+  try {
+    const db = getUsersDatabase();
+    const proUsers = db.filter((u) => u.role === 'profesional');
+    return proUsers.map((u) => {
+      const loc = u.profile.location || (u.profile.municipality && u.profile.department ? `${u.profile.municipality}, ${u.profile.department}` : 'Medellín, Antioquia');
+      return {
+        id: u.id,
+        name: u.name || u.profile.name,
+        specialty: u.profile.bio ? u.profile.bio.substring(0, 50) : 'Sastrería & Modistería Artesanal',
+        category: 'Upcycling Estructural' as const,
+        rating: 5.0,
+        reviewsCount: 1,
+        location: loc,
+        distanceKm: 1.0,
+        startingPrice: 25000,
+        imageUrl: u.profile.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(u.name)}&backgroundColor=012d1d&textColor=b0f1cc`,
+        bio: u.profile.bio || 'Costurero y taller artesanal registrado en Reborn Your Style. Especialista en confección, transformación y ajustes de prendas.',
+        tags: ['Sastrería', 'Ajustes', 'Moda Circular', 'Artesanal'],
+        isTopSeller: false,
+        portfolio: [],
+        reviews: [],
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
 

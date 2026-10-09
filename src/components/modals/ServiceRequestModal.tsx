@@ -30,11 +30,11 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({
   const [selectedGarmentOption, setSelectedGarmentOption] = useState<string>('__otra_prenda__');
   const [customGarmentText, setCustomGarmentText] = useState<string>('');
   const [serviceType, setServiceType] = useState<string>('Upcycling Creativo y Transformación');
-  const [budget, setBudget] = useState<number>(50000);
+  const [budget, setBudget] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
 
-  // Whenever modal opens, reset all fields cleanly - Requirement 7:
+  // Whenever modal opens, reset all fields cleanly
   useEffect(() => {
     if (isOpen) {
       if (garments.length > 0) {
@@ -45,11 +45,8 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({
       setCustomGarmentText('');
       setNotes('');
       setErrorMessage('');
-      if (professional?.startingPrice) {
-        setBudget(professional.startingPrice);
-      } else {
-        setBudget(50000);
-      }
+      // Field starts completely empty without automatic zero
+      setBudget('');
     }
   }, [isOpen, garments, professional]);
 
@@ -66,6 +63,17 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({
     }
   };
 
+  const handleBudgetChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawDigits = e.target.value.replace(/\D/g, '');
+    if (!rawDigits) {
+      setBudget('');
+      return;
+    }
+    const formatted = Number(rawDigits).toLocaleString('es-CO');
+    setBudget(formatted);
+    if (errorMessage) setErrorMessage('');
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
@@ -79,8 +87,23 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({
       finalGarmentTitle = customGarmentText.trim();
     }
 
-    if (!budget || budget <= 0) {
-      setErrorMessage(isEn ? 'Please enter a valid budget.' : 'Por favor ingresa un presupuesto válido.');
+    const cleanDigits = budget.replace(/\D/g, '');
+    if (!cleanDigits) {
+      setErrorMessage(
+        isEn
+          ? 'Please enter the budget value for your quote.'
+          : 'Por favor ingresa el valor de la cotización o presupuesto.'
+      );
+      return;
+    }
+
+    const numericBudget = parseInt(cleanDigits, 10);
+    if (isNaN(numericBudget) || numericBudget <= 0) {
+      setErrorMessage(
+        isEn
+          ? 'Please enter a valid budget greater than zero.'
+          : 'Por favor ingresa un presupuesto válido mayor a cero pesos.'
+      );
       return;
     }
 
@@ -89,7 +112,7 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({
       professionalName: professional.name,
       garmentTitle: finalGarmentTitle,
       serviceType,
-      budget,
+      budget: numericBudget,
       description: notes.trim()
     });
 
@@ -201,11 +224,11 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({
                 payments
               </span>
               <input
-                type="number"
+                type="text"
+                inputMode="numeric"
                 value={budget}
-                onChange={(e) => setBudget(Number(e.target.value))}
-                min={10000}
-                step={5000}
+                onChange={handleBudgetChange}
+                placeholder={isEn ? 'Enter the value (e.g. 50,000)' : 'Ingresa el valor (ej. 50.000)'}
                 required
                 className="w-full bg-[#f5f4ef] dark:bg-[#002113]/60 border border-[#c1c8c2] dark:border-[#2b694d]/50 rounded-xl py-2.5 pl-10 pr-3 text-xs sm:text-sm text-[#1b1c19] dark:text-white focus:bg-white dark:focus:bg-[#002113] focus:border-[#012d1d] outline-none"
               />

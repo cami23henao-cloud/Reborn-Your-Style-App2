@@ -32,7 +32,13 @@ import {
   updateUserAccountProfile,
   updateUserGarmentStatus,
   deleteUserAccount,
+  getRegisteredTailorsAsProfessionals,
 } from './services/userStore';
+import {
+  getRoomId,
+  subscribeToRoomMessages,
+  sendRealtimeChatMessage,
+} from './services/realtimeChatService';
 import { purgeAllLegacySessionsAndGoogleData } from './services/securityService';
 import { ProtectedAreaGuard } from './components/common/ProtectedAreaGuard';
 import { TopNavBar } from './components/TopNavBar';
@@ -229,6 +235,53 @@ export function App() {
       setUserProfile(GUEST_USER_PROFILE);
     }
   }, []);
+
+  // Synchronize registered tailors/professionals into the public directory
+  useEffect(() => {
+    const registeredPros = getRegisteredTailorsAsProfessionals();
+    if (registeredPros.length > 0) {
+      setProfessionals((prev) => {
+        const existingIds = new Set(prev.map((p) => p.id));
+        const newOnes = registeredPros.filter((p) => !existingIds.has(p.id));
+        return newOnes.length > 0 ? [...newOnes, ...prev] : prev;
+      });
+    }
+  }, [currentUserAccount, isLoggedIn]);
+
+  // Real-time Firestore Chat Room subscription for active chat conversation
+  useEffect(() => {
+    if (!floatingChatConvId && !activeConvId) return;
+    const targetId = floatingChatConvId || activeConvId;
+    const conv = conversations.find((c) => c.id === targetId);
+    if (!conv || !conv.participantId) return;
+
+    const clientId = currentUserAccount?.id || 'guest_client';
+    const tailorId = conv.participantId;
+    const roomId = getRoomId(clientId, tailorId);
+
+    const unsubscribe = subscribeToRoomMessages(roomId, (remoteMessages) => {
+      if (remoteMessages && remoteMessages.length > 0) {
+        setConversations((prev) =>
+          prev.map((c) => {
+            if (c.id === targetId) {
+              const lastMsg = remoteMessages[remoteMessages.length - 1];
+              return {
+                ...c,
+                messages: remoteMessages,
+                lastMessage: lastMsg.text,
+                lastMessageTime: lastMsg.time,
+              };
+            }
+            return c;
+          })
+        );
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [floatingChatConvId, activeConvId, currentUserAccount?.id]);
 
   // Section Reveal & Image Reveal Observer for smooth page motion
   useEffect(() => {
@@ -634,6 +687,20 @@ export function App() {
       time: 'Ahora',
     };
 
+    // Realtime bidirectional dispatch to Firestore room
+    const targetConv = conversations.find((c) => c.id === convId);
+    if (targetConv?.participantId) {
+      const clientId = currentUserAccount?.id || 'guest_client';
+      const tailorId = targetConv.participantId;
+      const roomId = getRoomId(clientId, tailorId);
+      sendRealtimeChatMessage(roomId, {
+        senderId: clientId,
+        senderName: userProfile.name || 'Cliente',
+        senderRole: 'user',
+        text,
+      }).catch((err) => console.warn('Firestore realtime dual-write notice:', err));
+    }
+
     setConversations((prev) => {
       let isFirstMessage = false;
       let participantName = '';
@@ -668,6 +735,20 @@ export function App() {
             text: `¡Hola! Gracias por comunicarte. Con mucho gusto te asesoro con el ajuste o diseño de tu prenda. ¿Tienes alguna foto o medida para revisar?`,
             time: 'Ahora',
           };
+
+          // Also dual-write reply to Firestore room
+          if (targetConv?.participantId) {
+            const clientId = currentUserAccount?.id || 'guest_client';
+            const tailorId = targetConv.participantId;
+            const roomId = getRoomId(clientId, tailorId);
+            sendRealtimeChatMessage(roomId, {
+              senderId: tailorId,
+              senderName: targetConv.participantName,
+              senderRole: 'pro',
+              text: proReply.text,
+            }).catch((err) => console.warn('Firestore pro reply dual-write notice:', err));
+          }
+
           setConversations((p) => {
             const withReply = p.map((c) =>
               c.id === convId
