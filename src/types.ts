@@ -12,7 +12,8 @@ export type AppView =
   | 'mi-estudio' 
   | 'mensajes' 
   | 'solicitud-resumen'
-  | 'admin';
+  | 'admin'
+  | 'tutoriales';
 
 export type UserRole = 'cliente' | 'profesional' | 'admin';
 

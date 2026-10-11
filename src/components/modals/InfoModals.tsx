@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useThemeLanguage } from '../../context/ThemeLanguageContext';
+import { TutorialsSection } from '../tutorials/TutorialsSection';
 
 interface InfoModalProps {
   type:
@@ -78,18 +79,18 @@ export const InfoModals: React.FC<InfoModalProps> = ({
   const TUTORIALS_DATA = [
     {
       id: 'tut-1',
-      title: 'De Jean Desgastado a Bolso Tote Bag',
-      category: 'bolsos',
-      categoryLabel: 'Bolsos y Accesorios',
+      title: 'De Jean Desgastado a Falda Upcycled',
+      category: 'pantalones',
+      categoryLabel: 'Pantalones y Denim',
       duration: '45 min',
       difficulty: 'Principiante',
-      image: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=800&auto=format&fit=crop&q=80',
-      description: 'Aprende a transformar la parte superior de unos pantalones de mezclilla en desuso en una práctica y resistente bolsa tote ecológica.',
-      materials: ['1 pantalón jean usado', 'Tijeras de tela', 'Hilo grueso de mezclilla', 'Aguja #16 o máquina de coser', 'Alfileres y cinta métrica'],
+      image: 'https://images.unsplash.com/photo-1582418702059-97ebafb35d09?w=800&auto=format&fit=crop&q=80',
+      description: 'Aprende a descoser y transformar la parte superior de unos pantalones vaqueros en una moderna falda vaquera.',
+      materials: ['1 pantalón jean usado', 'Tijeras de tela', 'Hilo grueso de mezclilla', 'Descosedor', 'Alfileres y cinta métrica'],
       steps: [
-        { num: 1, title: 'Corte de la base', text: 'Extiende el pantalón plano y corta horizontalmente justo debajo de la entrepierna, conservando la pretina y los bolsillos traseros intactos.' },
-        { num: 2, title: 'Costura del fondo', text: 'Voltea la pieza al revés y cose una costura recta reforzada a 1.5 cm del borde inferior cortado. Remata con puntada en zigzag.' },
-        { num: 3, title: 'Creación y fijación de manijas', text: 'Corta dos tiras de 60x6 cm de las perneras restantes, dóblalas en cuatro y cóselas a los lados de la pretina para las asas.' },
+        { num: 1, title: 'Descoser el tiro', text: 'Desose con cuidado la entrepierna y la costura del tiro delantero y trasero hasta el cierre.' },
+        { num: 2, title: 'Alinear y superponer', text: 'Superpón la pernera izquierda sobre la derecha manteniendo la falda plana y coloca alfileres.' },
+        { num: 3, title: 'Costura y dobladillo', text: 'Cose con puntada recta reforzada y define el largo final deseado con un dobladillo limpio o deshilachado.' },
       ],
     },
     {
@@ -163,8 +164,8 @@ export const InfoModals: React.FC<InfoModalProps> = ({
     : TUTORIALS_DATA.filter((t) => t.category === tutorialCategory);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden border border-[#efeee9]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+      <div className={`bg-white dark:bg-[#0e241c] rounded-2xl shadow-2xl w-full ${type === 'tutoriales' ? 'max-w-4xl' : 'max-w-2xl'} max-h-[90vh] flex flex-col overflow-hidden border border-[#efeee9] dark:border-[#2b694d]/40`}>
         {/* Header */}
         <div className="p-6 border-b border-[#efeee9] flex items-center justify-between bg-[#faf9f4]">
           <h2 className="font-headline text-xl font-bold text-[#012d1d] flex items-center gap-2">
@@ -410,48 +411,9 @@ export const InfoModals: React.FC<InfoModalProps> = ({
           )}
 
           {type === 'tutoriales' && (
-            <>
-              <div className="bg-[#b0f1cc]/30 p-4 rounded-xl border border-[#2b694d]/20 mb-3">
-                <h4 className="font-headline font-bold text-[#012d1d] text-base mb-1">
-                  Guías y Tutoriales de Suprareciclaje
-                </h4>
-                <p className="text-xs text-[#1b1c19]">
-                  Aprende técnicas sencillas y profesionales para intervenir, reparar y transformar tus prendas.
-                </p>
-              </div>
-
-              <div className="space-y-3 text-xs">
-                <div className="p-3 bg-[#f5f4ef] rounded-xl border border-[#c1c8c2]/40 flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-[#012d1d] text-[#b0f1cc] flex items-center justify-center shrink-0">
-                    <span className="material-symbols-outlined text-lg">content_cut</span>
-                  </div>
-                  <div>
-                    <h5 className="font-bold text-[#012d1d] text-sm">Sashiko y Zurcido Visible</h5>
-                    <p className="text-[#717973] mt-0.5">Técnica japonesa para reparar desgarros en denim con puntadas geométricas decorativas que refuerzan la tela.</p>
-                  </div>
-                </div>
-
-                <div className="p-3 bg-[#f5f4ef] rounded-xl border border-[#c1c8c2]/40 flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-[#012d1d] text-[#b0f1cc] flex items-center justify-center shrink-0">
-                    <span className="material-symbols-outlined text-lg">palette</span>
-                  </div>
-                  <div>
-                    <h5 className="font-bold text-[#012d1d] text-sm">Teñido Botánico y Natural</h5>
-                    <p className="text-[#717973] mt-0.5">Cómo devolver color y vida a camisas de algodón y lino usando huesos de aguacate, cáscaras de cebolla y cúrcuma.</p>
-                  </div>
-                </div>
-
-                <div className="p-3 bg-[#f5f4ef] rounded-xl border border-[#c1c8c2]/40 flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-[#012d1d] text-[#b0f1cc] flex items-center justify-center shrink-0">
-                    <span className="material-symbols-outlined text-lg">style</span>
-                  </div>
-                  <div>
-                    <h5 className="font-bold text-[#012d1d] text-sm">Patchwork Upcycling</h5>
-                    <p className="text-[#717973] mt-0.5">Unión de retazos y piezas de distintas prendas para crear chaquetas, chalecos o bolsos de alta resistencia y diseño único.</p>
-                  </div>
-                </div>
-              </div>
-            </>
+            <div className="py-2">
+              <TutorialsSection />
+            </div>
           )}
 
           {type === 'contacto' && (

@@ -82,8 +82,8 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
             id: 'tutoriales',
             label: t('nav.tutoriales'),
             icon: 'school',
-            isActive: false,
-            onClick: () => onOpenInfoModal?.('tutoriales'),
+            isActive: currentView === 'tutoriales',
+            onClick: () => onNavigate('tutoriales'),
           },
           {
             id: 'ayuda',

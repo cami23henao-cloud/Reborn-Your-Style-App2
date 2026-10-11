@@ -66,6 +66,7 @@ import { MiEstudioView } from './components/views/MiEstudioView';
 import { MensajesView } from './components/views/MensajesView';
 import { SolicitudResumenView } from './components/views/SolicitudResumenView';
 import { AdminPanelView } from './components/views/AdminPanelView';
+import { TutorialsSection } from './components/tutorials/TutorialsSection';
 import { useScrollReveal } from './hooks/useScrollReveal';
 import { SplashScreen } from './components/common/SplashScreen';
 
@@ -241,9 +242,9 @@ export function App() {
     const registeredPros = getRegisteredTailorsAsProfessionals();
     if (registeredPros.length > 0) {
       setProfessionals((prev) => {
-        const existingIds = new Set(prev.map((p) => p.id));
-        const newOnes = registeredPros.filter((p) => !existingIds.has(p.id));
-        return newOnes.length > 0 ? [...newOnes, ...prev] : prev;
+        const regIds = new Set(registeredPros.map((r) => r.id));
+        const others = prev.filter((p) => !regIds.has(p.id));
+        return [...registeredPros, ...others];
       });
     }
   }, [currentUserAccount, isLoggedIn]);
@@ -1052,6 +1053,11 @@ export function App() {
               onNavigateHome={() => handleNavigate('inicio')}
             />
           )
+        )}
+
+        {/* Módulo de Tutoriales con Videos Cortos y Streaming */}
+        {currentView === 'tutoriales' && (
+          <TutorialsSection isStandalonePage={true} />
         )}
       </main>
 

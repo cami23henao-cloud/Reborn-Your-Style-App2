@@ -3,10 +3,9 @@ import { GarmentProject, AppView, UserProfile } from '../../types';
 import { EXPANDED_CATEGORIES } from '../../data/categoriesData';
 import { BrandLogo } from '../BrandLogo';
 import { ContinuousColorWheel } from '../common/ContinuousColorWheel';
-import { ComprehensiveLocation } from '../common/ColombianLocationSelector';
-import { GoogleMapsGarmentLocation } from '../common/GoogleMapsGarmentLocation';
 import { UserAvatar } from '../common/UserAvatar';
 import { useThemeLanguage } from '../../context/ThemeLanguageContext';
+import { InteractiveGarmentLocation, LocationChangeData } from '../common/InteractiveGarmentLocation';
 
 interface PublicarPrendaViewProps {
   onPublishProject: (project: GarmentProject) => void;
@@ -84,16 +83,15 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
     setPresupuesto(formatted);
   };
 
-  // Requirement 9: Sistema de ubicación comprensible y estructurado en Colombia (sin coordenadas técnicas)
-  const [colombianLocation, setColombianLocation] = useState<ComprehensiveLocation>({
-    country: 'Colombia',
+  // Ubicación profesional interactiva (Búsqueda + Dirección + Mapa)
+  const [locationDetails, setLocationDetails] = useState<LocationChangeData>({
+    displayLocation: initialDraft?.location || initialDraft?.publicLocation || user.location || 'Medellín, Antioquia',
+    exactAddress: initialDraft?.exactAddress || '',
     department: initialDraft?.department || user.department || 'Antioquia',
     municipality: initialDraft?.municipality || user.municipality || 'Medellín',
-    localityOrComuna: '',
-    neighborhoodOrVereda: '',
-    exactAddress: initialDraft?.exactAddress || '',
-    displayLocation: initialDraft?.location || user.location || 'Medellín, Antioquia, Colombia',
-    publicLocation: initialDraft?.publicLocation || user.location || 'Medellín, Antioquia'
+    neighborhood: initialDraft?.neighborhoodOrVereda || '',
+    lat: 6.2442,
+    lng: -75.5812,
   });
   const [imageUrl, setImageUrl] = useState(initialDraft?.imageUrl || '');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -132,7 +130,11 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
     setFormError('');
 
     const numericBudget = presupuesto ? parseInt(presupuesto.replace(/\D/g, ''), 10) : 0;
-    const finalPublicLocation = colombianLocation.publicLocation || 'Medellín, Antioquia, Colombia';
+    const finalLocation = locationDetails.displayLocation.trim() || 'Medellín, Antioquia';
+    const finalExactAddress = locationDetails.exactAddress.trim();
+    const finalPublicLocation = finalExactAddress
+      ? `${finalLocation} (${finalExactAddress})`
+      : finalLocation;
 
     const newProject: GarmentProject = {
       id: `proj-${Date.now()}`,
@@ -148,13 +150,13 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
       budget: numericBudget,
       listingType,
       allowExchange,
-      location: colombianLocation.displayLocation,
-      department: colombianLocation.department,
-      municipality: colombianLocation.municipality,
-      country: colombianLocation.country,
-      localityOrComuna: colombianLocation.localityOrComuna,
-      neighborhoodOrVereda: colombianLocation.neighborhoodOrVereda,
-      exactAddress: colombianLocation.exactAddress,
+      location: finalLocation,
+      department: locationDetails.department || 'Antioquia',
+      municipality: locationDetails.municipality || 'Medellín',
+      country: 'Colombia',
+      localityOrComuna: '',
+      neighborhoodOrVereda: locationDetails.neighborhood || '',
+      exactAddress: finalExactAddress,
       publicLocation: finalPublicLocation,
       imageUrl,
       authorName: user.name,
@@ -171,6 +173,9 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
 
   const handleSaveDraftClick = () => {
     const numericBudget = presupuesto ? parseInt(presupuesto.replace(/\D/g, ''), 10) : 0;
+    const finalLocation = locationDetails.displayLocation.trim() || 'Medellín, Antioquia';
+    const finalExactAddress = locationDetails.exactAddress.trim();
+
     onSaveDraft({
       title: titulo,
       category: categoria,
@@ -183,14 +188,14 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
       budget: numericBudget,
       listingType,
       allowExchange,
-      location: colombianLocation.displayLocation,
-      department: colombianLocation.department,
-      municipality: colombianLocation.municipality,
-      country: colombianLocation.country,
-      localityOrComuna: colombianLocation.localityOrComuna,
-      neighborhoodOrVereda: colombianLocation.neighborhoodOrVereda,
-      exactAddress: colombianLocation.exactAddress,
-      publicLocation: colombianLocation.publicLocation,
+      location: finalLocation,
+      department: locationDetails.department || 'Antioquia',
+      municipality: locationDetails.municipality || 'Medellín',
+      country: 'Colombia',
+      localityOrComuna: '',
+      neighborhoodOrVereda: locationDetails.neighborhood || '',
+      exactAddress: finalExactAddress,
+      publicLocation: finalExactAddress ? `${finalLocation} (${finalExactAddress})` : finalLocation,
       imageUrl,
     });
   };
@@ -548,10 +553,11 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
               </div>
             )}
 
-            {/* Sistema de Ubicación Profesional con Google Maps (Colombia) */}
-            <GoogleMapsGarmentLocation
-              initialLocation={colombianLocation}
-              onChange={(loc) => setColombianLocation(loc)}
+            {/* Módulo de Ubicación Profesional: Búsqueda Inteligente + Dirección + Mapa Interactivo */}
+            <InteractiveGarmentLocation
+              initialLocation={locationDetails.displayLocation}
+              initialAddressDetail={locationDetails.exactAddress}
+              onChange={(data) => setLocationDetails(data)}
               required={true}
             />
 
@@ -667,7 +673,7 @@ export const PublicarPrendaView: React.FC<PublicarPrendaViewProps> = ({
                   <div className="flex items-center gap-1.5 text-[#717973] dark:text-[#a7b8ae]">
                     <span className="material-symbols-outlined text-xs text-[#2b694d] dark:text-[#b0f1cc]">location_on</span>
                     <span className="truncate max-w-[140px]">
-                      {colombianLocation.publicLocation || 'Colombia'}
+                      {locationDetails.displayLocation || 'Medellín, Antioquia'}
                     </span>
                   </div>
                   <span className="font-black text-[#012d1d] dark:text-white">

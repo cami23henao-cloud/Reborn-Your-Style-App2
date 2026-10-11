@@ -489,24 +489,6 @@ export const GoogleMapsGarmentLocation: React.FC<GoogleMapsGarmentLocationProps>
               </button>
             )}
           </div>
-
-          {/* BOTÓN DE GEOLOCALIZACIÓN: [ 📍 Usar mi ubicación actual ] */}
-          <button
-            type="button"
-            onClick={handleUseCurrentLocation}
-            disabled={isLocatingGps}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#012d1d] hover:bg-[#1b4332] active:scale-95 text-white dark:bg-[#b0f1cc] dark:text-[#002113] dark:hover:bg-[#90e1b2] text-xs font-bold transition-all shadow-xs cursor-pointer shrink-0 disabled:opacity-75 disabled:cursor-wait"
-            title="Detectar mi ubicación actual vía GPS"
-          >
-            <span
-              className={`material-symbols-outlined text-base ${
-                isLocatingGps ? 'animate-spin' : ''
-              }`}
-            >
-              {isLocatingGps ? 'progress_activity' : 'my_location'}
-            </span>
-            <span>{isLocatingGps ? 'Obteniendo ubicación...' : '📍 Usar mi ubicación actual'}</span>
-          </button>
         </div>
 
         {/* Subtexto indicativo: "Válido para cualquier departamento, municipio, barrio o vereda de Colombia." */}

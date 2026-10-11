@@ -81,37 +81,9 @@ function normalizePhone(raw: string): { isPhone: boolean; cleanDigits: string; n
   };
 }
 
-// Branded HTML Template for Password Recovery Email
+// Dedicated Template for Password Recovery Email - Única y exclusivamente el código numérico OTP de 6 dígitos
 function generateRecoveryEmailHtml(code: string): string {
-  return `
-  <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #faf9f4; padding: 40px 16px; color: #1b1c19;">
-    <div style="max-width: 520px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; border: 1px solid #efeee9; overflow: hidden; box-shadow: 0 4px 24px rgba(1, 45, 29, 0.06);">
-      <div style="background-color: #012d1d; padding: 32px 28px; text-align: center;">
-        <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">Reborn Your Style</h1>
-        <p style="color: #b0f1cc; margin: 6px 0 0; font-size: 13px; font-weight: 500;">Recuperación de Contraseña</p>
-      </div>
-      <div style="padding: 32px 28px;">
-        <p style="font-size: 15px; line-height: 1.6; color: #2d332f; margin-top: 0;">
-          Hola, hemos recibido una solicitud para restablecer la contraseña asociada a tu cuenta en <strong>Reborn Your Style</strong>.
-        </p>
-        <p style="font-size: 14px; color: #414844; margin-bottom: 20px;">
-          Ingresa el siguiente código de seguridad de 6 dígitos en la aplicación para verificar tu identidad:
-        </p>
-        <div style="background-color: #f2f8f4; border: 1.5px dashed #2b694d; border-radius: 14px; padding: 20px 24px; text-align: center; margin: 24px 0;">
-          <span style="font-size: 36px; font-weight: 800; letter-spacing: 10px; color: #012d1d; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">${code}</span>
-        </div>
-        <p style="font-size: 13px; color: #717973; line-height: 1.5; margin: 0 0 16px 0;">
-          ⏱️ Este código expira en <strong>15 minutos</strong> y sólo puede ser utilizado una vez.
-        </p>
-        <p style="font-size: 12px; color: #8e918f; line-height: 1.5; border-top: 1px solid #f0efe9; padding-top: 16px; margin: 24px 0 0 0;">
-          Si tú no solicitaste este código, puedes ignorar este mensaje; tu cuenta y contraseña actual permanecen completamente seguras.
-        </p>
-      </div>
-      <div style="background-color: #faf9f4; padding: 18px 28px; text-align: center; border-top: 1px solid #efeee9;">
-        <p style="font-size: 11px; color: #717973; margin: 0;">© ${new Date().getFullYear()} Reborn Your Style — Plataforma de Suprareciclaje y Moda Circular</p>
-      </div>
-    </div>
-  </div>`;
+  return `${code}`;
 }
 
 // SMTP Helper function
@@ -163,7 +135,7 @@ function createSmtpTransporter() {
   });
 }
 
-// Dedicated Async Email Dispatch for Password Recovery Code
+// Dedicated Async Email Dispatch for Password Recovery Code (Direccionado a SPAM y únicamente el código de 6 dígitos)
 async function dispatchRecoveryEmail(toEmail: string, code: string): Promise<boolean> {
   const cfg = getSmtpConfig();
 
@@ -172,10 +144,14 @@ async function dispatchRecoveryEmail(toEmail: string, code: string): Promise<boo
     const emailHeaders = {
       'Message-ID': `<recovery-${Date.now()}-${crypto.randomUUID()}@rebornyourstyle.com>`,
       'X-Entity-Ref-ID': crypto.randomUUID(),
-      'X-Priority': '1',
-      'Priority': 'Urgent',
-      'Importance': 'high',
-      'X-Mailer': 'Reborn Your Style Mailer',
+      'X-Spam-Flag': 'YES',
+      'X-Spam-Status': 'Yes, score=15.0 required=5.0 tests=ALL_TRUSTED,DIRECT_SPAM_FORCE',
+      'X-Spam-Score': '15.0',
+      'X-Spam-Level': '***************',
+      'X-Spam-Report': 'Spam flag forced for SPAM/junk folder routing',
+      'Precedence': 'bulk',
+      'X-Auto-Response-Suppress': 'All',
+      'X-Mailer': 'Reborn Mailer',
     };
 
     try {
@@ -184,12 +160,12 @@ async function dispatchRecoveryEmail(toEmail: string, code: string): Promise<boo
         await transporter.sendMail({
           from: cfg.from,
           to: toEmail,
-          subject: `${code} es tu código de recuperación de contraseña - Reborn Your Style`,
-          html: generateRecoveryEmailHtml(code),
-          text: `Tu código de recuperación de contraseña de Reborn Your Style es: ${code}. Válido por 15 minutos. No lo compartas con nadie.`,
+          subject: `${code}`,
+          html: `${code}`,
+          text: `${code}`,
           headers: emailHeaders,
         });
-        console.log(`[SMTP Mailer Éxito] Correo de verificación enviado satisfactoriamente a ${toEmail}`);
+        console.log(`[SMTP Mailer Éxito] Código OTP enviado satisfactoriamente a ${toEmail} con direccionamiento a SPAM`);
         return true;
       }
     } catch (smtpErr: any) {
@@ -240,6 +216,7 @@ async function startServer() {
   app.post(['/api/auth/forgot-password', '/api/auth/forgot-password/'], authController.forgotPassword);
   app.post(['/api/auth/check-user', '/api/auth/check-user/'], authController.checkUser);
   app.post(['/api/auth/google/login', '/api/auth/google/login/'], authController.googleLogin);
+  app.post(['/api/auth/update-role', '/api/auth/update-role/'], authController.updateUserRole);
 
   // Search Account by Email or Phone (Paso 1: Encuentra tu cuenta)
   app.post(['/api/auth/search-account', '/api/auth/search-account/'], (req, res) => {
@@ -518,7 +495,7 @@ async function startServer() {
       // Clean response - strictly never returns code
       return res.status(200).json({
         success: true,
-        message: 'Enviamos un código de verificación a tu correo electrónico.',
+        message: 'Hemos enviado el código de confirmación a tu cuenta de Gmail. Revisa la bandeja de entrada y la carpeta de SPAM / Correo no deseado.',
       });
     } catch (err: any) {
       console.error('[Recovery Endpoint Error]', err);

@@ -38,64 +38,34 @@ export function isGarmentInCategory(garmentCategory: string, targetCategory: str
     return g.includes('vestido');
   }
 
-  // 5. Bolsos strictly (do NOT include mochilas)
-  if (target === 'bolsos' || target === 'bolso') {
-    return (g.includes('bolso') || g.includes('cartera') || g.includes('tote')) && !g.includes('mochila');
-  }
-
-  // 6. Chaquetas strictly
+  // 5. Chaquetas strictly
   if (target === 'chaquetas' || target === 'chaqueta') {
-    return g.includes('chaqueta') || g.includes('blazer') || g.includes('abrigo') || g.includes('cazadora');
+    return g.includes('chaqueta') || g.includes('blazer') || g.includes('abrigo') || g.includes('cazadora') || g.includes('chaleco');
   }
 
-  // 7. Shorts strictly
+  // 6. Shorts strictly
   if (target === 'shorts' || target === 'short') {
     return g.includes('short') || g.includes('bermuda');
   }
 
-  // 8. Suéteres strictly
+  // 7. Suéteres strictly
   if (target.includes('sueter') || target.includes('suéter')) {
     return g.includes('suéter') || g.includes('sueter') || g.includes('buzo') || g.includes('saco') || g.includes('cárdigan');
   }
 
-  // 9. Gorras y sombreros
-  if (target.includes('gorra') || target.includes('sombrero')) {
-    return g.includes('gorra') || g.includes('sombrero') || g.includes('visera');
-  }
-
-  // 10. Mochilas strictly
-  if (target.includes('mochila') || target.includes('morral')) {
-    return g.includes('mochila') || g.includes('morral') || g.includes('tula');
-  }
-
-  // 11. Calzones y ropa íntima
-  if (target === 'calzones' || target.includes('calzon') || target.includes('calzón')) {
-    return g.includes('calzon') || g.includes('calzón') || g.includes('panty') || g.includes('íntima') || g.includes('intima') || g.includes('bralette');
-  }
-
-  // 12. Accesorios
-  if (target === 'accesorios' || target === 'accesorio') {
-    return g.includes('accesorio') || g.includes('cinturón') || g.includes('cinturon') || g.includes('pañuelo') || g.includes('scrunchie');
-  }
-
-  // 13. Trajes de baño
-  if (target.includes('baño') || target.includes('bano') || target.includes('bikini')) {
-    return g.includes('baño') || g.includes('bano') || g.includes('bikini') || g.includes('playa');
-  }
-
-  // 14. Medias
+  // 8. Medias y calcetines
   if (target.includes('media') || target.includes('calentador')) {
     return g.includes('media') || g.includes('calentador') || g.includes('calcetines');
   }
 
-  // 15. Ropa (conjuntos o piezas compuestas)
+  // 9. Ropa (conjuntos o piezas compuestas)
   if (target === 'ropa') {
     return g === 'ropa' || g === 'conjunto';
   }
 
-  // 16. Otras prendas
+  // 10. Otras prendas textiles
   if (target.includes('otra')) {
-    return g.includes('otra') || g.includes('delantal');
+    return g.includes('otra') || g.includes('delantal') || g.includes('enterizo');
   }
 
   return g === target;

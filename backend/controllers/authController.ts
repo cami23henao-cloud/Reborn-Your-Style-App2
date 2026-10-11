@@ -422,7 +422,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
       return res.status(200).json({
         success: true,
         exists: true,
-        message: 'Enviamos un código de verificación a tu correo electrónico.',
+        message: 'Hemos enviado el código de confirmación a tu cuenta de Gmail. Revisa la bandeja de entrada y la carpeta de SPAM / Correo no deseado.',
         expiresInMinutes: 15,
       });
     } catch (mailError: any) {
@@ -742,7 +742,10 @@ export const googleLogin = async (req: Request, res: Response) => {
     let isNewUser = false;
 
     if (user) {
-      // Existing user (e.g. registered previously via email/password): link to Google without duplicating
+      // Existing user: link to Google and update role if selected
+      if (role) {
+        user.role = role === 'profesional' ? 'profesional' : 'cliente';
+      }
       if (!user.authProvider) user.authProvider = 'google';
       if (picture && !user.avatarUrl) {
         user.avatarUrl = picture;
@@ -751,7 +754,7 @@ export const googleLogin = async (req: Request, res: Response) => {
       user.isVerified = true;
       usersStore.set(cleanEmail, user);
       savePersistedUsers();
-      console.log(`[Google Auth] Linked and authenticated existing user: ${cleanEmail}`);
+      console.log(`[Google Auth] Linked and authenticated existing user with role ${user.role}: ${cleanEmail}`);
     } else {
       // New user authenticated through Google: create active profile immediately
       const derivedName = cleanEmail.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
@@ -805,6 +808,44 @@ export const googleLogin = async (req: Request, res: Response) => {
     return res.status(200).json({
       success: false,
       message: 'No pudimos procesar la autenticación con Google. Por favor intenta nuevamente.',
+    });
+  }
+};
+
+/**
+ * Update User Role Controller (Client / Tailor)
+ * POST /api/auth/update-role
+ */
+export const updateUserRole = async (req: Request, res: Response) => {
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  try {
+    const { email, role } = req.body;
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const userRole = (role === 'profesional' || role === 'tailor') ? 'profesional' : 'cliente';
+
+    let user = usersStore.get(cleanEmail);
+    if (!user) {
+      return res.status(200).json({ success: false, message: 'Usuario no encontrado' });
+    }
+    user.role = userRole;
+    usersStore.set(cleanEmail, user);
+    savePersistedUsers();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Rol actualizado exitosamente.',
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        isVerified: user.isVerified !== false,
+      },
+    });
+  } catch (error: any) {
+    return res.status(200).json({
+      success: false,
+      message: 'Error al actualizar el rol.',
     });
   }
 };

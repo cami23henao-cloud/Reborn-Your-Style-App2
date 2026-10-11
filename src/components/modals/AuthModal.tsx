@@ -100,6 +100,7 @@ type AuthViewMode =
   | 'register'
   | 'register_verify'
   | 'forgot_password'
+  | 'google_role_select'
   | 'admin';
 
 export const AuthModal: React.FC<AuthModalProps> = ({
@@ -114,6 +115,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   // Navigation View State
   const [viewMode, setViewMode] = useState<AuthViewMode>(initialMode === 'register' ? 'register' : 'login');
   const [selectedRole, setSelectedRole] = useState<'cliente' | 'profesional'>('cliente');
+  const [googleRole, setGoogleRole] = useState<'cliente' | 'profesional' | null>(null);
 
   // Input states for Login
   const [loginEmail, setLoginEmail] = useState('');
@@ -287,13 +289,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   // ---------------------------------------------------------------------------
   // 2. CONTINUAR CON GOOGLE (OFICIAL GOOGLE IDENTITY SERVICES)
   // ---------------------------------------------------------------------------
-  const processGoogleEmail = async (rawEmail: string, rawName?: string, rawPicture?: string) => {
+  const processGoogleEmail = async (
+    rawEmail: string,
+    rawName?: string,
+    rawPicture?: string,
+    roleOverride?: 'cliente' | 'profesional'
+  ) => {
     const cleanEmail = (rawEmail || '').trim().toLowerCase();
     if (!cleanEmail || !cleanEmail.includes('@')) {
       setErrorMsg(isEn ? 'Invalid email address.' : 'El correo electrónico no es válido.');
       setIsLoading(false);
       return;
     }
+
+    const effectiveRole = roleOverride || googleRole || selectedRole || 'cliente';
 
     setIsLoading(true);
     setErrorMsg('');
@@ -307,13 +316,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName)}&backgroundColor=012d1d&textColor=b0f1cc`;
 
       // Requirement:
-      // "No exijas que la cuenta de Google esté previamente vinculada a una cuenta específica de Reborn Your Style:
-      //  si la cuenta de Google es válida y real, debe crearse o iniciarse sesión automáticamente."
+      // "El sistema vincula inmediatamente el rol seleccionado a los datos del perfil que retorna la API de Google,
+      //  guardándolo en la base de datos sin pasos adicionales.
+      //  Si selecciona 'Costurero', queda registrado y visible en la sección/directorio de costureros."
       try {
         await safeApiCall('/api/auth/google/login', 'POST', {
           email: cleanEmail,
           name: displayName,
           picture: avatarUrl,
+          role: effectiveRole,
         });
       } catch (backendErr) {
         console.warn('Backend Google account sync:', backendErr);
@@ -323,6 +334,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         email: cleanEmail,
         name: displayName,
         avatarUrl,
+        role: effectiveRole,
       });
 
       if (authRes.success && authRes.user) {
@@ -351,7 +363,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
 
-  const handleGoogleClick = async () => {
+  const handleOpenGoogleRoleSelect = () => {
+    setErrorMsg('');
+    setSuccessMsg('');
+    setGoogleRole(null);
+    setViewMode('google_role_select');
+  };
+
+  const handleGoogleClick = async (roleOverride?: 'cliente' | 'profesional') => {
+    const roleForAuth = roleOverride || googleRole || selectedRole || 'cliente';
     setErrorMsg('');
     setSuccessMsg('');
     setIsLoading(true);
@@ -374,7 +394,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               await processGoogleEmail(
                 verifyRes.data.user.email,
                 verifyRes.data.user.name || credential.user.displayName || undefined,
-                verifyRes.data.user.picture || credential.user.photoURL || undefined
+                verifyRes.data.user.picture || credential.user.photoURL || undefined,
+                roleForAuth
               );
               return;
             }
@@ -386,7 +407,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         await processGoogleEmail(
           credential.user.email,
           credential.user.displayName || undefined,
-          credential.user.photoURL || undefined
+          credential.user.photoURL || undefined,
+          roleForAuth
         );
         return;
       }
@@ -441,7 +463,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   await processGoogleEmail(
                     verifyRes.data.user.email,
                     verifyRes.data.user.name,
-                    verifyRes.data.user.picture
+                    verifyRes.data.user.picture,
+                    roleForAuth
                   );
                   return;
                 }
@@ -452,7 +475,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 });
                 const userInfo = await userInfoRes.json();
                 if (userInfo?.email) {
-                  await processGoogleEmail(userInfo.email, userInfo.name, userInfo.picture);
+                  await processGoogleEmail(userInfo.email, userInfo.name, userInfo.picture, roleForAuth);
                   return;
                 }
               } catch (err) {
@@ -754,8 +777,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setErrorMsg('');
       setSuccessMsg(
         isEn
-          ? 'We sent a verification code to your email.'
-          : 'Enviamos un código de verificación a tu correo electrónico.'
+          ? 'We have sent the confirmation code to your Gmail account. Check your inbox and SPAM / Junk folder.'
+          : 'Hemos enviado el código de confirmación a tu cuenta de Gmail. Revisa la bandeja de entrada y la carpeta de SPAM / Correo no deseado.'
       );
       setRecoveryStep('verify');
     } catch {
@@ -801,8 +824,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setErrorMsg('');
       setSuccessMsg(
         isEn
-          ? 'We sent a verification code to your email.'
-          : 'Enviamos un código de verificación a tu correo electrónico.'
+          ? 'We have sent the confirmation code to your Gmail account. Check your inbox and SPAM / Junk folder.'
+          : 'Hemos enviado el código de confirmación a tu cuenta de Gmail. Revisa la bandeja de entrada y la carpeta de SPAM / Correo no deseado.'
       );
     } catch {
       setIsLoading(false);
@@ -1127,7 +1150,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               {/* [ Continuar con Google ] */}
               <button
                 type="button"
-                onClick={handleGoogleClick}
+                onClick={handleOpenGoogleRoleSelect}
                 disabled={isLoading}
                 className="w-full py-2.5 px-4 bg-white hover:bg-[#faf9f4] border border-[#d3d0c7] hover:border-[#b0b3af] text-[#1b1c19] font-medium text-sm rounded-xl shadow-xs transition-all flex items-center justify-center gap-3 cursor-pointer"
               >
@@ -1378,7 +1401,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               {/* [ Registrarse con Google ] */}
               <button
                 type="button"
-                onClick={handleGoogleClick}
+                onClick={handleOpenGoogleRoleSelect}
                 disabled={isLoading}
                 className="w-full py-2.5 px-4 bg-white hover:bg-[#faf9f4] border border-[#d3d0c7] hover:border-[#b0b3af] text-[#1b1c19] font-medium text-sm rounded-xl shadow-xs transition-all flex items-center justify-center gap-3 cursor-pointer"
               >
@@ -1597,10 +1620,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     <h2 className="text-xl font-bold tracking-tight text-[#012d1d]">
                       {isEn ? 'Verification code' : 'Código de verificación'}
                     </h2>
-                    <p className="text-xs text-[#717973] mt-1.5 leading-relaxed">
+                    <p className="text-xs text-[#717973] mt-1.5 leading-relaxed font-medium">
                       {isEn
-                        ? 'We have sent a 6-digit code to your email address.'
-                        : 'Hemos enviado un código de 6 dígitos a tu correo electrónico.'}
+                        ? 'We have sent the confirmation code to your Gmail account. Check your inbox and SPAM / Junk folder.'
+                        : 'Hemos enviado el código de confirmación a tu cuenta de Gmail. Revisa la bandeja de entrada y la carpeta de SPAM / Correo no deseado.'}
                     </p>
                     <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-[#012d1d] text-xs font-semibold rounded-full mt-2 border border-emerald-200/80">
                       <span className="material-symbols-outlined text-[15px] text-[#2b694d]">mail</span>
@@ -1860,6 +1883,211 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </button>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* ================================================================= */}
+          {/* SCREEN: SELECCIÓN PREVIA DE ROL PARA GOOGLE OAUTH                 */}
+          {/* ================================================================= */}
+          {viewMode === 'google_role_select' && (
+            <div>
+              <div className="text-center mb-5">
+                <div className="w-12 h-12 rounded-full bg-white border border-[#e2e0d8] shadow-xs flex items-center justify-center mx-auto mb-2.5">
+                  <svg className="w-6 h-6" viewBox="0 0 24 24">
+                    <path
+                      fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                    />
+                    <path
+                      fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                    />
+                  </svg>
+                </div>
+                <h2 className="text-xl font-bold tracking-tight text-[#012d1d]">
+                  {isEn ? 'Choose your role' : 'Elige tu rol en la plataforma'}
+                </h2>
+                <p className="text-xs text-[#717973] mt-1.5 leading-relaxed font-medium">
+                  {isEn
+                    ? 'Select your role before continuing with Google.'
+                    : 'Antes de continuar con Google, indícanos cómo participarás en Reborn Your Style.'}
+                </p>
+              </div>
+
+              {/* Las 2 opciones requeridas */}
+              <div className="space-y-3 mb-5">
+                {/* Opción 1: [ 👤 Usuario / Cliente ] */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGoogleRole('cliente');
+                    setErrorMsg('');
+                  }}
+                  className={`w-full p-4 rounded-2xl border-2 text-left transition-all cursor-pointer relative flex items-start gap-3.5 ${
+                    googleRole === 'cliente'
+                      ? 'border-[#012d1d] bg-[#f2f8f4] shadow-sm ring-1 ring-[#012d1d]'
+                      : 'border-[#e2e0d8] bg-[#faf9f4] hover:border-[#b0b3af] hover:bg-white'
+                  }`}
+                >
+                  <div
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                      googleRole === 'cliente' ? 'bg-[#012d1d] text-[#b0f1cc]' : 'bg-[#e7e5dd] text-[#414844]'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[22px]">person</span>
+                  </div>
+                  <div className="flex-1 pr-6">
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-sm font-bold text-[#012d1d]">
+                        {isEn ? '👤 User / Client' : '👤 Usuario / Cliente'}
+                      </h4>
+                      <span className="text-[10px] font-bold bg-[#b0f1cc]/40 text-[#012d1d] px-2 py-0.5 rounded-full">
+                        {isEn ? 'Client' : 'Cliente'}
+                      </span>
+                    </div>
+                    <p className="text-xs font-bold text-[#2b694d] mt-0.5">
+                      {isEn ? '“I want to rent and publish garments”' : '“Quiero alquilar y publicar prendas”'}
+                    </p>
+                    <p className="text-[11px] text-[#717973] mt-1 leading-snug">
+                      {isEn
+                        ? 'Explore catalogs, rent or sell clothing, and connect with tailors to upcycle garments.'
+                        : 'Explora y alquila prendas, publica ropa de tu armario y solicita arreglos a costureros.'}
+                    </p>
+                  </div>
+                  {googleRole === 'cliente' && (
+                    <span className="material-symbols-outlined absolute right-3.5 top-3.5 text-[#012d1d] text-xl font-bold">
+                      check_circle
+                    </span>
+                  )}
+                </button>
+
+                {/* Opción 2: [ 🪡 Costurero / Sastre ] */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGoogleRole('profesional');
+                    setErrorMsg('');
+                  }}
+                  className={`w-full p-4 rounded-2xl border-2 text-left transition-all cursor-pointer relative flex items-start gap-3.5 ${
+                    googleRole === 'profesional'
+                      ? 'border-[#012d1d] bg-[#f2f8f4] shadow-sm ring-1 ring-[#012d1d]'
+                      : 'border-[#e2e0d8] bg-[#faf9f4] hover:border-[#b0b3af] hover:bg-white'
+                  }`}
+                >
+                  <div
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                      googleRole === 'profesional' ? 'bg-[#012d1d] text-[#b0f1cc]' : 'bg-[#e7e5dd] text-[#414844]'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[22px]">content_cut</span>
+                  </div>
+                  <div className="flex-1 pr-6">
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-sm font-bold text-[#012d1d]">
+                        {isEn ? '🪡 Tailor / Artisan' : '🪡 Costurero / Sastre'}
+                      </h4>
+                      <span className="text-[10px] font-bold bg-[#b0f1cc]/40 text-[#012d1d] px-2 py-0.5 rounded-full">
+                        {isEn ? 'Tailor' : 'Costurero'}
+                      </span>
+                    </div>
+                    <p className="text-xs font-bold text-[#2b694d] mt-0.5">
+                      {isEn
+                        ? '“I want to offer my tailoring and alteration services”'
+                        : '“Quiero ofrecer mis servicios de confección y arreglos”'}
+                    </p>
+                    <p className="text-[11px] text-[#717973] mt-1 leading-snug">
+                      {isEn
+                        ? 'Offer tailoring, modifications and upcycling. Your profile will appear in the tailors directory.'
+                        : 'Ofrece servicios de confección, ajustes y upcycling. Tu perfil quedará registrado y visible en el directorio de costureros.'}
+                    </p>
+                  </div>
+                  {googleRole === 'profesional' && (
+                    <span className="material-symbols-outlined absolute right-3.5 top-3.5 text-[#012d1d] text-xl font-bold">
+                      check_circle
+                    </span>
+                  )}
+                </button>
+              </div>
+
+              {/* Botón: [ Continuar con Google ] */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (googleRole) {
+                    handleGoogleClick(googleRole);
+                  }
+                }}
+                disabled={!googleRole || isLoading}
+                className={`w-full py-3 px-4 font-semibold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-3 cursor-pointer ${
+                  !googleRole || isLoading
+                    ? 'bg-[#e2e0d8] text-[#8e918f] cursor-not-allowed shadow-none'
+                    : 'bg-[#012d1d] hover:bg-[#0c3927] text-white hover:shadow-lg'
+                }`}
+              >
+                {isLoading ? (
+                  <>
+                    <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>{isEn ? 'Connecting with Google...' : 'Conectando con Google...'}</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                      <path
+                        fill="#4285F4"
+                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                      />
+                      <path
+                        fill="#34A853"
+                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                      />
+                      <path
+                        fill="#FBBC05"
+                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                      />
+                      <path
+                        fill="#EA4335"
+                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                      />
+                    </svg>
+                    <span>{isEn ? 'Continue with Google' : 'Continuar con Google'}</span>
+                  </>
+                )}
+              </button>
+
+              {!googleRole && (
+                <p className="text-[11px] text-[#717973] text-center mt-2 font-medium">
+                  {isEn
+                    ? 'Please select one role above to enable Google sign-in.'
+                    : 'Selecciona una de las 2 opciones arriba para habilitar el botón.'}
+                </p>
+              )}
+
+              {/* Mensajes de estado */}
+              {renderStatusMessages()}
+
+              {/* Botón de regreso */}
+              <div className="mt-5 pt-3.5 border-t border-[#f0efe9] text-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setErrorMsg('');
+                    setSuccessMsg('');
+                    setViewMode('login');
+                  }}
+                  className="text-xs font-semibold text-[#012d1d] hover:text-[#2b694d] hover:underline transition-colors flex items-center justify-center gap-1 mx-auto cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+                  <span>{isEn ? 'Back to sign in' : 'Volver al inicio de sesión'}</span>
+                </button>
+              </div>
             </div>
           )}
 

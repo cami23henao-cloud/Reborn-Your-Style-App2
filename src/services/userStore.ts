@@ -698,6 +698,13 @@ export async function loginOrRegisterWithGoogle(params: {
     // Synchronize & link existing manual account to Google
     (existing as any).authProvider = 'google';
     existing.isVerified = true;
+    if (params.role) {
+      existing.role = params.role;
+      existing.profile.role = params.role;
+      if (params.role === 'profesional' && (!existing.profile.bio || existing.profile.bio.length < 5)) {
+        existing.profile.bio = 'Costurero y taller artesanal especializado en confección y arreglos textiles.';
+      }
+    }
     if (params.avatarUrl && !existing.profile.avatarUrl) {
       existing.profile.avatarUrl = params.avatarUrl;
     }
@@ -719,7 +726,7 @@ export async function loginOrRegisterWithGoogle(params: {
       username: `@${emailClean.split('@')[0]}`,
       email: emailClean,
       avatarUrl: params.avatarUrl || '',
-      bio: '',
+      bio: role === 'profesional' ? 'Costurero y taller artesanal especializado en confección y arreglos textiles.' : '',
       role,
       location: 'Colombia',
       department: 'Antioquia',
@@ -1005,7 +1012,7 @@ export function removeDeviceGoogleAccount(email: string): void {
 export function getRegisteredTailorsAsProfessionals(): Professional[] {
   try {
     const db = getUsersDatabase();
-    const proUsers = db.filter((u) => u.role === 'profesional');
+    const proUsers = db.filter((u) => u.role === 'profesional' || (u.role as any) === 'tailor');
     return proUsers.map((u) => {
       const loc = u.profile.location || (u.profile.municipality && u.profile.department ? `${u.profile.municipality}, ${u.profile.department}` : 'Medellín, Antioquia');
       return {
@@ -1029,6 +1036,22 @@ export function getRegisteredTailorsAsProfessionals(): Professional[] {
   } catch {
     return [];
   }
+}
+
+/**
+ * Updates a user role in local persistent database
+ */
+export function updateUserRoleInDatabase(email: string, role: 'cliente' | 'profesional'): StoredUserAccount | null {
+  const cleanEmail = (email || '').trim().toLowerCase();
+  const db = getUsersDatabase();
+  const user = db.find((u) => u.email.trim().toLowerCase() === cleanEmail);
+  if (user) {
+    user.role = role;
+    user.profile.role = role;
+    saveUsersDatabase(db);
+    return user;
+  }
+  return null;
 }
 
 
