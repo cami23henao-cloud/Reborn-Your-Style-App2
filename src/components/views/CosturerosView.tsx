@@ -23,35 +23,42 @@ export const CosturerosView: React.FC<CosturerosViewProps> = ({
   const [selectedCity, setSelectedCity] = useState<string>('todos');
   const [selectedTag, setSelectedTag] = useState<string>('todos');
 
-  // Extract cities from location
+  // Extract cities and departments from location
   const availableCities = useMemo(() => {
     const set = new Set<string>();
+    // Common Colombian cities
+    ['Medellín', 'Bogotá', 'Cali', 'Barranquilla', 'Bucaramanga', 'Envigado', 'Cartagena'].forEach((c) => set.add(c));
     professionals.forEach((p) => {
       const parts = p.location.split(',');
       if (parts.length > 1) {
-        set.add(parts[parts.length - 3]?.trim() || parts[0]?.trim());
-      } else {
-        set.add(p.location);
+        const city = parts[parts.length - 3]?.trim() || parts[0]?.trim();
+        if (city) set.add(city);
+      } else if (p.location) {
+        set.add(p.location.trim());
       }
     });
     return Array.from(set).filter(Boolean);
   }, [professionals]);
 
-  // Extract common specialty tags
+  // Extract common specialty and garment tags
   const popularTags = language === 'en' ? [
     'All',
-    'Creative Embroidery',
+    'Denim / Jeans',
+    'Jackets & Coats',
+    'Dresses & Skirts',
     'Classic Tailoring',
+    'Creative Embroidery',
     'Upcycling',
-    'Denim',
     'Visible Mending',
     'Natural Dyeing',
   ] : [
     'Todos',
-    'Bordado Creativo',
+    'Jeans y Denim',
+    'Chaquetas y Abrigos',
+    'Vestidos y Faldas',
     'Sastrería Clásica',
+    'Bordado Creativo',
     'Upcycling',
-    'Denim',
     'Reparación visible',
     'Teñido Natural',
   ];
@@ -59,7 +66,7 @@ export const CosturerosView: React.FC<CosturerosViewProps> = ({
   // Filter professionals
   const filteredProfessionals = useMemo(() => {
     return professionals.filter((pro) => {
-      // Search text
+      // Search text (checks name, specialty, bio, location, address, and tags)
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
         const matches =
@@ -67,23 +74,43 @@ export const CosturerosView: React.FC<CosturerosViewProps> = ({
           pro.specialty.toLowerCase().includes(q) ||
           pro.bio.toLowerCase().includes(q) ||
           pro.location.toLowerCase().includes(q) ||
+          (pro.address && pro.address.toLowerCase().includes(q)) ||
           pro.tags.some((t) => t.toLowerCase().includes(q));
         if (!matches) return false;
       }
 
-      // City filter
+      // City / Location filter
       if (selectedCity !== 'todos') {
-        if (!pro.location.toLowerCase().includes(selectedCity.toLowerCase())) {
-          return false;
-        }
+        const cLower = selectedCity.toLowerCase();
+        const inLoc = pro.location.toLowerCase().includes(cLower);
+        const inAddr = pro.address ? pro.address.toLowerCase().includes(cLower) : false;
+        if (!inLoc && !inAddr) return false;
       }
 
-      // Tag filter
+      // Tag & Garment Type filter
       if (selectedTag !== 'todos' && selectedTag !== 'Todos' && selectedTag !== 'All') {
+        const tagLower = selectedTag.toLowerCase();
+        const isDenim = tagLower.includes('denim') || tagLower.includes('jeans');
+        const isJacket = tagLower.includes('chaqueta') || tagLower.includes('jacket');
+        const isDress = tagLower.includes('vestido') || tagLower.includes('dress') || tagLower.includes('falda');
+        const isTailoring = tagLower.includes('sastrería') || tagLower.includes('tailoring') || tagLower.includes('traje');
+        const isEmbroidery = tagLower.includes('bordado') || tagLower.includes('embroidery');
+
         const hasTag =
-          pro.tags.some((t) => t.toLowerCase().includes(selectedTag.toLowerCase())) ||
-          pro.specialty.toLowerCase().includes(selectedTag.toLowerCase()) ||
-          pro.category?.toLowerCase().includes(selectedTag.toLowerCase());
+          pro.tags.some((t) => {
+            const tl = t.toLowerCase();
+            if (tl.includes(tagLower)) return true;
+            if (isDenim && (tl.includes('denim') || tl.includes('jean') || tl.includes('mezclilla'))) return true;
+            if (isJacket && (tl.includes('chaqueta') || tl.includes('abrigo') || tl.includes('blazer'))) return true;
+            if (isDress && (tl.includes('vestido') || tl.includes('falda') || tl.includes('novia'))) return true;
+            if (isTailoring && (tl.includes('sastre') || tl.includes('traje') || tl.includes('alta costura'))) return true;
+            if (isEmbroidery && (tl.includes('bordad') || tl.includes('sashiko'))) return true;
+            return false;
+          }) ||
+          pro.specialty.toLowerCase().includes(tagLower) ||
+          pro.bio.toLowerCase().includes(tagLower) ||
+          pro.category?.toLowerCase().includes(tagLower);
+
         if (!hasTag) return false;
       }
 
@@ -322,13 +349,13 @@ export const CosturerosView: React.FC<CosturerosViewProps> = ({
                 <button
                   onClick={() => onSendMessage(pro)}
                   className="btn-interactive w-full py-2.5 px-3 rounded-xl bg-[#012d1d] hover:bg-[#2b694d] text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
-                  title="Iniciar sala de chat en vivo y en tiempo real"
+                  title={language === 'en' ? 'Enter workshop and chat in real-time' : 'Entrar al taller y chatear en tiempo real'}
                 >
                   <span className="relative flex h-2 w-2">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#4ade80] opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-[#4ade80]"></span>
                   </span>
-                  <span>💬 Chatear en vivo</span>
+                  <span>{language === 'en' ? '💬 Enter workshop & chat' : '💬 Entrar al taller y chatear'}</span>
                 </button>
               </div>
             </div>

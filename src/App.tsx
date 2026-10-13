@@ -38,6 +38,11 @@ import {
   getRoomId,
   subscribeToRoomMessages,
   sendRealtimeChatMessage,
+  fetchServerTailors,
+  fetchServerChats,
+  postServerChatMessage,
+  subscribeToLiveChat,
+  updateServerProfile,
 } from './services/realtimeChatService';
 import { purgeAllLegacySessionsAndGoogleData } from './services/securityService';
 import { ProtectedAreaGuard } from './components/common/ProtectedAreaGuard';
@@ -237,30 +242,108 @@ export function App() {
     }
   }, []);
 
-  // Synchronize registered tailors/professionals into the public directory
+  // Synchronize registered tailors/professionals into the public directory (Dynamic database fetch)
   useEffect(() => {
-    const registeredPros = getRegisteredTailorsAsProfessionals();
-    if (registeredPros.length > 0) {
-      setProfessionals((prev) => {
-        const regIds = new Set(registeredPros.map((r) => r.id));
-        const others = prev.filter((p) => !regIds.has(p.id));
-        return [...registeredPros, ...others];
-      });
-    }
+    let isCancelled = false;
+    const syncTailors = async () => {
+      try {
+        const serverPros = await fetchServerTailors();
+        if (!isCancelled && serverPros.length > 0) {
+          const localPros = getRegisteredTailorsAsProfessionals();
+          const proMap = new Map<string, Professional>();
+          // Put server pros first
+          serverPros.forEach((p) => proMap.set(p.id, p));
+          // Merge local registered pros
+          localPros.forEach((p) => {
+            if (!proMap.has(p.id)) proMap.set(p.id, p);
+          });
+          setProfessionals(Array.from(proMap.values()));
+          return;
+        }
+      } catch (err) {
+        console.warn('Tailors directory sync notice:', err);
+      }
+
+      // Fallback: local storage registered pros
+      const registeredPros = getRegisteredTailorsAsProfessionals();
+      if (registeredPros.length > 0 && !isCancelled) {
+        setProfessionals((prev) => {
+          const regIds = new Set(registeredPros.map((r) => r.id));
+          const others = prev.filter((p) => !regIds.has(p.id));
+          return [...registeredPros, ...others];
+        });
+      }
+    };
+
+    syncTailors();
+    return () => {
+      isCancelled = true;
+    };
   }, [currentUserAccount, isLoggedIn]);
 
-  // Real-time Firestore Chat Room subscription for active chat conversation
+  // Synchronize persistent chat conversations when user is logged in
+  useEffect(() => {
+    if (!currentUserAccount?.id) return;
+    let isCancelled = false;
+    fetchServerChats(currentUserAccount.id).then((serverChats) => {
+      if (!isCancelled && serverChats.length > 0) {
+        setConversations((prev) => {
+          const map = new Map<string, ChatConversation>();
+          prev.forEach((c) => map.set(c.id, c));
+          serverChats.forEach((sc) => {
+            if (map.has(sc.id)) {
+              const existing = map.get(sc.id)!;
+              map.set(sc.id, {
+                ...existing,
+                lastMessage: sc.lastMessage || existing.lastMessage,
+                lastMessageTime: sc.lastMessageTime || existing.lastMessageTime,
+              });
+            } else {
+              map.set(sc.id, sc);
+            }
+          });
+          return Array.from(map.values());
+        });
+      }
+    });
+    return () => {
+      isCancelled = true;
+    };
+  }, [currentUserAccount?.id]);
+
+  // Live WhatsApp-Style Chat Subscription for active conversation (WebSockets + Polling + Firestore)
   useEffect(() => {
     if (!floatingChatConvId && !activeConvId) return;
     const targetId = floatingChatConvId || activeConvId;
     const conv = conversations.find((c) => c.id === targetId);
     if (!conv || !conv.participantId) return;
 
-    const clientId = currentUserAccount?.id || 'guest_client';
-    const tailorId = conv.participantId;
-    const roomId = getRoomId(clientId, tailorId);
+    const currentUserId = currentUserAccount?.id || 'guest_client';
 
-    const unsubscribe = subscribeToRoomMessages(roomId, (remoteMessages) => {
+    // 1. Subscribe to Live Chat (WebSocket + Polling)
+    const unsubscribeLive = subscribeToLiveChat(targetId, currentUserId, (liveMessages) => {
+      if (liveMessages && liveMessages.length > 0) {
+        setConversations((prev) =>
+          prev.map((c) => {
+            if (c.id === targetId) {
+              const lastMsg = liveMessages[liveMessages.length - 1];
+              return {
+                ...c,
+                messages: liveMessages,
+                lastMessage: lastMsg.text,
+                lastMessageTime: lastMsg.time,
+              };
+            }
+            return c;
+          })
+        );
+      }
+    });
+
+    // 2. Also listen to Firestore room
+    const tailorId = conv.participantId;
+    const roomId = getRoomId(currentUserId, tailorId);
+    const unsubscribeFirestore = subscribeToRoomMessages(roomId, (remoteMessages) => {
       if (remoteMessages && remoteMessages.length > 0) {
         setConversations((prev) =>
           prev.map((c) => {
@@ -280,7 +363,8 @@ export function App() {
     });
 
     return () => {
-      unsubscribe();
+      unsubscribeLive();
+      unsubscribeFirestore();
     };
   }, [floatingChatConvId, activeConvId, currentUserAccount?.id]);
 
@@ -407,7 +491,18 @@ export function App() {
     setUserProfile(updatedProfile);
     if (currentUserAccount) {
       updateUserAccountProfile(currentUserAccount.id, updatedProfile);
-      setCurrentUserAccount((prev) => prev ? { ...prev, profile: updatedProfile } : null);
+      setCurrentUserAccount((prev) => (prev ? { ...prev, profile: updatedProfile } : null));
+      updateServerProfile({
+        id: currentUserAccount.id,
+        email: currentUserAccount.email,
+        name: updatedProfile.name,
+        bio: updatedProfile.bio,
+        location: updatedProfile.location,
+        address: updatedProfile.address,
+        phone: updatedProfile.phone,
+        instagram: updatedProfile.instagram,
+        avatarUrl: updatedProfile.avatarUrl,
+      }).catch((err) => console.warn('Server profile sync notice:', err));
     }
     addToast('Perfil actualizado', 'Tu foto y datos de perfil se han actualizado con éxito.', 'success');
   };
@@ -532,7 +627,7 @@ export function App() {
     setActiveConvId(targetConvId);
     setFloatingChatConvId(targetConvId);
     setIsFloatingChatOpen(true);
-    // User stays on current view smoothly
+    handleNavigate('mensajes');
   };
 
   // Publish Project from Publication View
@@ -679,7 +774,7 @@ export function App() {
     });
   };
 
-  // Send Message in Chat (Requirement 8: Real messages, persistence, responsive interaction)
+  // Send Message in Chat (Real-time WhatsApp style, persistence, responsive interaction)
   const handleSendMessage = (convId: string, text: string) => {
     const userMsg: ChatMessage = {
       id: `msg-${Date.now()}`,
@@ -688,28 +783,42 @@ export function App() {
       time: 'Ahora',
     };
 
-    // Realtime bidirectional dispatch to Firestore room
     const targetConv = conversations.find((c) => c.id === convId);
+    const clientId = currentUserAccount?.id || 'guest_client';
+    const tailorId = targetConv?.participantId || 'unknown_tailor';
+    const isTailor = userRole === 'profesional';
+
+    // 1. Post to Server Backend (Persists to disk in chats.json and messages.json, broadcasts via WebSocket)
+    postServerChatMessage({
+      chat_id: convId,
+      client_id: isTailor ? tailorId : clientId,
+      client_name: isTailor ? (targetConv?.participantName || 'Cliente') : (userProfile.name || 'Cliente'),
+      client_avatar: isTailor ? targetConv?.participantAvatar : userProfile.avatarUrl,
+      tailor_id: isTailor ? clientId : tailorId,
+      tailor_name: isTailor ? (userProfile.name || 'Taller') : (targetConv?.participantName || 'Taller'),
+      tailor_avatar: isTailor ? userProfile.avatarUrl : targetConv?.participantAvatar,
+      sender_id: clientId,
+      receiver_id: tailorId,
+      content: text,
+    }).catch((err) => console.warn('Server chat post notice:', err));
+
+    // 2. Realtime bidirectional dispatch to Firestore room
     if (targetConv?.participantId) {
-      const clientId = currentUserAccount?.id || 'guest_client';
-      const tailorId = targetConv.participantId;
       const roomId = getRoomId(clientId, tailorId);
       sendRealtimeChatMessage(roomId, {
         senderId: clientId,
         senderName: userProfile.name || 'Cliente',
-        senderRole: 'user',
+        senderRole: isTailor ? 'pro' : 'user',
         text,
       }).catch((err) => console.warn('Firestore realtime dual-write notice:', err));
     }
 
     setConversations((prev) => {
       let isFirstMessage = false;
-      let participantName = '';
 
       const updated = prev.map((c) => {
         if (c.id === convId) {
           isFirstMessage = c.messages.length === 0;
-          participantName = c.participantName;
           return {
             ...c,
             lastMessage: text,
@@ -727,20 +836,32 @@ export function App() {
         }
       }
 
-      // If this was the first message, simulate a realistic professional/community reply after 1.2s
-      if (isFirstMessage) {
+      // If this was the first message from client to tailor, simulate tailor welcome response after 1.2s
+      if (isFirstMessage && !isTailor) {
         setTimeout(() => {
           const proReply: ChatMessage = {
             id: `msg-${Date.now() + 1}`,
             sender: 'other',
-            text: `¡Hola! Gracias por comunicarte. Con mucho gusto te asesoro con el ajuste o diseño de tu prenda. ¿Tienes alguna foto o medida para revisar?`,
+            text: `¡Hola! Gracias por comunicarte con el taller. Con mucho gusto te asesoro con la transformación, confección o medidas de tu prenda. ¿Tienes alguna foto o detalle adicional para revisar?`,
             time: 'Ahora',
           };
 
+          // Post pro reply to server backend as well
+          postServerChatMessage({
+            chat_id: convId,
+            client_id: clientId,
+            client_name: userProfile.name || 'Cliente',
+            client_avatar: userProfile.avatarUrl,
+            tailor_id: tailorId,
+            tailor_name: targetConv?.participantName || 'Taller',
+            tailor_avatar: targetConv?.participantAvatar,
+            sender_id: tailorId,
+            receiver_id: clientId,
+            content: proReply.text,
+          }).catch((err) => console.warn('Server chat pro reply notice:', err));
+
           // Also dual-write reply to Firestore room
           if (targetConv?.participantId) {
-            const clientId = currentUserAccount?.id || 'guest_client';
-            const tailorId = targetConv.participantId;
             const roomId = getRoomId(clientId, tailorId);
             sendRealtimeChatMessage(roomId, {
               senderId: tailorId,

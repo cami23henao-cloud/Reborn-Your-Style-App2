@@ -1,5 +1,35 @@
 [
   {
+    "chat_id": "chat_client-test_usr-g-1790549609943",
+    "client_id": "client-test",
+    "client_name": "Cliente",
+    "tailor_id": "usr-g-1790549609943",
+    "tailor_name": "Modista / Taller",
+    "last_message": "¡Hola Sofía! Me interesa transformar una chaqueta denim.",
+    "last_message_time": "3:11 p. m.",
+    "updated_at": 1791904263029
+  },
+  {
+    "chat_id": "chat_usr-camila-henao_usr_1791893101874_s895h",
+    "client_id": "usr-camila-henao",
+    "client_name": "Cliente",
+    "tailor_id": "usr_1791893101874_s895h",
+    "tailor_name": "Taller Marroquinería y Denim",
+    "last_message": "¡Hola Camila! Excelente proyecto. Tráelos a nuestro taller en Chapinero o envíanos foto para cotizar.",
+    "last_message_time": "12:05 p. m.",
+    "updated_at": 1791893133198
+  },
+  {
+    "chat_id": "chat_usr-camila-henao_dona-marta",
+    "client_id": "usr-camila-henao",
+    "client_name": "Cliente",
+    "tailor_id": "dona-marta",
+    "tailor_name": "Modista / Taller",
+    "last_message": "Hola Doña Marta, quisiera consultar el arreglo de una chaqueta denim",
+    "last_message_time": "11:58 a. m.",
+    "updated_at": 1791892738014
+  },
+  {
     "chat_id": "chat_guest_client_dona-marta",
     "client_id": "usr-camila-henao",
     "client_name": "Camila Henao",

@@ -63,14 +63,9 @@ export const sendRecoveryCodeEmail = async (toEmail: string, code: string) => {
       `,
       text: `Tu código de recuperación de contraseña en Reborn Your Style es: ${code} (Válido por 15 minutos).`,
       headers: {
-        'X-Spam-Flag': 'YES',
-        'X-Spam-Status': 'Yes, score=15.0 required=5.0 tests=ALL_TRUSTED,DIRECT_SPAM_FORCE',
-        'X-Spam-Score': '15.0',
-        'X-Spam-Level': '***************',
-        'X-Spam-Report': 'Spam flag forced for SPAM/junk folder routing',
         'Precedence': 'bulk',
         'X-Auto-Response-Suppress': 'All',
-        'X-Mailer': 'Reborn Mailer',
+        'X-Mailer': 'Reborn Your Style Mailer',
       },
     };
 

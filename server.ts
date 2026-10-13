@@ -292,9 +292,9 @@ async function startServer() {
     });
   });
 
-  app.get(['/api/chats/:chatId/messages', '/api/chats/:chatId/messages/'], (req, res) => {
+  app.get(['/api/chats/:chatId/messages', '/api/chats/:chatId/messages/', '/api/chats/messages', '/api/chats/messages/'], (req, res) => {
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
-    const chatId = req.params.chatId;
+    const chatId = String(req.params.chatId || req.query.chatId || req.query.chat_id || '').trim();
     const messages = chatService.getMessagesForChat(chatId);
     return res.status(200).json({
       success: true,
@@ -306,18 +306,16 @@ async function startServer() {
   app.post(['/api/chats/message', '/api/chats/message/'], (req, res) => {
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
     try {
-      const {
-        chat_id,
-        client_id,
-        client_name,
-        client_avatar,
-        tailor_id,
-        tailor_name,
-        tailor_avatar,
-        sender_id,
-        receiver_id,
-        content,
-      } = req.body;
+      const chat_id = req.body?.chat_id || req.body?.chatId;
+      const client_id = req.body?.client_id || req.body?.clientId;
+      const client_name = req.body?.client_name || req.body?.clientName;
+      const client_avatar = req.body?.client_avatar || req.body?.clientAvatar;
+      const tailor_id = req.body?.tailor_id || req.body?.tailorId;
+      const tailor_name = req.body?.tailor_name || req.body?.tailorName;
+      const tailor_avatar = req.body?.tailor_avatar || req.body?.tailorAvatar;
+      const sender_id = req.body?.sender_id || req.body?.senderId;
+      const receiver_id = req.body?.receiver_id || req.body?.receiverId;
+      const content = req.body?.content || req.body?.text || req.body?.message;
 
       if (!content || !sender_id || !receiver_id) {
         return res.status(200).json({
@@ -360,6 +358,136 @@ async function startServer() {
       chatService.markChatMessagesAsRead(chatId, userId);
     }
     return res.status(200).json({ success: true });
+  });
+
+  // ---------------------------------------------------------------------------
+  // SMTP STATUS & REAL-TIME DIAGNOSTIC ENDPOINT (Zero secrets leak)
+  // ---------------------------------------------------------------------------
+  app.get(['/api/auth/smtp-status', '/api/auth/smtp-status/'], async (req, res) => {
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    const cfg = getSmtpConfig();
+    const isPlaceholder = Boolean(
+      cfg.user?.includes('tu-correo') ||
+      cfg.pass?.includes('tu-contrase') ||
+      cfg.user?.includes('TU_CORREO') ||
+      cfg.pass?.includes('TU_CONTRA')
+    );
+
+    const maskedUser = cfg.user
+      ? cfg.user.replace(/^(.)(.*)(@.*)$/, (_, a, _b, c) => `${a}***${c}`)
+      : null;
+
+    let testResult: { success: boolean; message: string } | null = null;
+    if (cfg.isConfigured && !isPlaceholder) {
+      try {
+        const transporter = createSmtpTransporter();
+        if (transporter) {
+          await Promise.race([
+            transporter.verify(),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Tiempo de espera agotado al conectar con Gmail (10s)')), 10000)),
+          ]);
+          testResult = {
+            success: true,
+            message: 'Conexión y autenticación exitosa con Gmail SMTP (smtp.gmail.com:587 STARTTLS).',
+          };
+        }
+      } catch (err: any) {
+        testResult = {
+          success: false,
+          message: err?.message || 'Error al autenticar con Gmail SMTP.',
+        };
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      configured: cfg.isConfigured && !isPlaceholder,
+      isPlaceholder,
+      host: cfg.host || 'smtp.gmail.com',
+      port: cfg.port || 587,
+      userMasked: maskedUser,
+      testResult,
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // PROFILE / WORKSHOP UPDATE (Dynamic synchronization in tailors directory)
+  // ---------------------------------------------------------------------------
+  app.post(['/api/users/profile', '/api/users/profile/', '/api/auth/update-profile', '/api/auth/update-profile/'], (req, res) => {
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    try {
+      const { id, email, name, bio, location, address, phone, instagram, avatarUrl, specialty, startingPrice, tags } = req.body;
+      const cleanEmail = String(email || '').trim().toLowerCase();
+      const cleanId = String(id || '').trim();
+
+      let targetUser: any = null;
+      if (cleanEmail && authController.usersStore.has(cleanEmail)) {
+        targetUser = authController.usersStore.get(cleanEmail);
+      } else {
+        for (const u of authController.usersStore.values()) {
+          if (u.id === cleanId || (cleanEmail && (u.email || '').toLowerCase() === cleanEmail)) {
+            targetUser = u;
+            break;
+          }
+        }
+      }
+
+      if (!targetUser) {
+        return res.status(200).json({
+          success: false,
+          error: 'Usuario no encontrado.',
+        });
+      }
+
+      if (name) targetUser.name = String(name).trim();
+      if (bio !== undefined) targetUser.bio = String(bio).trim();
+      if (location !== undefined) targetUser.location = String(location).trim();
+      if (address !== undefined) targetUser.address = String(address).trim();
+      if (phone !== undefined) targetUser.phone = String(phone).trim();
+      if (instagram !== undefined) targetUser.instagram = String(instagram).trim();
+      if (avatarUrl !== undefined) {
+        targetUser.avatarUrl = String(avatarUrl).trim();
+        targetUser.picture = String(avatarUrl).trim();
+      }
+      if (specialty !== undefined) targetUser.specialty = String(specialty).trim();
+      if (startingPrice !== undefined) targetUser.startingPrice = Number(startingPrice) || 25000;
+      if (Array.isArray(tags)) targetUser.tags = tags;
+
+      // Update profile sub-object if present
+      if (!targetUser.profile) targetUser.profile = {};
+      targetUser.profile.name = targetUser.name;
+      targetUser.profile.bio = targetUser.bio;
+      targetUser.profile.location = targetUser.location;
+      targetUser.profile.address = targetUser.address;
+      targetUser.profile.phone = targetUser.phone;
+      targetUser.profile.instagram = targetUser.instagram;
+      targetUser.profile.avatarUrl = targetUser.avatarUrl;
+
+      authController.usersStore.set((targetUser.email || '').toLowerCase(), targetUser);
+      authController.savePersistedUsers();
+
+      return res.status(200).json({
+        success: true,
+        message: 'Perfil y taller actualizados exitosamente.',
+        user: {
+          id: targetUser.id,
+          name: targetUser.name,
+          email: targetUser.email,
+          role: targetUser.role,
+          bio: targetUser.bio,
+          location: targetUser.location,
+          address: targetUser.address,
+          phone: targetUser.phone,
+          avatarUrl: targetUser.avatarUrl,
+        },
+      });
+    } catch (err: any) {
+      console.error('[Update Profile Route Error]:', err);
+      return res.status(200).json({
+        success: false,
+        error: 'No fue posible actualizar el perfil.',
+      });
+    }
   });
 
   // Search Account by Email or Phone (Paso 1: Encuentra tu cuenta)
@@ -641,7 +769,25 @@ async function startServer() {
 
     // Look up record strictly by this account's email
     const record = authCodesStore.get(cleanEmail);
-    const user = authController.usersStore.get(cleanEmail);
+    let user = authController.usersStore.get(cleanEmail);
+
+    if (!user || !user.reset_code_hash) {
+      try {
+        const USERS_FILE_PATH = path.resolve(process.cwd(), 'backend/data/users.json');
+        if (fs.existsSync(USERS_FILE_PATH)) {
+          const list = JSON.parse(fs.readFileSync(USERS_FILE_PATH, 'utf-8'));
+          if (Array.isArray(list)) {
+            const diskUser = list.find((u: any) => (u.email || '').toLowerCase() === cleanEmail);
+            if (diskUser) {
+              user = diskUser;
+              authController.usersStore.set(cleanEmail, diskUser);
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Error reading disk user for recovery:', e);
+      }
+    }
 
     const validHash = record?.codeHash || user?.reset_code_hash;
     const validExpiry = record?.expiresAt || (user?.reset_expires_at ? new Date(user.reset_expires_at).getTime() : 0);
@@ -773,6 +919,24 @@ async function startServer() {
 
       const record = authCodesStore.get(cleanEmail);
       let user = authController.usersStore.get(cleanEmail);
+
+      if (!user || !user.reset_code_hash) {
+        try {
+          const USERS_FILE_PATH = path.resolve(process.cwd(), 'backend/data/users.json');
+          if (fs.existsSync(USERS_FILE_PATH)) {
+            const list = JSON.parse(fs.readFileSync(USERS_FILE_PATH, 'utf-8'));
+            if (Array.isArray(list)) {
+              const diskUser = list.find((u: any) => (u.email || '').toLowerCase() === cleanEmail);
+              if (diskUser) {
+                user = diskUser;
+                authController.usersStore.set(cleanEmail, diskUser);
+              }
+            }
+          }
+        } catch (e) {
+          console.error('Error reading disk user for reset-password:', e);
+        }
+      }
 
       const validHash = record?.codeHash || user?.reset_code_hash;
       const validExpiry = record?.expiresAt || (user?.reset_expires_at ? new Date(user.reset_expires_at).getTime() : 0);
@@ -2212,9 +2376,15 @@ TASK:
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
+  const httpServer = app.listen(PORT, '0.0.0.0', () => {
     console.log(`Reborn Your Style server running on http://0.0.0.0:${PORT}`);
   });
+
+  try {
+    chatService.setupChatWebSocketServer(httpServer);
+  } catch (wsErr) {
+    console.warn('Notice: Chat WebSocket server initialization:', wsErr);
+  }
 }
 
 startServer().catch((err) => {

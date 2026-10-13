@@ -1,5 +1,25 @@
 [
   {
+    "id": "msg-3",
+    "chat_id": "chat_guest_client_sofia-m",
+    "sender_id": "usr-camila-henao",
+    "receiver_id": "sofia-m",
+    "content": "¿Hola Sofía! ¿Haces ajustes de cintura en faldas plisadas?",
+    "timestamp": 1728649000000,
+    "time": "3:15 p. m.",
+    "read_status": true
+  },
+  {
+    "id": "msg-4",
+    "chat_id": "chat_guest_client_sofia-m",
+    "sender_id": "sofia-m",
+    "receiver_id": "usr-camila-henao",
+    "content": "Perfecto, tráela a Laureles o coordinamos recogida para tomar medidas de la falda.",
+    "timestamp": 1728650000000,
+    "time": "3:22 p. m.",
+    "read_status": true
+  },
+  {
     "id": "msg-1",
     "chat_id": "chat_guest_client_dona-marta",
     "sender_id": "usr-camila-henao",
@@ -20,23 +40,43 @@
     "read_status": true
   },
   {
-    "id": "msg-3",
-    "chat_id": "chat_guest_client_sofia-m",
+    "id": "msg-1791892738014-00911c",
+    "chat_id": "chat_usr-camila-henao_dona-marta",
     "sender_id": "usr-camila-henao",
-    "receiver_id": "sofia-m",
-    "content": "¿Hola Sofía! ¿Haces ajustes de cintura en faldas plisadas?",
-    "timestamp": 1728649000000,
-    "time": "3:15 p. m.",
-    "read_status": true
+    "receiver_id": "dona-marta",
+    "content": "Hola Doña Marta, quisiera consultar el arreglo de una chaqueta denim",
+    "timestamp": 1791892738014,
+    "time": "11:58 a. m.",
+    "read_status": false
   },
   {
-    "id": "msg-4",
-    "chat_id": "chat_guest_client_sofia-m",
-    "sender_id": "sofia-m",
+    "id": "msg-1791893124956-019160",
+    "chat_id": "chat_usr-camila-henao_usr_1791893101874_s895h",
+    "sender_id": "usr-camila-henao",
+    "receiver_id": "usr_1791893101874_s895h",
+    "content": "Hola, tengo unos jeans vintage y quiero transformarlos en falda y chaleco",
+    "timestamp": 1791893124956,
+    "time": "12:05 p. m.",
+    "read_status": false
+  },
+  {
+    "id": "msg-1791893133198-41da0a",
+    "chat_id": "chat_usr-camila-henao_usr_1791893101874_s895h",
+    "sender_id": "usr_1791893101874_s895h",
     "receiver_id": "usr-camila-henao",
-    "content": "Perfecto, tráela a Laureles o coordinamos recogida para tomar medidas de la falda.",
-    "timestamp": 1728650000000,
-    "time": "3:22 p. m.",
-    "read_status": true
+    "content": "¡Hola Camila! Excelente proyecto. Tráelos a nuestro taller en Chapinero o envíanos foto para cotizar.",
+    "timestamp": 1791893133198,
+    "time": "12:05 p. m.",
+    "read_status": false
+  },
+  {
+    "id": "msg-1791904263029-5d15a5",
+    "chat_id": "chat_client-test_usr-g-1790549609943",
+    "sender_id": "client-test",
+    "receiver_id": "usr-g-1790549609943",
+    "content": "¡Hola Sofía! Me interesa transformar una chaqueta denim.",
+    "timestamp": 1791904263029,
+    "time": "3:11 p. m.",
+    "read_status": false
   }
 ]

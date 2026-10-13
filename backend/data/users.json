@@ -19,7 +19,7 @@
     "isVerified": true,
     "createdAt": "2026-03-01T00:00:00.000Z",
     "lastLoginAt": "2026-10-12T20:47:43.224Z",
-    "reset_code_hash": "f3f4ddcf4415e7ed8b87d735a7c222001bd5488911e629d6eee1c32819968305",
+    "reset_code_hash": "",
     "reset_expires_at": "2026-10-11T17:29:17.909Z",
     "avatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocKka2XII4_n9fufi5gzJBCFEE9FJXP9Ysed-Fht3cGc6e29wx-2bQ=s96-c",
     "picture": "https://lh3.googleusercontent.com/a/ACg8ocKka2XII4_n9fufi5gzJBCFEE9FJXP9Ysed-Fht3cGc6e29wx-2bQ=s96-c"
@@ -55,7 +55,9 @@
     "picture": null,
     "avatarUrl": null,
     "isVerified": true,
-    "createdAt": "2026-09-29T13:58:55.006Z"
+    "createdAt": "2026-09-29T13:58:55.006Z",
+    "password": "$2b$10$85McncGbwvV5Ah2ban3f.ex8Jwf8Ik6xgcmz.oe.khbpdbD.GMy1O",
+    "lastLoginAt": "2026-10-13T12:07:05.382Z"
   },
   {
     "id": "usr-g-1790691054250",
@@ -106,5 +108,31 @@
     "role": "cliente",
     "status": "active",
     "isVerified": true
+  },
+  {
+    "id": "usr_1791893101874_s895h",
+    "name": "Taller Marroquinería y Denim",
+    "email": "taller.denim@gmail.com",
+    "password": "$2b$10$GpUZqochGJGg3YVKUsRjc.E41zfCYYLZijMb4YOD5pa.JjOpsOTU6",
+    "role": "profesional",
+    "isVerified": true,
+    "email_confirmed": true,
+    "status": "active",
+    "createdAt": "2026-10-13T12:05:01.874Z",
+    "lastLoginAt": "2026-10-13T12:05:01.874Z",
+    "location": "Chapinero, Bogotá D.C., Colombia",
+    "address": "Calle 63 # 9-45",
+    "specialty": "Transformación de Jeans y Cuero Reciclado",
+    "tags": [
+      "Denim",
+      "Jeans",
+      "Cuero",
+      "Chaquetas"
+    ],
+    "profile": {
+      "name": "Taller Marroquinería y Denim",
+      "location": "Chapinero, Bogotá D.C., Colombia",
+      "address": "Calle 63 # 9-45"
+    }
   }
 ]

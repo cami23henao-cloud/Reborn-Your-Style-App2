@@ -268,7 +268,14 @@ export const MensajesView: React.FC<MensajesViewProps> = ({
                       >
                         <p className="whitespace-pre-wrap break-words">{msg.text}</p>
                       </div>
-                      <span className="text-[10px] text-[#717973] mt-1 px-1">{msg.time}</span>
+                      <div className="flex items-center gap-1 text-[10px] text-[#717973] mt-1 px-1">
+                        <span>{msg.time}</span>
+                        {isMe && (
+                          <span className="material-symbols-outlined text-[13px] text-[#2b694d] leading-none" title="Entregado">
+                            done_all
+                          </span>
+                        )}
+                      </div>
                     </motion.div>
                   );
                 })
