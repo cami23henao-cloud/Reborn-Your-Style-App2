@@ -51,7 +51,7 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
     }
   };
 
-  // Requested Navigation Items: Reorganized with Inicio, Catálogo, Tutoriales, Centro de Ayuda, Perfil
+  // Navigation Items: Inicio, Catálogo, Tutoriales, Perfil
   interface NavItem {
     id: string;
     label: string;
@@ -84,13 +84,6 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
             icon: 'school',
             isActive: currentView === 'tutoriales',
             onClick: () => onNavigate('tutoriales'),
-          },
-          {
-            id: 'ayuda',
-            label: t('nav.ayuda'),
-            icon: 'help_outline',
-            isActive: false,
-            onClick: () => onOpenInfoModal?.('contacto'),
           },
           {
             id: 'perfil',

@@ -1,10 +1,10 @@
 import nodemailer from 'nodemailer';
 
 export const createTransporter = () => {
-  const host = process.env.SMTP_HOST?.trim();
+  const user = process.env.SMTP_USER?.trim() || process.env.GMAIL_USER?.trim();
+  const pass = process.env.SMTP_PASS?.trim() || process.env.GMAIL_PASS?.trim();
+  const host = process.env.SMTP_HOST?.trim() || (user?.toLowerCase().includes('@gmail.com') ? 'smtp.gmail.com' : undefined);
   const port = parseInt(process.env.SMTP_PORT || '587', 10) || 587;
-  const user = process.env.SMTP_USER?.trim();
-  const pass = process.env.SMTP_PASS?.trim();
 
   if (!host || !user || !pass) {
     throw new Error('SMTP_NOT_CONFIGURED');
@@ -50,9 +50,18 @@ export const sendRecoveryCodeEmail = async (toEmail: string, code: string) => {
     const mailOptions = {
       from: fromEmail.includes('<') ? fromEmail : `"Reborn Your Style" <${fromEmail}>`,
       to: toEmail,
-      subject: `${code}`,
-      html: `${code}`,
-      text: `${code}`,
+      subject: 'Código de recuperación de contraseña',
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; border: 1px solid #e2e0d8; border-radius: 16px; background-color: #faf9f4;">
+          <h2 style="color: #012d1d; margin-top: 0; font-size: 20px;">Código de recuperación de contraseña</h2>
+          <p style="color: #414844; font-size: 14px; line-height: 1.5;">Ingresa el siguiente código de 6 dígitos numéricos para restablecer el acceso a tu cuenta en <strong>Reborn Your Style</strong>:</p>
+          <div style="background-color: #ffffff; border: 2px dashed #012d1d; border-radius: 12px; padding: 16px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #012d1d; font-family: monospace; margin: 20px 0;">
+            ${code}
+          </div>
+          <p style="color: #717973; font-size: 12px; line-height: 1.4;">Este código tiene una vigencia de 15 minutos. Si no realizaste esta solicitud, por favor ignora este mensaje.</p>
+        </div>
+      `,
+      text: `Tu código de recuperación de contraseña en Reborn Your Style es: ${code} (Válido por 15 minutos).`,
       headers: {
         'X-Spam-Flag': 'YES',
         'X-Spam-Status': 'Yes, score=15.0 required=5.0 tests=ALL_TRUSTED,DIRECT_SPAM_FORCE',
@@ -66,10 +75,9 @@ export const sendRecoveryCodeEmail = async (toEmail: string, code: string) => {
     };
 
     const info = await transporter.sendMail(mailOptions);
-    console.log(`[SMTP Mailer] Código enviado exitosamente a ${toEmail} con direccionamiento a SPAM`);
-    return { success: true, messageId: info.messageId };
+    console.log(`[SMTP Mailer] Código enviado exitosamente a ${toEmail}`);
   } catch (error: any) {
     console.error('[SMTP Mailer Error]', error?.message || 'Error al conectar con servidor SMTP');
-    return { success: true, messageId: 'dev-fallback' };
+    throw error;
   }
 };

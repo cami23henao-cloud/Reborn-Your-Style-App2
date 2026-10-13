@@ -18,8 +18,11 @@
     "authProvider": "email",
     "isVerified": true,
     "createdAt": "2026-03-01T00:00:00.000Z",
-    "lastLoginAt": "2026-10-07T21:18:54.130Z",
-    "reset_code_hash": ""
+    "lastLoginAt": "2026-10-12T20:47:43.224Z",
+    "reset_code_hash": "f3f4ddcf4415e7ed8b87d735a7c222001bd5488911e629d6eee1c32819968305",
+    "reset_expires_at": "2026-10-11T17:29:17.909Z",
+    "avatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocKka2XII4_n9fufi5gzJBCFEE9FJXP9Ysed-Fht3cGc6e29wx-2bQ=s96-c",
+    "picture": "https://lh3.googleusercontent.com/a/ACg8ocKka2XII4_n9fufi5gzJBCFEE9FJXP9Ysed-Fht3cGc6e29wx-2bQ=s96-c"
   },
   {
     "id": "usr-admin",
@@ -87,5 +90,21 @@
     "status": "active",
     "createdAt": "2026-10-09T19:30:24.397Z",
     "lastLoginAt": "2026-10-09T19:30:24.397Z"
+  },
+  {
+    "id": "usr-1791837954127",
+    "name": "johanguti007",
+    "email": "johanguti007@gmail.com",
+    "phone": "",
+    "avatarUrl": null,
+    "role": "cliente"
+  },
+  {
+    "id": "usr_1791839252629",
+    "name": "test",
+    "email": "test@example.com",
+    "role": "cliente",
+    "status": "active",
+    "isVerified": true
   }
 ]

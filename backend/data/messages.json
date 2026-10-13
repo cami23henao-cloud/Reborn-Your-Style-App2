@@ -1,0 +1,42 @@
+[
+  {
+    "id": "msg-1",
+    "chat_id": "chat_guest_client_dona-marta",
+    "sender_id": "usr-camila-henao",
+    "receiver_id": "dona-marta",
+    "content": "¡Hola Doña Marta! Vi sus trabajos de bordado y me encantaron. Tengo una chaqueta de jean que quiero renovar.",
+    "timestamp": 1728739200000,
+    "time": "10:24 a. m.",
+    "read_status": true
+  },
+  {
+    "id": "msg-2",
+    "chat_id": "chat_guest_client_dona-marta",
+    "sender_id": "dona-marta",
+    "receiver_id": "usr-camila-henao",
+    "content": "¡Hola Camila! Qué alegría saludarte. Claro que sí, con gusto te ayudo a transformar tu chaqueta de denim con bordados florales.",
+    "timestamp": 1728740000000,
+    "time": "10:30 a. m.",
+    "read_status": true
+  },
+  {
+    "id": "msg-3",
+    "chat_id": "chat_guest_client_sofia-m",
+    "sender_id": "usr-camila-henao",
+    "receiver_id": "sofia-m",
+    "content": "¿Hola Sofía! ¿Haces ajustes de cintura en faldas plisadas?",
+    "timestamp": 1728649000000,
+    "time": "3:15 p. m.",
+    "read_status": true
+  },
+  {
+    "id": "msg-4",
+    "chat_id": "chat_guest_client_sofia-m",
+    "sender_id": "sofia-m",
+    "receiver_id": "usr-camila-henao",
+    "content": "Perfecto, tráela a Laureles o coordinamos recogida para tomar medidas de la falda.",
+    "timestamp": 1728650000000,
+    "time": "3:22 p. m.",
+    "read_status": true
+  }
+]

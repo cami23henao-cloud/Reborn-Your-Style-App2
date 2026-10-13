@@ -159,7 +159,37 @@ export const InteractiveGarmentLocation: React.FC<InteractiveGarmentLocationProp
     }
   };
 
-  // 2. Geocodificación de la dirección exacta
+  // 2. Geocodificación de la dirección exacta con Google Maps Geocoder API
+  const fallbackGeocoding = async (query: string, cleanAddr: string, city: string, dept: string) => {
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+        query
+      )}&countrycodes=co&limit=1&addressdetails=1`;
+
+      const res = await fetch(url, {
+        headers: { 'Accept-Language': 'es' },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          const item = data[0];
+          const newLat = parseFloat(item.lat);
+          const newLng = parseFloat(item.lon);
+          const nextCoords = { lat: newLat, lng: newLng };
+          setCoords(nextCoords);
+          setMarkerOffset({ x: 0, y: 0 });
+          setGeocodedLabel(item.display_name.split(',')[0] || cleanAddr);
+          notifyChange(nextCoords, cleanAddr, city, dept);
+        }
+      }
+    } catch (err) {
+      console.warn('Geocodificación fallback notice:', err);
+    } finally {
+      setIsGeocoding(false);
+    }
+  };
+
   const triggerGeocoding = (address: string, city: string, dept: string) => {
     if (geocodeTimerRef.current) clearTimeout(geocodeTimerRef.current);
 
@@ -171,35 +201,42 @@ export const InteractiveGarmentLocation: React.FC<InteractiveGarmentLocationProp
 
     geocodeTimerRef.current = setTimeout(async () => {
       setIsGeocoding(true);
-      try {
-        const query = `${cleanAddr}, ${city}, Colombia`;
-        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-          query
-        )}&countrycodes=co&limit=1&addressdetails=1`;
+      const fullQuery = `${cleanAddr}, ${city}, Colombia`;
 
-        const res = await fetch(url, {
-          headers: { 'Accept-Language': 'es' },
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data) && data.length > 0) {
-            const item = data[0];
-            const newLat = parseFloat(item.lat);
-            const newLng = parseFloat(item.lon);
-            const nextCoords = { lat: newLat, lng: newLng };
-            setCoords(nextCoords);
-            setMarkerOffset({ x: 0, y: 0 });
-            setGeocodedLabel(item.display_name.split(',')[0] || cleanAddr);
-            notifyChange(nextCoords, cleanAddr, city, dept);
-          }
+      // 1. Primario: Google Maps Geocoder Oficial (google.maps.Geocoder)
+      if (typeof window !== 'undefined' && (window as any).google?.maps?.Geocoder) {
+        try {
+          const geocoder = new (window as any).google.maps.Geocoder();
+          geocoder.geocode(
+            {
+              address: fullQuery,
+              componentRestrictions: { country: 'CO' },
+            },
+            (results: any, status: any) => {
+              if (status === 'OK' && results && results.length > 0 && results[0]?.geometry?.location) {
+                const loc = results[0].geometry.location;
+                const newLat = typeof loc.lat === 'function' ? loc.lat() : Number(loc.lat);
+                const newLng = typeof loc.lng === 'function' ? loc.lng() : Number(loc.lng);
+                const nextCoords = { lat: newLat, lng: newLng };
+                setCoords(nextCoords);
+                setMarkerOffset({ x: 0, y: 0 });
+                setGeocodedLabel(results[0].formatted_address?.split(',')[0] || cleanAddr);
+                notifyChange(nextCoords, cleanAddr, city, dept);
+                setIsGeocoding(false);
+              } else {
+                fallbackGeocoding(fullQuery, cleanAddr, city, dept);
+              }
+            }
+          );
+          return;
+        } catch (err) {
+          console.warn('Google Maps Geocoder notice:', err);
         }
-      } catch (err) {
-        console.warn('Geocodificación notice:', err);
-      } finally {
-        setIsGeocoding(false);
       }
-    }, 450);
+
+      // 2. Secundario: Fallback Geocoder
+      fallbackGeocoding(fullQuery, cleanAddr, city, dept);
+    }, 400);
   };
 
   // Manejador del input [ Dirección exacta ]

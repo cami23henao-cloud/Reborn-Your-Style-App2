@@ -1,0 +1,26 @@
+[
+  {
+    "chat_id": "chat_guest_client_dona-marta",
+    "client_id": "usr-camila-henao",
+    "client_name": "Camila Henao",
+    "client_avatar": "https://lh3.googleusercontent.com/a/ACg8ocKka2XII4_n9fufi5gzJBCFEE9FJXP9Ysed-Fht3cGc6e29wx-2bQ=s96-c",
+    "tailor_id": "dona-marta",
+    "tailor_name": "Doña Marta",
+    "tailor_avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=300&auto=format&fit=crop&q=80",
+    "last_message": "¡Hola! Claro que sí, con gusto te ayudo a transformar tu chaqueta de denim con bordados florales.",
+    "last_message_time": "10:30 a. m.",
+    "updated_at": 1728740000000
+  },
+  {
+    "chat_id": "chat_guest_client_sofia-m",
+    "client_id": "usr-camila-henao",
+    "client_name": "Camila Henao",
+    "client_avatar": "https://lh3.googleusercontent.com/a/ACg8ocKka2XII4_n9fufi5gzJBCFEE9FJXP9Ysed-Fht3cGc6e29wx-2bQ=s96-c",
+    "tailor_id": "sofia-m",
+    "tailor_name": "Sofía Montoya",
+    "tailor_avatar": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=300&auto=format&fit=crop&q=80",
+    "last_message": "Perfecto, tráela a Laureles o coordinamos recogida para tomar medidas de la falda.",
+    "last_message_time": "Ayer",
+    "updated_at": 1728650000000
+  }
+]

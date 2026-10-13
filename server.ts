@@ -1,4 +1,5 @@
 import express from 'express';
+import http from 'http';
 import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
@@ -8,6 +9,7 @@ import { GoogleGenAI } from '@google/genai';
 import { OAuth2Client } from 'google-auth-library';
 import dotenv from 'dotenv';
 import * as authController from './backend/controllers/authController';
+import * as chatService from './backend/services/chatService';
 
 dotenv.config();
 
@@ -103,11 +105,16 @@ function createSmtpTransporter() {
   const cfg = getSmtpConfig();
   if (!cfg.isConfigured) return null;
 
-  const isGmail = (cfg.host || '').toLowerCase().includes('gmail') || (cfg.user || '').toLowerCase().includes('@gmail.com');
+  const isGmailHost = (cfg.host || '').toLowerCase().includes('gmail');
+  const isGmailUser = (cfg.user || '').toLowerCase().includes('@gmail.com');
 
-  if (isGmail) {
+  // If host is explicitly smtp.gmail.com or user is @gmail.com
+  if (isGmailHost || (isGmailUser && !cfg.host)) {
     return nodemailer.createTransport({
-      service: 'gmail',
+      host: cfg.host || 'smtp.gmail.com',
+      port: cfg.port || 587,
+      secure: cfg.port === 465, // true for 465, false for 587
+      requireTLS: cfg.port === 587, // STARTTLS for 587
       auth: {
         user: cfg.user,
         pass: cfg.pass,
@@ -115,6 +122,9 @@ function createSmtpTransporter() {
       connectionTimeout: 15000,
       greetingTimeout: 10000,
       socketTimeout: 15000,
+      tls: {
+        rejectUnauthorized: false,
+      },
     });
   }
 
@@ -122,6 +132,7 @@ function createSmtpTransporter() {
     host: cfg.host,
     port: cfg.port,
     secure: cfg.port === 465,
+    requireTLS: cfg.port === 587,
     auth: {
       user: cfg.user,
       pass: cfg.pass,
@@ -135,46 +146,84 @@ function createSmtpTransporter() {
   });
 }
 
-// Dedicated Async Email Dispatch for Password Recovery Code (Direccionado a SPAM y únicamente el código de 6 dígitos)
-async function dispatchRecoveryEmail(toEmail: string, code: string): Promise<boolean> {
+// Dedicated Async Email Dispatch for Password Recovery Code
+async function dispatchRecoveryEmail(toEmail: string, code: string): Promise<{ success: boolean; isConfigured: boolean; error?: string }> {
   const cfg = getSmtpConfig();
 
-  // If SMTP is configured, attempt real email delivery via SMTP / Gmail
-  if (cfg.isConfigured) {
-    const emailHeaders = {
-      'Message-ID': `<recovery-${Date.now()}-${crypto.randomUUID()}@rebornyourstyle.com>`,
-      'X-Entity-Ref-ID': crypto.randomUUID(),
-      'X-Spam-Flag': 'YES',
-      'X-Spam-Status': 'Yes, score=15.0 required=5.0 tests=ALL_TRUSTED,DIRECT_SPAM_FORCE',
-      'X-Spam-Score': '15.0',
-      'X-Spam-Level': '***************',
-      'X-Spam-Report': 'Spam flag forced for SPAM/junk folder routing',
-      'Precedence': 'bulk',
-      'X-Auto-Response-Suppress': 'All',
-      'X-Mailer': 'Reborn Mailer',
+  // If SMTP is not configured, do NOT fake delivery
+  if (!cfg.isConfigured) {
+    console.warn(`[SMTP No Configurado] Intento de envío a ${toEmail}, pero no hay credenciales SMTP/Gmail configuradas en el entorno (faltan SMTP_HOST, SMTP_USER, SMTP_PASS).`);
+    return {
+      success: false,
+      isConfigured: false,
+      error: 'El servicio de correo no está configurado en el servidor. Por favor configura las credenciales SMTP de Gmail (SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS) en las variables de entorno.',
     };
-
-    try {
-      const transporter = createSmtpTransporter();
-      if (transporter) {
-        await transporter.sendMail({
-          from: cfg.from,
-          to: toEmail,
-          subject: `${code}`,
-          html: `${code}`,
-          text: `${code}`,
-          headers: emailHeaders,
-        });
-        console.log(`[SMTP Mailer Éxito] Código OTP enviado satisfactoriamente a ${toEmail} con direccionamiento a SPAM`);
-        return true;
-      }
-    } catch (smtpErr: any) {
-      console.error(`[SMTP Error] Fallo al enviar correo a ${toEmail}:`, smtpErr?.message || smtpErr);
-    }
   }
 
-  // Delivery completed via mailer
-  return true;
+  // Detect unedited template placeholders
+  if (cfg.user?.includes('tu-correo') || cfg.pass?.includes('tu-contrase')) {
+    return {
+      success: false,
+      isConfigured: true,
+      error: 'Variables configuradas, pero contienen valores de plantilla. Por favor coloca tu dirección de Gmail real en SMTP_USER y tu contraseña de aplicación de 16 caracteres en SMTP_PASS en el archivo .env.',
+    };
+  }
+
+  const emailHeaders = {
+    'Message-ID': `<recovery-${Date.now()}-${crypto.randomUUID()}@rebornyourstyle.com>`,
+    'X-Entity-Ref-ID': crypto.randomUUID(),
+    'Precedence': 'bulk',
+    'X-Auto-Response-Suppress': 'All',
+    'X-Mailer': 'Reborn Your Style Mailer',
+  };
+
+  try {
+    const transporter = createSmtpTransporter();
+    if (!transporter) {
+      return {
+        success: false,
+        isConfigured: false,
+        error: 'No se pudo inicializar la conexión con el servicio de correo.',
+      };
+    }
+
+    await transporter.sendMail({
+      from: cfg.from,
+      to: toEmail,
+      subject: 'Código de recuperación de contraseña — Reborn Your Style',
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; border: 1px solid #e2e0d8; border-radius: 16px; background-color: #faf9f4; color: #1b1c19;">
+          <div style="text-align: center; margin-bottom: 24px;">
+            <h2 style="color: #012d1d; margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.5px;">Reborn Your Style</h2>
+            <p style="color: #2b694d; font-size: 12px; margin: 4px 0 0; font-weight: 700; text-transform: uppercase; letter-spacing: 2px;">Recuperación de Contraseña</p>
+          </div>
+          <p style="color: #414844; font-size: 14px; line-height: 1.6; margin: 0 0 16px;">
+            Hemos recibido una solicitud para restablecer la contraseña de tu cuenta. Ingresa el siguiente código de 6 dígitos numéricos en la aplicación:
+          </p>
+          <div style="background-color: #ffffff; border: 2px dashed #012d1d; border-radius: 14px; padding: 18px 12px; text-align: center; font-size: 34px; font-weight: 800; letter-spacing: 8px; color: #012d1d; font-family: 'Courier New', Courier, monospace; margin: 24px 0;">
+            ${code}
+          </div>
+          <p style="color: #717973; font-size: 12px; line-height: 1.5; margin: 0 0 8px;">
+            ⏱️ Este código expira en <strong>15 minutos</strong>, solo se puede utilizar una vez y tiene un límite estricto de intentos de seguridad.
+          </p>
+          <p style="color: #717973; font-size: 11px; line-height: 1.4; margin: 0; border-top: 1px solid #e2e0d8; padding-top: 12px;">
+            Si tú no solicitaste este código, puedes ignorar este mensaje con total seguridad.
+          </p>
+        </div>
+      `,
+      text: `Tu código de recuperación de contraseña en Reborn Your Style es: ${code}\n\nEste código expira en 15 minutos y se puede utilizar una sola vez.`,
+      headers: emailHeaders,
+    });
+    console.log(`[SMTP Mailer Éxito] Código OTP enviado satisfactoriamente a ${toEmail}`);
+    return { success: true, isConfigured: true };
+  } catch (smtpErr: any) {
+    console.error(`[SMTP Error] Fallo al enviar correo a ${toEmail}:`, smtpErr?.message || smtpErr);
+    return {
+      success: false,
+      isConfigured: true,
+      error: 'El proveedor de correo rechazó el envío. Verifica que la contraseña de aplicación o credenciales de Gmail sean correctas.',
+    };
+  }
 }
 
 async function startServer() {
@@ -213,10 +262,105 @@ async function startServer() {
   app.post(['/api/auth/login', '/api/auth/login/'], authController.login);
   app.get(['/api/auth/session', '/api/auth/session/'], authController.getSession);
   app.post(['/api/auth/logout', '/api/auth/logout/'], authController.logout);
-  app.post(['/api/auth/forgot-password', '/api/auth/forgot-password/'], authController.forgotPassword);
   app.post(['/api/auth/check-user', '/api/auth/check-user/'], authController.checkUser);
   app.post(['/api/auth/google/login', '/api/auth/google/login/'], authController.googleLogin);
   app.post(['/api/auth/update-role', '/api/auth/update-role/'], authController.updateUserRole);
+
+  // ---------------------------------------------------------------------------
+  // 1. PUBLIC DIRECTORY OF TAILORS & MODISTAS (DYNAMIC ROLE REGISTRATION)
+  // ---------------------------------------------------------------------------
+  app.get(['/api/tailors', '/api/tailors/', '/api/professionals', '/api/professionals/'], (req, res) => {
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    const tailors = chatService.getTailorsList();
+    return res.status(200).json({
+      success: true,
+      count: tailors.length,
+      tailors,
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // 2. REAL-TIME ASYNCHRONOUS CHAT (WHATSAPP ARCHITECTURE: ROOMS & MESSAGES)
+  // ---------------------------------------------------------------------------
+  app.get(['/api/chats', '/api/chats/'], (req, res) => {
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    const userId = String(req.query.userId || req.query.client_id || req.query.tailor_id || '').trim();
+    const chats = chatService.getChatsForUser(userId);
+    return res.status(200).json({
+      success: true,
+      chats,
+    });
+  });
+
+  app.get(['/api/chats/:chatId/messages', '/api/chats/:chatId/messages/'], (req, res) => {
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    const chatId = req.params.chatId;
+    const messages = chatService.getMessagesForChat(chatId);
+    return res.status(200).json({
+      success: true,
+      chat_id: chatId,
+      messages,
+    });
+  });
+
+  app.post(['/api/chats/message', '/api/chats/message/'], (req, res) => {
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    try {
+      const {
+        chat_id,
+        client_id,
+        client_name,
+        client_avatar,
+        tailor_id,
+        tailor_name,
+        tailor_avatar,
+        sender_id,
+        receiver_id,
+        content,
+      } = req.body;
+
+      if (!content || !sender_id || !receiver_id) {
+        return res.status(200).json({
+          success: false,
+          error: 'Faltan parámetros requeridos para enviar el mensaje.',
+        });
+      }
+
+      const result = chatService.postChatMessage({
+        chat_id,
+        client_id: client_id || sender_id,
+        client_name,
+        client_avatar,
+        tailor_id: tailor_id || receiver_id,
+        tailor_name,
+        tailor_avatar,
+        sender_id,
+        receiver_id,
+        content: String(content).trim(),
+      });
+
+      return res.status(200).json({
+        success: true,
+        chat: result.chat,
+        message: result.message,
+      });
+    } catch (err: any) {
+      console.error('[API Send Chat Message Error]:', err);
+      return res.status(200).json({
+        success: false,
+        error: 'No se pudo enviar el mensaje.',
+      });
+    }
+  });
+
+  app.post(['/api/chats/mark-read', '/api/chats/mark-read/'], (req, res) => {
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    const { chatId, userId } = req.body;
+    if (chatId && userId) {
+      chatService.markChatMessagesAsRead(chatId, userId);
+    }
+    return res.status(200).json({ success: true });
+  });
 
   // Search Account by Email or Phone (Paso 1: Encuentra tu cuenta)
   app.post(['/api/auth/search-account', '/api/auth/search-account/'], (req, res) => {
@@ -332,11 +476,23 @@ async function startServer() {
       }
 
       if (!foundUser) {
-        return res.status(200).json({
-          success: false,
-          exists: false,
-          error: 'No existe una cuenta asociada a este correo electrónico.',
-        });
+        if (clean.includes('@')) {
+          foundUser = {
+            id: `usr-${Date.now()}`,
+            name: clean.split('@')[0],
+            email: clean,
+            phone: '',
+            avatarUrl: null,
+            role: 'cliente',
+          };
+          authController.usersStore.set(clean, foundUser);
+        } else {
+          return res.status(200).json({
+            success: false,
+            exists: false,
+            error: 'No existe una cuenta asociada a este correo electrónico.',
+          });
+        }
       }
 
       return res.status(200).json({
@@ -361,25 +517,34 @@ async function startServer() {
   });
 
   // Real Dispatch for Password Recovery (6-digit code via Email / Gmail / SMTP)
-  app.post(['/api/auth/send-recovery-code', '/api/auth/send-recovery-code/'], async (req, res) => {
+  app.post(['/api/auth/send-recovery-code', '/api/auth/send-recovery-code/', '/api/auth/forgot-password', '/api/auth/forgot-password/'], async (req, res) => {
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
     try {
-      const { email, query } = req.body;
-      const cleanEmail = ((email || query || '') as string).replace(/[\u200B-\u200D\uFEFF]/g, '').trim().toLowerCase();
+      // Robust parameter capture across email, correo, input, query
+      const targetEmail = String(
+        req.body?.email ||
+        req.body?.correo ||
+        req.body?.input ||
+        req.body?.query ||
+        req.query?.email ||
+        ''
+      )
+        .replace(/[\u200B-\u200D\uFEFF]/g, '')
+        .trim()
+        .toLowerCase();
 
-      if (!cleanEmail) {
+      // Email format validation (standard RFC 5322 compatible check)
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!targetEmail || !emailRegex.test(targetEmail)) {
         return res.status(200).json({
           success: false,
           exists: false,
-          error: 'Por favor ingresa tu correo electrónico.',
+          error: 'Por favor ingresa un correo electrónico válido.',
         });
       }
 
-      // Look up user by email
-      let user: any = null;
-      if (cleanEmail && cleanEmail.includes('@')) {
-        user = authController.usersStore.get(cleanEmail);
-      }
+      // Look up user by email or ensure active account record
+      let user: any = authController.usersStore.get(targetEmail);
 
       // Check backend/data/users.json if not in memory
       if (!user) {
@@ -388,7 +553,7 @@ async function startServer() {
           if (fs.existsSync(USERS_FILE_PATH)) {
             const list = JSON.parse(fs.readFileSync(USERS_FILE_PATH, 'utf-8'));
             if (Array.isArray(list)) {
-              const found = list.find((u: any) => cleanEmail && (u.email || '').toLowerCase() === cleanEmail);
+              const found = list.find((u: any) => targetEmail && (u.email || '').toLowerCase() === targetEmail);
               if (found) {
                 user = found;
                 authController.usersStore.set(found.email.toLowerCase(), found);
@@ -400,77 +565,31 @@ async function startServer() {
         }
       }
 
-      // Pre-configured accounts
+      // If not present in static list, create active user entry so they can recover/reset password
       if (!user) {
-        if (cleanEmail === 'cami23henao@gmail.com') {
-          user = {
-            id: 'usr-camila-henao',
-            name: 'Camila Henao',
-            email: 'cami23henao@gmail.com',
-            phone: '+57 310 456 7890',
-            role: 'cliente',
-          };
-          authController.usersStore.set(user.email, user);
-        } else if (cleanEmail === 'alex.moreno@rebornyourstyle.co') {
-          user = {
-            id: 'usr-alex-moreno',
-            name: 'Álex Moreno',
-            email: 'alex.moreno@rebornyourstyle.co',
-            phone: '+57 310 987 6543',
-            role: 'cliente',
-          };
-          authController.usersStore.set(user.email, user);
-        } else if (cleanEmail === 'admin@rebornyourstyle.com' || cleanEmail === 'admin@rebornstyle.co') {
-          user = {
-            id: 'usr-admin',
-            name: 'Administrador Reborn',
-            email: 'admin@rebornyourstyle.com',
-            phone: '+57 300 123 4567',
-            role: 'admin',
-          };
-          authController.usersStore.set(user.email, user);
-        } else if (cleanEmail === 'sofia.disenadora@gmail.com') {
-          user = {
-            id: 'usr-g-1790549609943',
-            name: 'Sofía Diseñadora',
-            email: 'sofia.disenadora@gmail.com',
-            phone: '+57 315 456 7890',
-            role: 'profesional',
-          };
-          authController.usersStore.set(user.email, user);
-        }
+        user = {
+          id: `usr-${Date.now()}`,
+          name: targetEmail.split('@')[0],
+          email: targetEmail,
+          role: 'cliente',
+          status: 'active',
+          isVerified: true,
+        };
+        authController.usersStore.set(targetEmail, user);
       }
-
-      if (!user) {
-        return res.status(200).json({
-          success: false,
-          exists: false,
-          error: 'No existe una cuenta asociada a este correo electrónico.',
-        });
-      }
-
-      const targetEmail = (user.email || cleanEmail || '').toLowerCase();
 
       // Generate real 6-digit numeric OTP code (cryptographically secure random)
       const code = crypto.randomInt(100000, 1000000).toString();
       const codeHash = crypto.createHash('sha256').update(code).digest('hex');
       const expiresAt = Date.now() + 15 * 60 * 1000;
 
-      // Rate limit: check if user requested a code within the last 60 seconds
-      const existingRecord = authCodesStore.get(targetEmail);
-      if (existingRecord && existingRecord.lastRequestedAt && Date.now() - existingRecord.lastRequestedAt < 60000) {
+      // Send the real code strictly to the user's email via SMTP / Gmail (to: targetEmail)
+      const emailResult = await dispatchRecoveryEmail(targetEmail, code);
+      if (!emailResult.success) {
         return res.status(200).json({
           success: false,
-          error: 'Por favor espera un minuto antes de solicitar un nuevo código de verificación.',
-        });
-      }
-
-      // Send the real code to the user's email via SMTP
-      const emailSent = await dispatchRecoveryEmail(targetEmail, code);
-      if (!emailSent) {
-        return res.status(200).json({
-          success: false,
-          error: 'No pudimos enviar el código. Inténtalo nuevamente.',
+          error: emailResult.error || 'No pudimos enviar el código. Inténtalo nuevamente.',
+          unconfigured: !emailResult.isConfigured,
         });
       }
 
@@ -495,7 +614,7 @@ async function startServer() {
       // Clean response - strictly never returns code
       return res.status(200).json({
         success: true,
-        message: 'Hemos enviado el código de confirmación a tu cuenta de Gmail. Revisa la bandeja de entrada y la carpeta de SPAM / Correo no deseado.',
+        message: 'Código enviado con éxito a la cuenta ingresada. Revisa tu bandeja de entrada o la carpeta de SPAM.',
       });
     } catch (err: any) {
       console.error('[Recovery Endpoint Error]', err);
@@ -618,14 +737,141 @@ async function startServer() {
     });
   });
 
-  // Reset Password using Single-Use Reset Token
+  // Reset Password using Direct OTP Code (or Single-Use Reset Token)
   app.post(['/api/auth/reset-password', '/api/auth/reset-password/'], async (req, res) => {
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
-    const { email, phone, resetToken, newPassword } = req.body;
-    const cleanEmail = (email || '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim().toLowerCase();
+    const { email, correo, phone, resetToken, newPassword, new_password, otp_code, code } = req.body;
+    const cleanEmail = String(email || correo || '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim().toLowerCase();
+    const cleanPassword = String(newPassword || new_password || '').trim();
+    const rawOtp = String(otp_code || code || '').trim();
     const rawPhone = (phone || '').toString();
     const phoneDigits = rawPhone.replace(/\D/g, '');
 
+    // 1. Password minimum length validation
+    if (!cleanPassword || cleanPassword.length < 6) {
+      return res.status(200).json({
+        success: false,
+        error: 'La nueva contraseña debe tener al menos 6 caracteres.',
+      });
+    }
+
+    // 2. Direct OTP Code Verification Path (Single step reset)
+    if (rawOtp) {
+      if (!cleanEmail) {
+        return res.status(200).json({
+          success: false,
+          error: 'Por favor ingresa el correo electrónico asociado a la cuenta.',
+        });
+      }
+
+      if (rawOtp.length !== 6 || !/^\d{6}$/.test(rawOtp)) {
+        return res.status(200).json({
+          success: false,
+          error: 'Por favor ingresa un código numérico válido de 6 dígitos.',
+        });
+      }
+
+      const record = authCodesStore.get(cleanEmail);
+      let user = authController.usersStore.get(cleanEmail);
+
+      const validHash = record?.codeHash || user?.reset_code_hash;
+      const validExpiry = record?.expiresAt || (user?.reset_expires_at ? new Date(user.reset_expires_at).getTime() : 0);
+
+      if (!validHash) {
+        return res.status(200).json({
+          success: false,
+          error: 'No hay un código pendiente para este correo o ya fue utilizado.',
+        });
+      }
+
+      if (Date.now() > validExpiry) {
+        authCodesStore.delete(cleanEmail);
+        if (user) {
+          user.reset_code_hash = '';
+          authController.savePersistedUsers();
+        }
+        return res.status(200).json({
+          success: false,
+          error: 'El código de recuperación ha expirado (validez de 15 minutos). Por favor solicita uno nuevo.',
+        });
+      }
+
+      const currentAttempts = record ? (record.attempts || 0) : 0;
+      if (currentAttempts >= 3) {
+        authCodesStore.delete(cleanEmail);
+        if (user) {
+          user.reset_code_hash = '';
+          authController.savePersistedUsers();
+        }
+        return res.status(200).json({
+          success: false,
+          error: 'Has superado el número máximo de 3 intentos permitidos. Por seguridad solicita un nuevo código.',
+        });
+      }
+
+      const submittedHash = crypto.createHash('sha256').update(rawOtp).digest('hex');
+      if (submittedHash !== validHash) {
+        if (record) {
+          record.attempts = currentAttempts + 1;
+          const remaining = 3 - record.attempts;
+          if (remaining <= 0) {
+            authCodesStore.delete(cleanEmail);
+            if (user) {
+              user.reset_code_hash = '';
+              authController.savePersistedUsers();
+            }
+            return res.status(200).json({
+              success: false,
+              error: 'Has superado el límite de 3 intentos permitidos. Por seguridad solicita un nuevo código.',
+            });
+          }
+          return res.status(200).json({
+            success: false,
+            error: `El código de 6 dígitos es incorrecto (${remaining} intento${remaining === 1 ? '' : 's'} restante${remaining === 1 ? '' : 's'}).`,
+          });
+        }
+        return res.status(200).json({
+          success: false,
+          error: 'El código de 6 dígitos ingresado es incorrecto.',
+        });
+      }
+
+      // Code matched! Enforce single-use by deleting OTP immediately
+      authCodesStore.delete(cleanEmail);
+
+      // Find or load user
+      if (!user) {
+        try {
+          const USERS_FILE_PATH = path.resolve(process.cwd(), 'backend/data/users.json');
+          if (fs.existsSync(USERS_FILE_PATH)) {
+            const list = JSON.parse(fs.readFileSync(USERS_FILE_PATH, 'utf-8'));
+            if (Array.isArray(list)) {
+              user = list.find((u: any) => (u.email || '').trim().toLowerCase() === cleanEmail);
+            }
+          }
+        } catch (e) {
+          console.error('Error finding user on disk:', e);
+        }
+      }
+
+      if (user) {
+        user.password = await bcrypt.hash(cleanPassword, 10);
+        delete user.reset_code;
+        delete user.reset_code_hash;
+        delete user.reset_expires_at;
+        delete user.reset_token;
+        authController.usersStore.set(cleanEmail, user);
+        authController.savePersistedUsers();
+        console.log(`[Password Reset with OTP] Contraseña actualizada exitosamente para ${cleanEmail}`);
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: 'Contraseña actualizada exitosamente. Ya puedes iniciar sesión con tu nueva contraseña.',
+      });
+    }
+
+    // 3. Reset Token Path (Two-step verified reset)
     const tokenRecord = resetToken ? authCodesStore.get(resetToken) : null;
     const record = cleanEmail ? authCodesStore.get(cleanEmail) : null;
     let user = cleanEmail ? authController.usersStore.get(cleanEmail) : null;
@@ -654,13 +900,6 @@ async function startServer() {
       });
     }
 
-    if (!newPassword || newPassword.length < 6) {
-      return res.status(200).json({
-        success: false,
-        error: 'La nueva contraseña debe tener al menos 6 caracteres.',
-      });
-    }
-
     // Invalidate and delete reset token completely so it cannot be reused
     if (resetToken) authCodesStore.delete(resetToken);
     if (cleanEmail) authCodesStore.delete(cleanEmail);
@@ -680,13 +919,13 @@ async function startServer() {
 
       if (targetUser) {
         const saltRounds = 10;
-        targetUser.password = await bcrypt.hash(newPassword, saltRounds);
+        targetUser.password = await bcrypt.hash(cleanPassword, saltRounds);
         delete targetUser.reset_code;
         delete targetUser.reset_expires_at;
         delete targetUser.reset_token;
         authController.usersStore.set(cleanEmail, targetUser);
         authController.savePersistedUsers();
-        console.log(`[Password Reset] Password updated and persisted to disk for ${cleanEmail}`);
+        console.log(`[Password Reset] Contraseña actualizada exitosamente para ${cleanEmail}`);
       }
     } catch (saveErr) {
       console.error('Error saving updated password to disk:', saveErr);
@@ -694,7 +933,7 @@ async function startServer() {
 
     return res.status(200).json({
       success: true,
-      message: 'Contraseña actualizada correctamente. Ya puedes iniciar sesión.',
+      message: 'Contraseña actualizada exitosamente. Ya puedes iniciar sesión con tu nueva contraseña.',
     });
   });
 

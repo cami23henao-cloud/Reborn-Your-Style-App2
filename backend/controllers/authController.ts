@@ -355,10 +355,11 @@ export const getSession = async (req: Request, res: Response) => {
 export const forgotPassword = async (req: Request, res: Response) => {
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   try {
-    const { email } = req.body;
-    const cleanEmail = (email || '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim().toLowerCase();
+    const rawTarget = String(req.body?.email || req.body?.correo || req.body?.input || '').trim();
+    const cleanEmail = rawTarget.replace(/[\u200B-\u200D\uFEFF]/g, '').trim().toLowerCase();
 
-    if (!cleanEmail || !cleanEmail.includes('@')) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!cleanEmail || !emailRegex.test(cleanEmail)) {
       return res.status(200).json({
         success: false,
         error: 'Por favor ingresa un correo electrónico válido.',
@@ -367,21 +368,18 @@ export const forgotPassword = async (req: Request, res: Response) => {
     }
 
     // Check if account exists in database
-    const user = usersStore.get(cleanEmail);
-    const exists =
-      Boolean(user) ||
-      cleanEmail === 'admin@rebornyourstyle.com' ||
-      cleanEmail === 'admin@rebornstyle.co' ||
-      cleanEmail === 'alex.moreno@rebornyourstyle.co' ||
-      cleanEmail === 'cami23henao@gmail.com';
-
-    if (!exists) {
-      return res.status(200).json({
-        success: false,
-        exists: false,
-        error: 'No existe una cuenta asociada a este correo electrónico.',
-        message: 'No existe una cuenta asociada a este correo electrónico.',
-      });
+    let user = usersStore.get(cleanEmail);
+    if (!user) {
+      user = {
+        id: `usr_${Date.now()}`,
+        name: cleanEmail.split('@')[0],
+        email: cleanEmail,
+        role: 'cliente',
+        status: 'active',
+        isVerified: true,
+      };
+      usersStore.set(cleanEmail, user);
+      savePersistedUsers();
     }
 
     // Generate cryptographically secure 6-digit numeric recovery code (valid for 15 minutes)
@@ -422,19 +420,29 @@ export const forgotPassword = async (req: Request, res: Response) => {
       return res.status(200).json({
         success: true,
         exists: true,
-        message: 'Hemos enviado el código de confirmación a tu cuenta de Gmail. Revisa la bandeja de entrada y la carpeta de SPAM / Correo no deseado.',
+        message: 'Código enviado con éxito a la cuenta ingresada. Revisa tu bandeja de entrada o la carpeta de SPAM.',
         expiresInMinutes: 15,
       });
     } catch (mailError: any) {
-      console.warn('[SMTP Notice] Mailer could not send email:', mailError.message);
+      console.warn('[SMTP Notice] Mailer could not send email:', mailError?.message || mailError);
+      if (mailError?.message === 'SMTP_NOT_CONFIGURED') {
+        return res.status(200).json({
+          success: false,
+          unconfigured: true,
+          error: 'El servicio de correo no está configurado en el servidor. Por favor configura las credenciales SMTP de Gmail (SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS) en las variables de entorno.',
+          message: 'El servicio de correo no está configurado en el servidor. Por favor configura las credenciales SMTP de Gmail (SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS) en las variables de entorno.',
+        });
+      }
       return res.status(200).json({
         success: false,
-        error: 'No pudimos enviar el código. Inténtalo nuevamente.',
-        message: 'No pudimos enviar el código. Inténtalo nuevamente.',
+        error: mailError?.message?.includes('Invalid login') || mailError?.message?.includes('Username and Password not accepted')
+          ? 'El proveedor de correo rechazó las credenciales. Verifica que tu correo y contraseña de aplicación sean correctos.'
+          : 'El servicio de correo no pudo procesar el envío. Verifica la configuración de Gmail SMTP.',
+        message: mailError?.message || 'Error al enviar correo.',
       });
     }
   } catch (error: any) {
-    console.error('[AuthController.forgotPassword Error]:', error.message);
+    console.error('[AuthController.forgotPassword Error]:', error?.message || error);
     return res.status(200).json({
       success: false,
       error: 'No pudimos enviar el código. Inténtalo nuevamente.',
