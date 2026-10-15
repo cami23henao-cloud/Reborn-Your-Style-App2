@@ -21,18 +21,24 @@ export const CreateServiceModal: React.FC<CreateServiceModalProps> = ({
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [startingPrice, setStartingPrice] = useState<string>('');
+  const [priceRange, setPriceRange] = useState('');
+  const [deliveryTime, setDeliveryTime] = useState('');
   const [icon, setIcon] = useState('design_services');
 
   useEffect(() => {
     if (serviceToEdit) {
       setTitle(serviceToEdit.title);
       setDescription(serviceToEdit.description);
-      setStartingPrice(String(serviceToEdit.startingPrice));
-      setIcon(serviceToEdit.icon);
+      setStartingPrice(String(serviceToEdit.startingPrice || ''));
+      setPriceRange(serviceToEdit.priceRange || '');
+      setDeliveryTime(serviceToEdit.deliveryTime || '2 a 3 días hábiles');
+      setIcon(serviceToEdit.icon || 'design_services');
     } else {
       setTitle('');
       setDescription('');
       setStartingPrice('');
+      setPriceRange('');
+      setDeliveryTime('');
       setIcon('design_services');
     }
   }, [serviceToEdit, isOpen]);
@@ -41,14 +47,25 @@ export const CreateServiceModal: React.FC<CreateServiceModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !description.trim()) return;
+    if (!title.trim() || !description.trim() || !startingPrice.trim() || !deliveryTime.trim()) return;
+
+    const numPrice = Number(startingPrice.replace(/[^0-9]/g, '')) || 0;
+    const formattedRange = priceRange.trim() || `$${numPrice.toLocaleString('es-CO')} COP`;
 
     onSaveService({
       id: serviceToEdit ? serviceToEdit.id : `srv-${Date.now()}`,
       title: title.trim(),
       description: description.trim(),
-      startingPrice: Number(startingPrice) || 0,
-      icon
+      startingPrice: numPrice,
+      price: numPrice,
+      priceRange: formattedRange,
+      deliveryTime: deliveryTime.trim(),
+      category: serviceToEdit?.category || 'Confección y Arreglos',
+      techniques: serviceToEdit?.techniques || ['Arreglos', 'Confección', 'Sostenible'],
+      imageUrl:
+        serviceToEdit?.imageUrl ||
+        'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=600&auto=format&fit=crop&q=80',
+      icon,
     });
     onClose();
   };
@@ -82,50 +99,84 @@ export const CreateServiceModal: React.FC<CreateServiceModalProps> = ({
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
             <label className="block text-xs font-semibold text-[#012d1d] dark:text-white mb-1">
-              {isEn ? 'Service Name *' : 'Nombre del Servicio *'}
+              {isEn ? 'Service / Modification Name *' : 'Nombre del servicio o arreglo *'}
             </label>
             <input
               type="text"
               required
-              placeholder={isEn ? 'E.g.: Custom Botanical Embroidery' : 'Ej: Bordado Botánico Personalizado'}
+              placeholder={isEn ? 'E.g.: Custom Botanical Embroidery or Hemming' : 'Ej: Bordado Botánico Personalizado o Ajuste de Cintura'}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full bg-[#f5f4ef] dark:bg-[#002113]/60 border border-[#c1c8c2] dark:border-[#2b694d]/50 rounded-lg p-2.5 text-sm text-[#1b1c19] dark:text-white focus:bg-white dark:focus:bg-[#002113] focus:border-[#012d1d] outline-none"
+              className="w-full bg-[#f5f4ef] dark:bg-[#002113]/60 border border-[#c1c8c2] dark:border-[#2b694d]/50 rounded-xl p-2.5 text-sm text-[#1b1c19] dark:text-white focus:bg-white dark:focus:bg-[#002113] focus:border-[#012d1d] outline-none transition-all"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-[#012d1d] dark:text-white mb-1">
+                {isEn ? 'Estimated Price / Starting at ($ COP) *' : 'Precio estimado o base ($ COP) *'}
+              </label>
+              <div className="relative">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-[#717973] dark:text-[#a0a5a1]">
+                  $ COP
+                </span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  required
+                  placeholder={isEn ? 'E.g. 25000' : 'Ej. 25000'}
+                  value={startingPrice}
+                  onChange={(e) => setStartingPrice(e.target.value.replace(/[^0-9]/g, ''))}
+                  className="w-full bg-[#f5f4ef] dark:bg-[#002113]/60 border border-[#c1c8c2] dark:border-[#2b694d]/50 rounded-xl pl-16 pr-4 py-2.5 text-sm text-[#1b1c19] dark:text-white focus:bg-white dark:focus:bg-[#002113] focus:border-[#012d1d] outline-none"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-[#012d1d] dark:text-white mb-1">
+                {isEn ? 'Estimated Delivery Time *' : 'Tiempo de entrega estimado *'}
+              </label>
+              <div className="relative">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#717973]">
+                  <span className="material-symbols-outlined text-[18px]">schedule</span>
+                </span>
+                <input
+                  type="text"
+                  required
+                  placeholder={isEn ? 'E.g. 2 to 3 business days' : 'Ej. 2 a 3 días hábiles'}
+                  value={deliveryTime}
+                  onChange={(e) => setDeliveryTime(e.target.value)}
+                  className="w-full bg-[#f5f4ef] dark:bg-[#002113]/60 border border-[#c1c8c2] dark:border-[#2b694d]/50 rounded-xl pl-10 pr-4 py-2.5 text-sm text-[#1b1c19] dark:text-white focus:bg-white dark:focus:bg-[#002113] focus:border-[#012d1d] outline-none"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-[#012d1d] dark:text-white mb-1">
+              {isEn ? 'Price range label (optional)' : 'Rango o detalle de precio (opcional)'}
+            </label>
+            <input
+              type="text"
+              placeholder={isEn ? 'E.g. $25,000 - $40,000 COP depending on complexity' : 'Ej. $25.000 - $40.000 COP según complejidad'}
+              value={priceRange}
+              onChange={(e) => setPriceRange(e.target.value)}
+              className="w-full bg-[#f5f4ef] dark:bg-[#002113]/60 border border-[#c1c8c2] dark:border-[#2b694d]/50 rounded-xl p-2.5 text-xs text-[#1b1c19] dark:text-white focus:bg-white dark:focus:bg-[#002113] focus:border-[#012d1d] outline-none"
             />
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-[#012d1d] dark:text-white mb-1">
-              {isEn ? 'Job description *' : 'Descripción del trabajo *'}
+              {isEn ? 'Detailed description *' : 'Descripción detallada del servicio *'}
             </label>
             <textarea
               rows={3}
               required
-              placeholder={isEn ? 'Describe what is included in this service for clients...' : 'Describe lo que incluye este servicio para tus clientes...'}
+              placeholder={isEn ? 'Describe what is included, materials used, technique, and care advice...' : 'Describe qué incluye el arreglo, técnicas utilizadas, tipos de telas que aceptas y recomendaciones...'}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full bg-[#f5f4ef] dark:bg-[#002113]/60 border border-[#c1c8c2] dark:border-[#2b694d]/50 rounded-lg p-2.5 text-sm text-[#1b1c19] dark:text-white focus:bg-white dark:focus:bg-[#002113] focus:border-[#012d1d] outline-none"
+              className="w-full bg-[#f5f4ef] dark:bg-[#002113]/60 border border-[#c1c8c2] dark:border-[#2b694d]/50 rounded-xl p-2.5 text-sm text-[#1b1c19] dark:text-white focus:bg-white dark:focus:bg-[#002113] focus:border-[#012d1d] outline-none"
             />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-[#012d1d] dark:text-white mb-1">
-              {isEn ? 'Starting Price From ($ COP) *' : 'Precio Base Desde ($ COP) *'}
-            </label>
-            <div className="relative">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-[#717973] dark:text-[#a0a5a1]">
-                $ COP
-              </span>
-              <input
-                type="text"
-                inputMode="numeric"
-                required
-                placeholder={isEn ? 'Enter amount (e.g. 25000)' : 'Escribe el valor (ej. 25000)'}
-                value={startingPrice}
-                onChange={(e) => setStartingPrice(e.target.value.replace(/[^0-9]/g, ''))}
-                className="w-full bg-[#f5f4ef] dark:bg-[#002113]/60 border border-[#c1c8c2] dark:border-[#2b694d]/50 rounded-xl pl-16 pr-4 py-2.5 text-sm text-[#1b1c19] dark:text-white focus:bg-white dark:focus:bg-[#002113] focus:border-[#012d1d] outline-none"
-              />
-            </div>
           </div>
 
           <div>

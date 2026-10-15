@@ -1,5 +1,15 @@
 [
   {
+    "chat_id": "chat_usr-demo-cliente_usr-demo-costurera",
+    "client_id": "usr-demo-cliente",
+    "client_name": "Cliente",
+    "tailor_id": "usr-demo-costurera",
+    "tailor_name": "Modista / Taller",
+    "last_message": "¡Hola! Quiero cotizar la transformación de una chaqueta denim.",
+    "last_message_time": "2:46 a. m.",
+    "updated_at": 1792032382105
+  },
+  {
     "chat_id": "chat_client-test_usr-g-1790549609943",
     "client_id": "client-test",
     "client_name": "Cliente",

@@ -24,7 +24,15 @@ export const MensajesView: React.FC<MensajesViewProps> = ({
   const [showMobileChat, setShowMobileChat] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
-  const activeConv = conversations.find((c) => c.id === activeConvId) || null;
+  const activeConv =
+    conversations.find((c) => c.id === activeConvId) ||
+    (conversations.length > 0 ? conversations[0] : null);
+
+  useEffect(() => {
+    if (!activeConvId && conversations.length > 0) {
+      onSelectConversation(conversations[0].id);
+    }
+  }, [activeConvId, conversations, onSelectConversation]);
 
   // Scroll ONLY inside the chat messages container, NEVER scrolling the outer browser page
   const scrollToBottom = () => {

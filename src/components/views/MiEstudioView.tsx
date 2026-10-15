@@ -347,45 +347,57 @@ export const MiEstudioView: React.FC<MiEstudioViewProps> = ({
                 >
                   <div className="h-44 w-full relative bg-[#e3e3de]">
                     <img
-                      src={service.imageUrl}
+                      src={
+                        service.imageUrl ||
+                        'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=600&auto=format&fit=crop&q=80'
+                      }
                       alt={service.title}
                       className="w-full h-full object-cover"
                     />
                     <span className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2.5 py-0.5 rounded-full text-[10px] font-bold text-[#012d1d]">
-                      {service.category}
+                      {service.category || 'Confección y Arreglos'}
                     </span>
                     <span className="absolute top-3 right-3 bg-[#012d1d]/80 text-white backdrop-blur-sm px-2.5 py-0.5 rounded-full text-[10px] font-semibold flex items-center gap-1">
                       <span className="material-symbols-outlined text-xs">schedule</span>
-                      <span>{service.deliveryTime}</span>
+                      <span>{service.deliveryTime || '2 a 3 días hábiles'}</span>
                     </span>
                   </div>
 
                   <div className="p-5 flex-1 flex flex-col">
-                    <h3 className="font-headline font-bold text-base text-[#012d1d] mb-1.5">
-                      {service.title}
-                    </h3>
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="w-6 h-6 rounded-md bg-[#012d1d] text-[#b0f1cc] flex items-center justify-center shrink-0">
+                        <span className="material-symbols-outlined text-sm">
+                          {service.icon || 'design_services'}
+                        </span>
+                      </span>
+                      <h3 className="font-headline font-bold text-base text-[#012d1d] leading-tight">
+                        {service.title}
+                      </h3>
+                    </div>
                     <p className="text-xs text-[#414844] line-clamp-2 mb-4 leading-relaxed">
                       {service.description}
                     </p>
 
                     <div className="flex flex-wrap gap-1.5 mb-4">
-                      {service.techniques.slice(0, 3).map((t, idx) => (
-                        <span
-                          key={idx}
-                          className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-[#f5f4ef] text-[#414844] border border-[#c1c8c2]/50"
-                        >
-                          {t}
-                        </span>
-                      ))}
+                      {(service.techniques || ['Arreglos', 'Confección', 'Sostenible'])
+                        .slice(0, 3)
+                        .map((t, idx) => (
+                          <span
+                            key={idx}
+                            className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-[#f5f4ef] text-[#414844] border border-[#c1c8c2]/50"
+                          >
+                            {t}
+                          </span>
+                        ))}
                     </div>
 
                     <div className="mt-auto pt-4 border-t border-[#efeee9] flex justify-between items-center">
                       <div>
                         <span className="text-[10px] text-[#717973] uppercase tracking-wider block">
-                          {language === 'en' ? 'Base Rate' : 'Tarifa Base'}
+                          {language === 'en' ? 'Base Rate / Range' : 'Tarifa Base / Rango'}
                         </span>
                         <p className="font-bold text-base text-[#012d1d]">
-                          ${service.price.toLocaleString('es-CO')}
+                          {service.priceRange || `$${(service.price || service.startingPrice || 0).toLocaleString('es-CO')} COP`}
                         </p>
                       </div>
 

@@ -13,7 +13,8 @@ export type AppView =
   | 'mensajes' 
   | 'solicitud-resumen'
   | 'admin'
-  | 'tutoriales';
+  | 'tutoriales'
+  | 'evaluacion';
 
 export type UserRole = 'cliente' | 'profesional' | 'admin';
 
@@ -112,6 +113,7 @@ export interface Professional {
     comment: string;
     date: string;
   }[];
+  services?: ServiceItem[];
 }
 
 export interface GarmentProject {
@@ -142,6 +144,8 @@ export interface GarmentProject {
   authorName: string;
   authorAvatar: string;
   authorRole?: UserRole;
+  ownerId?: string;
+  ownerName?: string;
   assignedTailorId?: string;
   assignedTailorName?: string;
   status: 'Publicada' | 'En revisión' | 'En Proceso' | 'Completado' | 'Oculta';
@@ -214,7 +218,16 @@ export interface ServiceItem {
   title: string;
   description: string;
   startingPrice: number;
+  price?: number;
+  priceRange?: string;
+  deliveryTime?: string;
+  category?: string;
+  techniques?: string[];
+  imageUrl?: string;
   icon: string;
+  tailorId?: string;
+  userId?: string;
+  createdAt?: string;
 }
 
 export interface InspirationItem {

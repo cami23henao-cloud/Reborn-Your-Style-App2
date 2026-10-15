@@ -86,6 +86,13 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
             onClick: () => onNavigate('tutoriales'),
           },
           {
+            id: 'evaluacion',
+            label: language === 'en' ? 'Quiz' : 'Test Digital',
+            icon: 'quiz',
+            isActive: currentView === 'evaluacion',
+            onClick: () => onNavigate('evaluacion'),
+          },
+          {
             id: 'perfil',
             label: t('nav.perfil'),
             icon: 'account_circle',

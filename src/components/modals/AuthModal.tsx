@@ -286,6 +286,31 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
 
+  // Quick Demo Account Login for Team Testing
+  const handleQuickDemoLogin = async (email: string, pass: string) => {
+    setLoginEmail(email);
+    setLoginPassword(pass);
+    setErrorMsg('');
+    setSuccessMsg('');
+    setIsLoading(true);
+    try {
+      const res = await loginUser(email, pass);
+      setIsLoading(false);
+      if (res.success && res.user) {
+        setSuccessMsg(isEn ? `Welcome back, ${res.user.name}!` : `¡Bienvenido(a) de nuevo, ${res.user.name}!`);
+        setTimeout(() => {
+          onLoginAccount(res.user!);
+          onClose();
+        }, 400);
+      } else {
+        setErrorMsg(res.error || 'No se pudo iniciar sesión con la cuenta demo.');
+      }
+    } catch {
+      setIsLoading(false);
+      setErrorMsg('No pudimos procesar la solicitud.');
+    }
+  };
+
   // ---------------------------------------------------------------------------
   // 2. CONTINUAR CON GOOGLE (OFICIAL GOOGLE IDENTITY SERVICES)
   // ---------------------------------------------------------------------------
@@ -302,7 +327,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       return;
     }
 
-    const effectiveRole = roleOverride || googleRole || selectedRole || 'cliente';
+    // Look up if account already exists to strictly preserve previously assigned role
+    const existingAccount = findAccountByIdentifier(cleanEmail);
+    const effectiveRole =
+      existingAccount?.role ||
+      roleOverride ||
+      googleRole ||
+      (viewMode === 'register' ? selectedRole : 'cliente');
 
     setIsLoading(true);
     setErrorMsg('');
@@ -315,16 +346,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         rawPicture ||
         `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName)}&backgroundColor=012d1d&textColor=b0f1cc`;
 
-      // Requirement:
-      // "El sistema vincula inmediatamente el rol seleccionado a los datos del perfil que retorna la API de Google,
-      //  guardándolo en la base de datos sin pasos adicionales.
-      //  Si selecciona 'Costurero', queda registrado y visible en la sección/directorio de costureros."
       try {
         await safeApiCall('/api/auth/google/login', 'POST', {
           email: cleanEmail,
           name: displayName,
           picture: avatarUrl,
           role: effectiveRole,
+          isRegisterMode: viewMode === 'register',
         });
       } catch (backendErr) {
         console.warn('Backend Google account sync:', backendErr);
@@ -1143,6 +1171,50 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </p>
               </div>
 
+              {/* Acceso Rápido Cuentas Demo para Pruebas del Equipo */}
+              <div className="mb-5 p-3.5 rounded-2xl bg-[#f2f8f4] border border-[#b0f1cc]/80 space-y-2">
+                <div className="flex items-center justify-between text-xs font-bold text-[#012d1d]">
+                  <span className="flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-sm text-[#2b694d]">science</span>
+                    <span>{isEn ? 'Team Test Accounts (1-Click)' : 'Cuentas Demo para Pruebas (1-Clic)'}</span>
+                  </span>
+                  <span className="text-[10px] font-semibold text-[#2b694d] bg-white px-2 py-0.5 rounded-full border border-[#b0f1cc]">
+                    Equipo
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-0.5">
+                  <button
+                    type="button"
+                    onClick={() => handleQuickDemoLogin('costurera.demo@plataforma.com', 'demo1234')}
+                    className="p-2.5 rounded-xl bg-white hover:bg-[#e8f5ed] border border-[#b0f1cc] text-left transition-all cursor-pointer flex items-center gap-2.5 shadow-2xs group active:scale-98"
+                    title={isEn ? 'Login as Demo Tailor / Workshop' : 'Iniciar sesión como Costurera / Taller Demo'}
+                  >
+                    <span className="w-8 h-8 rounded-lg bg-[#012d1d] text-[#b0f1cc] flex items-center justify-center shrink-0">
+                      <span className="material-symbols-outlined text-base">architecture</span>
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-[#012d1d] truncate">Costurera / Taller</p>
+                      <p className="text-[10px] text-[#717973] truncate">costurera.demo@plataforma.com</p>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleQuickDemoLogin('cliente.demo@plataforma.com', 'demo1234')}
+                    className="p-2.5 rounded-xl bg-white hover:bg-[#e8f5ed] border border-[#b0f1cc] text-left transition-all cursor-pointer flex items-center gap-2.5 shadow-2xs group active:scale-98"
+                    title={isEn ? 'Login as Demo Client' : 'Iniciar sesión como Cliente Demo'}
+                  >
+                    <span className="w-8 h-8 rounded-lg bg-[#2b694d] text-white flex items-center justify-center shrink-0">
+                      <span className="material-symbols-outlined text-base">person</span>
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-[#012d1d] truncate">Cliente Demo</p>
+                      <p className="text-[10px] text-[#717973] truncate">cliente.demo@plataforma.com</p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
               <form onSubmit={handleLoginSubmit} className="space-y-4">
                 {/* [ Correo electrónico ] */}
                 <div>
@@ -1244,7 +1316,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               {/* [ Continuar con Google ] */}
               <button
                 type="button"
-                onClick={handleOpenGoogleRoleSelect}
+                onClick={() => handleGoogleClick()}
                 disabled={isLoading}
                 className="w-full py-2.5 px-4 bg-white hover:bg-[#faf9f4] border border-[#d3d0c7] hover:border-[#b0b3af] text-[#1b1c19] font-medium text-sm rounded-xl shadow-xs transition-all flex items-center justify-center gap-3 cursor-pointer"
               >

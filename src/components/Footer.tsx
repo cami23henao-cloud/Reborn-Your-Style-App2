@@ -82,6 +82,20 @@ export const Footer: React.FC<FooterProps> = ({
           >
             {language === 'en' ? 'How Reborn Works' : 'Cómo Funciona Reborn'}
           </button>
+          <button
+            onClick={() => onNavigate('tutoriales')}
+            className="text-left text-xs text-[#faf9f4]/80 hover:text-white transition-colors py-0.5 cursor-pointer flex items-center gap-1.5"
+          >
+            <span className="material-symbols-outlined text-sm text-[#b0f1cc]">school</span>
+            <span>{language === 'en' ? 'Tutorials & Training' : 'Tutoriales y Formación'}</span>
+          </button>
+          <button
+            onClick={() => onNavigate('evaluacion')}
+            className="text-left text-xs text-[#faf9f4]/80 hover:text-white transition-colors py-0.5 cursor-pointer flex items-center gap-1.5 font-semibold text-[#b0f1cc]"
+          >
+            <span className="material-symbols-outlined text-sm text-[#b0f1cc]">verified</span>
+            <span>{language === 'en' ? 'Knowledge Quiz & Cert' : 'Evalúa tus Conocimientos (Quiz)'}</span>
+          </button>
         </div>
 
         {/* Categories preview */}

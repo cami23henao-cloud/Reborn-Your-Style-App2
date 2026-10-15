@@ -6,6 +6,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 import { usersStore } from '../controllers/authController';
 
 export interface ServerChat {
+  conversation_id: string;
   chat_id: string;
   client_id: string;
   client_name: string;
@@ -20,6 +21,7 @@ export interface ServerChat {
 
 export interface ServerChatMessage {
   id: string;
+  conversation_id: string;
   chat_id: string;
   sender_id: string;
   receiver_id: string;
@@ -49,9 +51,14 @@ export function loadChatsAndMessagesFromDisk() {
   try {
     if (fs.existsSync(CHATS_FILE)) {
       const data = fs.readFileSync(CHATS_FILE, 'utf-8');
-      const list: ServerChat[] = JSON.parse(data);
+      const list: any[] = JSON.parse(data);
       if (Array.isArray(list)) {
-        list.forEach((c) => chatsStore.set(c.chat_id, c));
+        list.forEach((c) => {
+          const id = c.conversation_id || c.chat_id;
+          c.conversation_id = id;
+          c.chat_id = id;
+          chatsStore.set(id, c);
+        });
       }
     }
   } catch (err) {
@@ -61,9 +68,14 @@ export function loadChatsAndMessagesFromDisk() {
   try {
     if (fs.existsSync(MESSAGES_FILE)) {
       const data = fs.readFileSync(MESSAGES_FILE, 'utf-8');
-      const list: ServerChatMessage[] = JSON.parse(data);
+      const list: any[] = JSON.parse(data);
       if (Array.isArray(list)) {
-        list.forEach((m) => messagesStore.set(m.id, m));
+        list.forEach((m) => {
+          const cId = m.conversation_id || m.chat_id;
+          m.conversation_id = cId;
+          m.chat_id = cId;
+          messagesStore.set(m.id, m);
+        });
       }
     }
   } catch (err) {
@@ -282,14 +294,38 @@ export function getDeterministicChatId(clientId: string, tailorId: string): stri
  * Retrieve chats for user (client or tailor)
  */
 export function getChatsForUser(userId: string): ServerChat[] {
-  const cleanId = (userId || '').trim();
+  const cleanId = (userId || '').trim().toLowerCase();
   const allChats = Array.from(chatsStore.values());
   if (!cleanId || cleanId === 'admin') {
     return allChats.sort((a, b) => b.updated_at - a.updated_at);
   }
 
+  // Build alias set for matching
+  const aliases = new Set<string>([cleanId]);
+  if (cleanId === 'usr-demo-costurera' || cleanId === 'costurera.demo@plataforma.com') {
+    aliases.add('usr-demo-costurera');
+    aliases.add('costurera.demo@plataforma.com');
+    aliases.add('dona-marta');
+  }
+  if (cleanId === 'usr-demo-cliente' || cleanId === 'cliente.demo@plataforma.com') {
+    aliases.add('usr-demo-cliente');
+    aliases.add('cliente.demo@plataforma.com');
+  }
+
+  // Also check usersStore for registered user id/email
+  for (const u of usersStore.values()) {
+    if (u.id?.toLowerCase() === cleanId || u.email?.toLowerCase() === cleanId) {
+      if (u.id) aliases.add(u.id.toLowerCase());
+      if (u.email) aliases.add(u.email.toLowerCase());
+    }
+  }
+
   return allChats
-    .filter((c) => c.client_id === cleanId || c.tailor_id === cleanId)
+    .filter((c) => {
+      const cClient = (c.client_id || '').toLowerCase();
+      const cTailor = (c.tailor_id || '').toLowerCase();
+      return aliases.has(cClient) || aliases.has(cTailor);
+    })
     .sort((a, b) => b.updated_at - a.updated_at);
 }
 
@@ -299,14 +335,16 @@ export function getChatsForUser(userId: string): ServerChat[] {
 export function getMessagesForChat(chatId: string): ServerChatMessage[] {
   const cleanId = (chatId || '').trim();
   return Array.from(messagesStore.values())
-    .filter((m) => m.chat_id === cleanId)
+    .filter((m) => (m.conversation_id || m.chat_id) === cleanId)
     .sort((a, b) => a.timestamp - b.timestamp);
 }
 
 /**
  * Create or save new message and update chat
+ * Parameters: { conversation_id, client_id, tailor_id, sender_id, receiver_id, content, timestamp }
  */
 export function postChatMessage(data: {
+  conversation_id?: string;
   chat_id?: string;
   client_id: string;
   client_name?: string;
@@ -317,15 +355,17 @@ export function postChatMessage(data: {
   sender_id: string;
   receiver_id: string;
   content: string;
+  timestamp?: number;
 }): { chat: ServerChat; message: ServerChatMessage } {
   const now = new Date();
   const timeFormatted = formatTime(now);
-  const chatId = data.chat_id || getDeterministicChatId(data.client_id, data.tailor_id);
+  const convId = data.conversation_id || data.chat_id || getDeterministicChatId(data.client_id, data.tailor_id);
 
-  let chat = chatsStore.get(chatId);
+  let chat = chatsStore.get(convId);
   if (!chat) {
     chat = {
-      chat_id: chatId,
+      conversation_id: convId,
+      chat_id: convId,
       client_id: data.client_id,
       client_name: data.client_name || 'Cliente',
       client_avatar: data.client_avatar,
@@ -337,6 +377,8 @@ export function postChatMessage(data: {
       updated_at: now.getTime(),
     };
   } else {
+    chat.conversation_id = convId;
+    chat.chat_id = convId;
     chat.last_message = data.content;
     chat.last_message_time = timeFormatted;
     chat.updated_at = now.getTime();
@@ -345,27 +387,32 @@ export function postChatMessage(data: {
     if (data.client_avatar && !chat.client_avatar) chat.client_avatar = data.client_avatar;
     if (data.tailor_avatar && !chat.tailor_avatar) chat.tailor_avatar = data.tailor_avatar;
   }
-  chatsStore.set(chatId, chat);
+  chatsStore.set(convId, chat);
   saveChatsToDisk();
 
   const msgId = `msg-${now.getTime()}-${crypto.randomBytes(3).toString('hex')}`;
+  const messageTimestamp = data.timestamp || now.getTime();
   const message: ServerChatMessage = {
     id: msgId,
-    chat_id: chatId,
+    conversation_id: convId,
+    chat_id: convId,
     sender_id: data.sender_id,
     receiver_id: data.receiver_id,
     content: data.content,
-    timestamp: now.getTime(),
+    timestamp: messageTimestamp,
     time: timeFormatted,
     read_status: false,
   };
   messagesStore.set(msgId, message);
   saveMessagesToDisk();
 
-  // Broadcast to WebSockets
+  // Broadcast to WebSockets with both chat and conversation keys
   broadcastToClients({
     type: 'new_message',
+    conversation_id: convId,
+    chat_id: convId,
     chat,
+    conversation: chat,
     message,
   });
 

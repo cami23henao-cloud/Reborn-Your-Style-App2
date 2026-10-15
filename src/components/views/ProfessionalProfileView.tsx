@@ -260,6 +260,102 @@ export const ProfessionalProfileView: React.FC<ProfessionalProfileViewProps> = (
             </motion.div>
           )}
 
+          {/* Published Services Section (Requirement 3: Renderizado inmediato en el perfil público del costurero) */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, delay: 0.18 }}
+            className="bg-white dark:bg-[#0e241c] rounded-3xl p-6 sm:p-8 shadow-[0_4px_20px_rgba(1,45,29,0.05)] border border-[#efeee9] dark:border-[#2b694d]/40"
+          >
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-xl text-[#2b694d] dark:text-[#b0f1cc]">
+                  design_services
+                </span>
+                <h3 className="font-headline text-lg font-bold text-[#012d1d] dark:text-white">
+                  {isEn ? 'Services & Modifications Offered' : 'Servicios y Arreglos Disponibles'}
+                </h3>
+              </div>
+              <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#f2f8f4] dark:bg-[#002113] text-[#2b694d] dark:text-[#b0f1cc] border border-[#b0f1cc]/80">
+                {(professional.services && professional.services.length > 0)
+                  ? `${professional.services.length} ${isEn ? 'services' : 'servicios'}`
+                  : (isEn ? 'Custom quote' : 'Cotización personalizada')}
+              </span>
+            </div>
+
+            {professional.services && professional.services.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {professional.services.map((srv) => (
+                  <div
+                    key={srv.id}
+                    className="p-4 rounded-2xl bg-[#faf9f4] dark:bg-[#002113]/50 border border-[#e2e0d8] dark:border-[#2b694d]/40 flex flex-col justify-between space-y-3 hover:border-[#2b694d] transition-colors"
+                  >
+                    <div>
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="w-8 h-8 rounded-lg bg-[#012d1d] text-[#b0f1cc] flex items-center justify-center shrink-0">
+                            <span className="material-symbols-outlined text-base">
+                              {srv.icon || 'content_cut'}
+                            </span>
+                          </span>
+                          <h4 className="font-bold text-sm text-[#012d1d] dark:text-white leading-tight">
+                            {srv.title}
+                          </h4>
+                        </div>
+                      </div>
+
+                      <p className="text-xs text-[#414844] dark:text-[#c1c8c2] line-clamp-3 leading-relaxed mb-3">
+                        {srv.description}
+                      </p>
+                    </div>
+
+                    <div className="pt-2.5 border-t border-[#efeee9] dark:border-[#2b694d]/30 flex flex-col gap-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-extrabold text-[#012d1d] dark:text-[#b0f1cc]">
+                          {srv.priceRange || `$${(srv.startingPrice || 0).toLocaleString('es-CO')} COP`}
+                        </span>
+                        {srv.deliveryTime && (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#2b694d] dark:text-[#94d4b1] bg-white dark:bg-[#002113] px-2 py-0.5 rounded-md border border-[#b0f1cc]/60">
+                            <span className="material-symbols-outlined text-[13px]">schedule</span>
+                            <span>{srv.deliveryTime}</span>
+                          </span>
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => onRequestService(professional)}
+                        className="w-full mt-1 py-2 px-3 rounded-xl bg-[#012d1d] hover:bg-[#2b694d] text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
+                      >
+                        <span className="material-symbols-outlined text-sm">shopping_bag</span>
+                        <span>{isEn ? 'Request This Service' : 'Solicitar este servicio'}</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-5 rounded-2xl bg-[#faf9f4] dark:bg-[#002113]/30 border border-dashed border-[#c1c8c2] dark:border-[#2b694d]/40 text-center space-y-2">
+                <span className="material-symbols-outlined text-2xl text-[#2b694d]">handyman</span>
+                <p className="text-xs text-[#414844] dark:text-[#c1c8c2] max-w-md mx-auto">
+                  {isEn
+                    ? `This workshop offers specialized craftsmanship starting at $${(professional.startingPrice || 25000).toLocaleString()} COP. Click "Request Service" to ask for a custom quote or repair.`
+                    : `Este taller ofrece trabajos personalizados desde $${(professional.startingPrice || 25000).toLocaleString('es-CO')} COP. Pulsa "Solicitar servicio" o inicia un chat para cotizar cualquier arreglo o transformación a la medida.`}
+                </p>
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={() => onRequestService(professional)}
+                    className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-[#012d1d] hover:bg-[#2b694d] text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-sm">shopping_bag</span>
+                    <span>{isEn ? 'Request Custom Work' : 'Solicitar trabajo a la medida'}</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </motion.div>
+
           {/* Portfolio & Sample Works */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}

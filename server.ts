@@ -10,6 +10,8 @@ import { OAuth2Client } from 'google-auth-library';
 import dotenv from 'dotenv';
 import * as authController from './backend/controllers/authController';
 import * as chatService from './backend/services/chatService';
+import * as serviceController from './backend/controllers/serviceController';
+import * as garmentController from './backend/controllers/garmentController';
 
 dotenv.config();
 
@@ -280,6 +282,7 @@ async function startServer() {
   });
 
   // ---------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
   // 2. REAL-TIME ASYNCHRONOUS CHAT (WHATSAPP ARCHITECTURE: ROOMS & MESSAGES)
   // ---------------------------------------------------------------------------
   app.get(['/api/chats', '/api/chats/'], (req, res) => {
@@ -289,15 +292,17 @@ async function startServer() {
     return res.status(200).json({
       success: true,
       chats,
+      conversations: chats,
     });
   });
 
   app.get(['/api/chats/:chatId/messages', '/api/chats/:chatId/messages/', '/api/chats/messages', '/api/chats/messages/'], (req, res) => {
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
-    const chatId = String(req.params.chatId || req.query.chatId || req.query.chat_id || '').trim();
+    const chatId = String(req.params.chatId || req.query.chatId || req.query.chat_id || req.query.conversation_id || '').trim();
     const messages = chatService.getMessagesForChat(chatId);
     return res.status(200).json({
       success: true,
+      conversation_id: chatId,
       chat_id: chatId,
       messages,
     });
@@ -306,7 +311,7 @@ async function startServer() {
   app.post(['/api/chats/message', '/api/chats/message/'], (req, res) => {
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
     try {
-      const chat_id = req.body?.chat_id || req.body?.chatId;
+      const conversation_id = req.body?.conversation_id || req.body?.chat_id || req.body?.chatId;
       const client_id = req.body?.client_id || req.body?.clientId;
       const client_name = req.body?.client_name || req.body?.clientName;
       const client_avatar = req.body?.client_avatar || req.body?.clientAvatar;
@@ -316,16 +321,18 @@ async function startServer() {
       const sender_id = req.body?.sender_id || req.body?.senderId;
       const receiver_id = req.body?.receiver_id || req.body?.receiverId;
       const content = req.body?.content || req.body?.text || req.body?.message;
+      const timestamp = req.body?.timestamp;
 
       if (!content || !sender_id || !receiver_id) {
         return res.status(200).json({
           success: false,
-          error: 'Faltan parámetros requeridos para enviar el mensaje.',
+          error: 'Faltan parámetros requeridos para enviar el mensaje (sender_id, receiver_id, content).',
         });
       }
 
       const result = chatService.postChatMessage({
-        chat_id,
+        conversation_id,
+        chat_id: conversation_id,
         client_id: client_id || sender_id,
         client_name,
         client_avatar,
@@ -335,11 +342,15 @@ async function startServer() {
         sender_id,
         receiver_id,
         content: String(content).trim(),
+        timestamp: typeof timestamp === 'number' ? timestamp : undefined,
       });
 
       return res.status(200).json({
         success: true,
+        conversation_id: result.chat.conversation_id,
+        chat_id: result.chat.chat_id,
         chat: result.chat,
+        conversation: result.chat,
         message: result.message,
       });
     } catch (err: any) {
@@ -353,12 +364,23 @@ async function startServer() {
 
   app.post(['/api/chats/mark-read', '/api/chats/mark-read/'], (req, res) => {
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
-    const { chatId, userId } = req.body;
-    if (chatId && userId) {
-      chatService.markChatMessagesAsRead(chatId, userId);
+    const { chatId, conversationId, userId } = req.body;
+    const targetChatId = chatId || conversationId;
+    if (targetChatId && userId) {
+      chatService.markChatMessagesAsRead(targetChatId, userId);
     }
     return res.status(200).json({ success: true });
   });
+
+  // ---------------------------------------------------------------------------
+  // 2B. SERVICES & GARMENTS PERSISTENCE (TAILOR SERVICES & PUBLIC CATALOG)
+  // ---------------------------------------------------------------------------
+  app.post(['/api/services', '/api/services/'], serviceController.createOrUpdateService);
+  app.get(['/api/services', '/api/services/'], serviceController.getServices);
+  app.delete(['/api/services/:id', '/api/services/:id/'], serviceController.deleteService);
+
+  app.post(['/api/garments', '/api/garments/'], garmentController.publishGarment);
+  app.get(['/api/garments', '/api/garments/'], garmentController.getGarments);
 
   // ---------------------------------------------------------------------------
   // SMTP STATUS & REAL-TIME DIAGNOSTIC ENDPOINT (Zero secrets leak)

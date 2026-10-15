@@ -485,6 +485,27 @@ export const ExploraView: React.FC<ExploraViewProps> = ({
                     </div>
                   ))}
                 </div>
+              ) : garments.length === 0 ? (
+                <div className="bg-white rounded-3xl p-10 sm:p-14 text-center border border-[#c1c8c2]/50 shadow-xs space-y-4 max-w-lg mx-auto my-6">
+                  <div className="w-16 h-16 rounded-2xl bg-[#f2f8f4] text-[#2b694d] border border-[#b0f1cc]/80 flex items-center justify-center mx-auto shadow-2xs">
+                    <span className="material-symbols-outlined text-3xl">checkroom</span>
+                  </div>
+                  <h3 className="font-headline font-bold text-lg text-[#012d1d]">
+                    {language === 'en' ? 'Pristine Catalog Ready' : 'Catálogo Listo para Publicaciones Reales'}
+                  </h3>
+                  <p className="text-xs text-[#717973] max-w-md mx-auto leading-relaxed">
+                    {language === 'en'
+                      ? 'No items have been posted yet. Be the first to share a garment for transformation, exchange, or donation!'
+                      : 'No hay prendas publicadas aún. Sé el primero en publicar una prenda para que los costureros y artesanos de la comunidad coticen su transformación.'}
+                  </p>
+                  <button
+                    onClick={() => onNavigate('publicar-prenda')}
+                    className="px-6 py-2.5 rounded-xl bg-[#012d1d] hover:bg-[#2b694d] text-white text-xs font-bold transition-all shadow-sm flex items-center gap-2 mx-auto cursor-pointer active:scale-95"
+                  >
+                    <span className="material-symbols-outlined text-base">add_circle</span>
+                    <span>{language === 'en' ? 'Publish First Garment' : 'Publicar Primera Prenda'}</span>
+                  </button>
+                </div>
               ) : (
                 <div className="bg-white rounded-3xl p-12 text-center border border-[#c1c8c2]/50 shadow-xs space-y-3">
                   <span className="material-symbols-outlined text-4xl text-[#717973]">search_off</span>

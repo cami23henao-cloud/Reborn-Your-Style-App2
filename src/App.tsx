@@ -36,12 +36,17 @@ import {
 } from './services/userStore';
 import {
   getRoomId,
+  getDeterministicChatId,
   subscribeToRoomMessages,
   sendRealtimeChatMessage,
   fetchServerTailors,
   fetchServerChats,
   postServerChatMessage,
   subscribeToLiveChat,
+  subscribeToUserInbox,
+  saveServerService,
+  postServerGarment,
+  fetchServerGarments,
   updateServerProfile,
 } from './services/realtimeChatService';
 import { purgeAllLegacySessionsAndGoogleData } from './services/securityService';
@@ -72,6 +77,7 @@ import { MensajesView } from './components/views/MensajesView';
 import { SolicitudResumenView } from './components/views/SolicitudResumenView';
 import { AdminPanelView } from './components/views/AdminPanelView';
 import { TutorialsSection } from './components/tutorials/TutorialsSection';
+import { EvaluacionView } from './components/views/EvaluacionView';
 import { useScrollReveal } from './hooks/useScrollReveal';
 import { SplashScreen } from './components/common/SplashScreen';
 
@@ -281,11 +287,30 @@ export function App() {
     };
   }, [currentUserAccount, isLoggedIn]);
 
-  // Synchronize persistent chat conversations when user is logged in
+  // Load persisted garments from server database on mount
+  useEffect(() => {
+    fetchServerGarments().then((serverGarms) => {
+      if (serverGarms && serverGarms.length > 0) {
+        setGarments((prev) => {
+          const map = new Map<string, GarmentProject>();
+          prev.forEach((g) => map.set(g.id, g));
+          serverGarms.forEach((sg: any) => {
+            if (!map.has(sg.id)) map.set(sg.id, sg);
+          });
+          return Array.from(map.values());
+        });
+      }
+    }).catch(() => {});
+  }, []);
+
+  // Synchronize persistent chat conversations and active real-time inbox listener
   useEffect(() => {
     if (!currentUserAccount?.id) return;
+    const currentUserId = currentUserAccount.id;
     let isCancelled = false;
-    fetchServerChats(currentUserAccount.id).then((serverChats) => {
+
+    // 1. Initial fetch from database
+    fetchServerChats(currentUserId).then((serverChats) => {
       if (!isCancelled && serverChats.length > 0) {
         setConversations((prev) => {
           const map = new Map<string, ChatConversation>();
@@ -306,12 +331,70 @@ export function App() {
         });
       }
     });
+
+    // 2. Real-time Inbox Subscription: automatically receives incoming messages for current user
+    const unsubscribeInbox = subscribeToUserInbox(currentUserId, ({ chat, message }) => {
+      if (isCancelled || (!message && !chat)) return;
+      const convId = chat?.conversation_id || chat?.chat_id || message?.conversation_id || message?.chat_id;
+      if (!convId) return;
+
+      const cleanUser = currentUserId.toLowerCase();
+      const isClient = userRole === 'cliente';
+      const participantId = isClient ? (chat?.tailor_id || message?.sender_id) : (chat?.client_id || message?.sender_id);
+      const participantName = isClient ? (chat?.tailor_name || 'Taller') : (chat?.client_name || 'Cliente');
+      const participantAvatar = isClient ? (chat?.tailor_avatar || '') : (chat?.client_avatar || '');
+
+      setConversations((prev) => {
+        const existingIdx = prev.findIndex((c) => c.id === convId || c.participantId === participantId);
+
+        const newMsgItem: ChatMessage | null = message?.content ? {
+          id: message.id || `msg-${Date.now()}`,
+          sender: message.sender_id?.toLowerCase() === cleanUser ? 'user' : 'other',
+          text: message.content,
+          time: message.time || 'Ahora',
+        } : null;
+
+        if (existingIdx >= 0) {
+          const target = prev[existingIdx];
+          const hasMessage = newMsgItem && target.messages.some((m) => m.id === newMsgItem.id);
+          const updatedMessages = (newMsgItem && !hasMessage) ? [...target.messages, newMsgItem] : target.messages;
+
+          const updatedTarget: ChatConversation = {
+            ...target,
+            lastMessage: message?.content || chat?.last_message || target.lastMessage,
+            lastMessageTime: message?.time || chat?.last_message_time || 'Ahora',
+            unreadCount: (activeConvId === convId || floatingChatConvId === convId) ? 0 : target.unreadCount + 1,
+            messages: updatedMessages,
+          };
+
+          const nextList = [...prev];
+          nextList.splice(existingIdx, 1);
+          return [updatedTarget, ...nextList];
+        } else {
+          // Brand new conversation incoming from client
+          const newConv: ChatConversation = {
+            id: convId,
+            participantId: participantId || 'user',
+            participantName,
+            participantRole: isClient ? 'Modista / Taller' : 'Cliente Reborn',
+            participantAvatar,
+            lastMessage: message?.content || chat?.last_message || '',
+            lastMessageTime: message?.time || chat?.last_message_time || 'Ahora',
+            unreadCount: 1,
+            messages: newMsgItem ? [newMsgItem] : [],
+          };
+          return [newConv, ...prev];
+        }
+      });
+    });
+
     return () => {
       isCancelled = true;
+      unsubscribeInbox();
     };
-  }, [currentUserAccount?.id]);
+  }, [currentUserAccount?.id, userRole, activeConvId, floatingChatConvId]);
 
-  // Live WhatsApp-Style Chat Subscription for active conversation (WebSockets + Polling + Firestore)
+  // Live WhatsApp-Style Chat Subscription for active focused conversation (WebSockets + Polling + Firestore)
   useEffect(() => {
     if (!floatingChatConvId && !activeConvId) return;
     const targetId = floatingChatConvId || activeConvId;
@@ -523,9 +606,12 @@ export function App() {
     if (account.role === 'admin') {
       handleNavigate('admin');
       addToast('Sesión administrativa iniciada', 'Bienvenido al panel central de administración.', 'success');
-    } else {
+    } else if (account.role === 'profesional') {
       handleNavigate('mi-estudio');
-      addToast('Sesión iniciada', `Bienvenido(a), ${account.name}. Tu perfil privado está activo.`, 'success');
+      addToast('Sesión de taller iniciada', `Bienvenido(a) a tu taller, ${account.name}. Gestiona tus servicios y mensajes.`, 'success');
+    } else {
+      handleNavigate('explora');
+      addToast('Sesión iniciada', `Bienvenido(a), ${account.name}. Explora prendas y costureros disponibles.`, 'success');
     }
   };
 
@@ -602,13 +688,18 @@ export function App() {
 
   // Start chat with professional (Requirement 8: starts empty, no forced page change)
   const handleStartMessageWithPro = (pro: Professional) => {
+    const clientId = currentUserAccount?.id || 'guest_client';
+    const deterministicId = getDeterministicChatId(clientId, pro.id);
+    const existingConv = conversations.find(
+      (c) => c.id === deterministicId || c.participantId === pro.id
+    );
+
     let targetConvId = '';
-    const existingConv = conversations.find((c) => c.participantId === pro.id);
     if (existingConv) {
       targetConvId = existingConv.id;
     } else {
       const newConv: ChatConversation = {
-        id: `conv-${Date.now()}`,
+        id: deterministicId,
         participantId: pro.id,
         participantName: pro.name,
         participantRole: pro.specialty,
@@ -616,7 +707,7 @@ export function App() {
         lastMessage: '',
         lastMessageTime: '',
         unreadCount: 0,
-        messages: [], // Strictly empty: no invented messages!
+        messages: [],
       };
       setConversations((prev) => [newConv, ...prev]);
       if (currentUserAccount) {
@@ -632,10 +723,10 @@ export function App() {
 
   // Publish Project from Publication View
   const handlePublishProject = (project: GarmentProject) => {
-    const garmentWithOwner = {
+    const garmentWithOwner: GarmentProject = {
       ...project,
-      ownerId: userProfile.id,
-      ownerName: userProfile.name,
+      ownerId: userProfile.id || currentUserAccount?.id || `usr-${Date.now()}`,
+      ownerName: userProfile.name || currentUserAccount?.name || 'Usuario Reborn',
     };
 
     setUserGarments((prev) => [garmentWithOwner, ...prev]);
@@ -644,6 +735,11 @@ export function App() {
     if (currentUserAccount) {
       saveUserGarment(currentUserAccount.id, garmentWithOwner);
     }
+
+    // Persist to server backend /api/garments database
+    postServerGarment(garmentWithOwner).catch((err) =>
+      console.warn('Backend garment save notice:', err)
+    );
 
     const updatedProf: UserProfile = {
       ...userProfile,
@@ -657,7 +753,7 @@ export function App() {
     setDraftProject(null);
     addToast(
       '¡Prenda Publicada!',
-      `"${project.title}" ya está visible para la comunidad en Reborn.`,
+      `"${project.title}" ya está visible para la comunidad en el catálogo público de Reborn.`,
       'success'
     );
     handleNavigate('explora');
@@ -672,28 +768,87 @@ export function App() {
     );
   };
 
-  // Service Management
+  // Service Management: Persists to /api/services and renders immediately in public tailor profile
   const handleSaveService = (serviceData: Omit<ServiceItem, 'id'>, editId?: string) => {
+    const serviceId = editId || `srv-${Date.now()}`;
+    const targetUserId = currentUserAccount?.id || 'usr-demo-costurera';
+
+    const completeService: ServiceItem = {
+      ...serviceData,
+      id: serviceId,
+      tailorId: targetUserId,
+      userId: targetUserId,
+      createdAt: new Date().toISOString(),
+    };
+
     if (editId) {
       setUserServices((prev) =>
-        prev.map((s) => (s.id === editId ? { ...serviceData, id: editId } : s))
+        prev.map((s) => (s.id === editId ? completeService : s))
       );
       setServices((prev) =>
-        prev.map((s) => (s.id === editId ? { ...serviceData, id: editId } : s))
+        prev.map((s) => (s.id === editId ? completeService : s))
       );
-      addToast('Servicio actualizado', 'Los cambios se han guardado con éxito.', 'success');
     } else {
-      const newService: ServiceItem = {
-        ...serviceData,
-        id: `srv-${Date.now()}`,
-      };
-      setUserServices((prev) => [...prev, newService]);
-      setServices((prev) => [...prev, newService]);
+      setUserServices((prev) => [...prev, completeService]);
+      setServices((prev) => [...prev, completeService]);
       if (currentUserAccount) {
-        saveUserServiceItem(currentUserAccount.id, newService);
+        saveUserServiceItem(currentUserAccount.id, completeService);
       }
-      addToast('Servicio creado', 'Tu nuevo servicio ya está disponible.', 'success');
     }
+
+    // Persist to backend database via API /api/services with authenticated user ID
+    saveServerService({
+      ...completeService,
+      userId: targetUserId,
+      tailorId: targetUserId,
+    }).catch((err) => console.warn('Server service save notice:', err));
+
+    // Update the tailor's profile in professionals list immediately
+    setProfessionals((prev) =>
+      prev.map((pro) => {
+        const isMatch =
+          pro.id === targetUserId ||
+          pro.id === 'usr-demo-costurera' ||
+          (currentUserAccount && (pro.name === currentUserAccount.name || pro.id === currentUserAccount.id));
+        if (isMatch) {
+          const prevServices = pro.services || [];
+          const updatedServices = editId
+            ? prevServices.map((s) => (s.id === editId ? completeService : s))
+            : [...prevServices, completeService];
+          return {
+            ...pro,
+            services: updatedServices,
+          };
+        }
+        return pro;
+      })
+    );
+
+    // If currently viewing this professional, update selectedProfessional as well
+    setSelectedProfessional((prev) => {
+      if (!prev) return null;
+      const isMatch =
+        prev.id === targetUserId ||
+        prev.id === 'usr-demo-costurera' ||
+        (currentUserAccount && (prev.name === currentUserAccount.name || prev.id === currentUserAccount.id));
+      if (isMatch) {
+        const prevServices = prev.services || [];
+        const updatedServices = editId
+          ? prevServices.map((s) => (s.id === editId ? completeService : s))
+          : [...prevServices, completeService];
+        return {
+          ...prev,
+          services: updatedServices,
+        };
+      }
+      return prev;
+    });
+
+    addToast(
+      editId ? 'Servicio actualizado' : 'Servicio publicado',
+      'Tu servicio ya está guardado en la base de datos y visible en tu perfil público.',
+      'success'
+    );
     setServiceToEdit(null);
   };
 
@@ -784,30 +939,34 @@ export function App() {
     };
 
     const targetConv = conversations.find((c) => c.id === convId);
-    const clientId = currentUserAccount?.id || 'guest_client';
-    const tailorId = targetConv?.participantId || 'unknown_tailor';
+    const currentUserId = currentUserAccount?.id || 'guest_client';
     const isTailor = userRole === 'profesional';
+    const otherUserId = targetConv?.participantId || (isTailor ? 'usr-demo-cliente' : 'usr-demo-costurera');
+    const actualClientId = isTailor ? otherUserId : currentUserId;
+    const actualTailorId = isTailor ? currentUserId : otherUserId;
 
     // 1. Post to Server Backend (Persists to disk in chats.json and messages.json, broadcasts via WebSocket)
     postServerChatMessage({
+      conversation_id: convId,
       chat_id: convId,
-      client_id: isTailor ? tailorId : clientId,
+      client_id: actualClientId,
       client_name: isTailor ? (targetConv?.participantName || 'Cliente') : (userProfile.name || 'Cliente'),
       client_avatar: isTailor ? targetConv?.participantAvatar : userProfile.avatarUrl,
-      tailor_id: isTailor ? clientId : tailorId,
+      tailor_id: actualTailorId,
       tailor_name: isTailor ? (userProfile.name || 'Taller') : (targetConv?.participantName || 'Taller'),
       tailor_avatar: isTailor ? userProfile.avatarUrl : targetConv?.participantAvatar,
-      sender_id: clientId,
-      receiver_id: tailorId,
+      sender_id: currentUserId,
+      receiver_id: otherUserId,
       content: text,
+      timestamp: Date.now(),
     }).catch((err) => console.warn('Server chat post notice:', err));
 
     // 2. Realtime bidirectional dispatch to Firestore room
     if (targetConv?.participantId) {
-      const roomId = getRoomId(clientId, tailorId);
+      const roomId = getRoomId(actualClientId, actualTailorId);
       sendRealtimeChatMessage(roomId, {
-        senderId: clientId,
-        senderName: userProfile.name || 'Cliente',
+        senderId: currentUserId,
+        senderName: userProfile.name || (isTailor ? 'Taller' : 'Cliente'),
         senderRole: isTailor ? 'pro' : 'user',
         text,
       }).catch((err) => console.warn('Firestore realtime dual-write notice:', err));
@@ -848,23 +1007,24 @@ export function App() {
 
           // Post pro reply to server backend as well
           postServerChatMessage({
+            conversation_id: convId,
             chat_id: convId,
-            client_id: clientId,
+            client_id: actualClientId,
             client_name: userProfile.name || 'Cliente',
             client_avatar: userProfile.avatarUrl,
-            tailor_id: tailorId,
+            tailor_id: actualTailorId,
             tailor_name: targetConv?.participantName || 'Taller',
             tailor_avatar: targetConv?.participantAvatar,
-            sender_id: tailorId,
-            receiver_id: clientId,
+            sender_id: actualTailorId,
+            receiver_id: actualClientId,
             content: proReply.text,
           }).catch((err) => console.warn('Server chat pro reply notice:', err));
 
           // Also dual-write reply to Firestore room
           if (targetConv?.participantId) {
-            const roomId = getRoomId(clientId, tailorId);
+            const roomId = getRoomId(actualClientId, actualTailorId);
             sendRealtimeChatMessage(roomId, {
-              senderId: tailorId,
+              senderId: actualTailorId,
               senderName: targetConv.participantName,
               senderRole: 'pro',
               text: proReply.text,
@@ -1176,9 +1336,14 @@ export function App() {
           )
         )}
 
-        {/* Módulo de Tutoriales con Videos Cortos y Streaming */}
+        {/* Módulo de Formación y Tutoriales Multiformato */}
         {currentView === 'tutoriales' && (
-          <TutorialsSection isStandalonePage={true} />
+          <TutorialsSection isStandalonePage={true} onNavigate={handleNavigate} />
+        )}
+
+        {/* Módulo de Evaluación de Conocimientos (Test Digital & Certificación) */}
+        {currentView === 'evaluacion' && (
+          <EvaluacionView userProfile={userProfile} onNavigate={handleNavigate} />
         )}
       </main>
 
