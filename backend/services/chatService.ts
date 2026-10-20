@@ -26,6 +26,8 @@ export interface ServerChatMessage {
   sender_id: string;
   receiver_id: string;
   content: string;
+  imageUrl?: string;
+  mediaType?: 'text' | 'image';
   timestamp: number;
   time: string;
   read_status: boolean;
@@ -302,15 +304,7 @@ export function getChatsForUser(userId: string): ServerChat[] {
 
   // Build alias set for matching
   const aliases = new Set<string>([cleanId]);
-  if (cleanId === 'usr-demo-costurera' || cleanId === 'costurera.demo@plataforma.com') {
-    aliases.add('usr-demo-costurera');
-    aliases.add('costurera.demo@plataforma.com');
-    aliases.add('dona-marta');
-  }
-  if (cleanId === 'usr-demo-cliente' || cleanId === 'cliente.demo@plataforma.com') {
-    aliases.add('usr-demo-cliente');
-    aliases.add('cliente.demo@plataforma.com');
-  }
+
 
   // Also check usersStore for registered user id/email
   for (const u of usersStore.values()) {
@@ -344,6 +338,7 @@ export function getMessagesForChat(chatId: string): ServerChatMessage[] {
  * Parameters: { conversation_id, client_id, tailor_id, sender_id, receiver_id, content, timestamp }
  */
 export function postChatMessage(data: {
+  id?: string;
   conversation_id?: string;
   chat_id?: string;
   client_id: string;
@@ -355,11 +350,49 @@ export function postChatMessage(data: {
   sender_id: string;
   receiver_id: string;
   content: string;
+  imageUrl?: string;
+  mediaType?: 'text' | 'image';
   timestamp?: number;
 }): { chat: ServerChat; message: ServerChatMessage } {
   const now = new Date();
   const timeFormatted = formatTime(now);
   const convId = data.conversation_id || data.chat_id || getDeterministicChatId(data.client_id, data.tailor_id);
+  const messageTimestamp = data.timestamp || now.getTime();
+  const msgId = data.id || `msg-${now.getTime()}-${crypto.randomBytes(3).toString('hex')}`;
+
+  // Deduplication check: if message with same ID already exists, return it immediately without duplicate broadcast
+  if (messagesStore.has(msgId)) {
+    const existingMsg = messagesStore.get(msgId)!;
+    const existingChat = chatsStore.get(convId) || {
+      conversation_id: convId,
+      chat_id: convId,
+      client_id: data.client_id,
+      client_name: data.client_name || 'Cliente',
+      tailor_id: data.tailor_id,
+      tailor_name: data.tailor_name || 'Modista / Taller',
+      last_message: existingMsg.content,
+      last_message_time: existingMsg.time,
+      updated_at: existingMsg.timestamp,
+    };
+    return { chat: existingChat, message: existingMsg };
+  }
+
+  // Also check deduplication by identical sender, content, and timestamp within 1500ms
+  for (const m of messagesStore.values()) {
+    if (
+      m.conversation_id === convId &&
+      m.sender_id === data.sender_id &&
+      m.content === data.content &&
+      Math.abs(m.timestamp - messageTimestamp) < 1500
+    ) {
+      const existingChat = chatsStore.get(convId)!;
+      return { chat: existingChat, message: m };
+    }
+  }
+
+  const effectiveLastMessage = data.imageUrl
+    ? data.content ? `📷 ${data.content}` : '📷 Fotografía adjunta'
+    : data.content;
 
   let chat = chatsStore.get(convId);
   if (!chat) {
@@ -372,14 +405,14 @@ export function postChatMessage(data: {
       tailor_id: data.tailor_id,
       tailor_name: data.tailor_name || 'Modista / Taller',
       tailor_avatar: data.tailor_avatar,
-      last_message: data.content,
+      last_message: effectiveLastMessage,
       last_message_time: timeFormatted,
       updated_at: now.getTime(),
     };
   } else {
     chat.conversation_id = convId;
     chat.chat_id = convId;
-    chat.last_message = data.content;
+    chat.last_message = effectiveLastMessage;
     chat.last_message_time = timeFormatted;
     chat.updated_at = now.getTime();
     if (data.client_name && !chat.client_name) chat.client_name = data.client_name;
@@ -390,8 +423,6 @@ export function postChatMessage(data: {
   chatsStore.set(convId, chat);
   saveChatsToDisk();
 
-  const msgId = `msg-${now.getTime()}-${crypto.randomBytes(3).toString('hex')}`;
-  const messageTimestamp = data.timestamp || now.getTime();
   const message: ServerChatMessage = {
     id: msgId,
     conversation_id: convId,
@@ -399,6 +430,8 @@ export function postChatMessage(data: {
     sender_id: data.sender_id,
     receiver_id: data.receiver_id,
     content: data.content,
+    imageUrl: data.imageUrl,
+    mediaType: data.imageUrl ? 'image' : (data.mediaType || 'text'),
     timestamp: messageTimestamp,
     time: timeFormatted,
     read_status: false,

@@ -229,6 +229,8 @@ export async function fetchServerMessages(chatId: string, currentUserId: string)
         id: m.id,
         sender: m.sender_id === currentUserId ? 'user' : 'other',
         text: m.content || '',
+        imageUrl: m.imageUrl,
+        mediaType: m.imageUrl ? 'image' : (m.mediaType || 'text'),
         time: m.time || 'Ahora',
       }));
     }
@@ -241,9 +243,10 @@ export async function fetchServerMessages(chatId: string, currentUserId: string)
 
 /**
  * Posts a message to the backend database with instant persistent storage
- * Parameters: { conversation_id, client_id, tailor_id, sender_id, receiver_id, content, timestamp }
+ * Parameters: { id, conversation_id, client_id, tailor_id, sender_id, receiver_id, content, imageUrl, mediaType, timestamp }
  */
 export async function postServerChatMessage(data: {
+  id?: string;
   conversation_id?: string;
   chat_id?: string;
   client_id: string;
@@ -255,6 +258,8 @@ export async function postServerChatMessage(data: {
   sender_id: string;
   receiver_id: string;
   content: string;
+  imageUrl?: string;
+  mediaType?: 'text' | 'image';
   timestamp?: number;
 }): Promise<{ success: boolean; chat?: any; conversation?: any; message?: any }> {
   try {

@@ -13,6 +13,8 @@ interface ExploraViewProps {
   onNavigate: (view: AppView) => void;
   user: UserProfile;
   onRequestGarment?: (garment: GarmentProject) => void;
+  onSelectGarment?: (garment: GarmentProject) => void;
+  onContactGarment?: (garment: GarmentProject) => void;
   initialTab?: 'profesionales' | 'prendas';
   initialCategory?: string;
   onSelectCategory?: (categoryName: string) => void;
@@ -24,6 +26,9 @@ export const ExploraView: React.FC<ExploraViewProps> = ({
   onSelectProfessional,
   onNavigate,
   user,
+  onRequestGarment,
+  onSelectGarment,
+  onContactGarment,
   initialTab = 'prendas',
   initialCategory = 'Todas',
   onSelectCategory,
@@ -418,6 +423,10 @@ export const ExploraView: React.FC<ExploraViewProps> = ({
                   {filteredGarments.map((garment) => (
                     <div
                       key={garment.id}
+                      onClick={() => {
+                        if (onSelectGarment) onSelectGarment(garment);
+                        else if (onRequestGarment) onRequestGarment(garment);
+                      }}
                       className="hover-elevate bg-white rounded-3xl p-4 border border-[#c1c8c2]/50 hover:border-[#012d1d] hover:shadow-lg transition-all duration-300 flex flex-col justify-between space-y-3 group cursor-pointer"
                     >
                       {/* Image & Badges */}
@@ -443,13 +452,21 @@ export const ExploraView: React.FC<ExploraViewProps> = ({
                         <h3 className="font-headline font-bold text-sm text-[#012d1d] group-hover:text-[#2b694d] transition-colors leading-snug line-clamp-1">
                           {garment.title}
                         </h3>
+
+                        {garment.modifications && (
+                          <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#b0f1cc]/30 text-[#002113] text-[10px] font-bold border border-[#2b694d]/20 line-clamp-1">
+                            <span className="material-symbols-outlined text-xs text-[#2b694d]">tune</span>
+                            <span className="truncate">{garment.modifications}</span>
+                          </div>
+                        )}
+
                         <p className="text-xs text-[#414844] line-clamp-2 leading-relaxed">
                           {garment.description}
                         </p>
 
                         <div className="flex items-center gap-1.5 text-xs text-[#717973] pt-1">
                           <span className="material-symbols-outlined text-xs text-[#2b694d]">location_on</span>
-                          <span className="truncate">{garment.location.split(',')[0]}</span>
+                          <span className="truncate">{garment.municipality || garment.department || garment.location.split(',')[0]}</span>
                         </div>
                       </div>
 
@@ -470,7 +487,7 @@ export const ExploraView: React.FC<ExploraViewProps> = ({
                           </div>
                         </div>
 
-                        <div className="text-right">
+                        <div className="text-right flex items-center gap-2">
                           <span className="text-xs font-black text-[#012d1d] block">
                             {garment.listingType === 'Donación'
                               ? (language === 'en' ? 'Free' : 'Gratis')
@@ -482,6 +499,20 @@ export const ExploraView: React.FC<ExploraViewProps> = ({
                           </span>
                         </div>
                       </div>
+
+                      {/* Action Button */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (onContactGarment) onContactGarment(garment);
+                          else if (onSelectGarment) onSelectGarment(garment);
+                        }}
+                        className="w-full py-2 px-3 rounded-xl bg-[#012d1d] hover:bg-[#2b694d] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-xs text-[#b0f1cc]">chat</span>
+                        <span>{language === 'en' ? 'Contact / Chat' : 'Contactar / Chatear'}</span>
+                      </button>
                     </div>
                   ))}
                 </div>

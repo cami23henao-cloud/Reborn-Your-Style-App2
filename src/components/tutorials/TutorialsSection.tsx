@@ -277,11 +277,11 @@ export const TutorialsSection: React.FC<TutorialsSectionProps> = ({
         {/* Format Pills */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
           {[
-            { id: 'todos', label: 'Todo el Contenido', icon: 'auto_stories' },
-            { id: 'videos', label: 'Videos Embebidos', icon: 'smart_display' },
-            { id: 'articulos', label: 'Guías Lectivas', icon: 'article' },
             { id: 'infografias', label: 'Infografías', icon: 'schema' },
+            { id: 'articulos', label: 'Guías Lectivas', icon: 'article' },
             { id: 'descargas', label: 'Recursos PDF', icon: 'download' },
+            { id: 'videos', label: 'Videos', icon: 'smart_display' },
+            { id: 'todos', label: 'Todo el Contenido', icon: 'auto_stories' },
           ].map((fmt) => (
             <button
               key={fmt.id}
@@ -289,7 +289,7 @@ export const TutorialsSection: React.FC<TutorialsSectionProps> = ({
               onClick={() => setActiveFormat(fmt.id as TutorialFormat)}
               className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
                 activeFormat === fmt.id
-                  ? 'bg-[#012d1d] text-[#b0f1cc] shadow-xs'
+                  ? 'bg-[#012d1d] text-[#b0f1cc] shadow-xs ring-1 ring-[#b0f1cc]/40'
                   : 'text-[#414844] dark:text-[#a7b8ae] hover:bg-[#faf9f4] dark:hover:bg-[#112920]'
               }`}
             >
@@ -315,81 +315,10 @@ export const TutorialsSection: React.FC<TutorialsSectionProps> = ({
       </div>
 
       {/* ===================================================================== */}
-      {/* SECCIÓN 1: GUÍAS LECTIVAS / ARTÍCULOS INTERACTIVOS                   */}
-      {/* ===================================================================== */}
-      {(activeFormat === 'todos' || activeFormat === 'articulos') && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="w-8 h-8 rounded-xl bg-[#e8f5ed] dark:bg-[#16382c] text-[#2b694d] dark:text-[#b0f1cc] flex items-center justify-center">
-                <span className="material-symbols-outlined text-lg">article</span>
-              </span>
-              <div>
-                <h2 className="font-headline font-bold text-lg text-[#012d1d] dark:text-white">
-                  Guías Lectivas y Artículos Interactivos
-                </h2>
-                <p className="text-xs text-[#717973] dark:text-[#a7b8ae]">
-                  Estrategias digitales, técnica fotográfica de prendas y fichas técnicas estándar.
-                </p>
-              </div>
-            </div>
-            <span className="text-xs font-bold text-[#2b694d] dark:text-[#b0f1cc]">
-              {filteredArticles.length} guías
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {filteredArticles.map((article) => (
-              <div
-                key={article.id}
-                onClick={() => setActiveArticle(article)}
-                className="hover-elevate bg-white dark:bg-[#0e241c] rounded-3xl border border-[#c1c8c2]/50 dark:border-[#2b694d]/40 overflow-hidden shadow-xs hover:border-[#012d1d] transition-all cursor-pointer flex flex-col justify-between group"
-              >
-                <div className="space-y-3">
-                  <div className="relative aspect-video w-full overflow-hidden bg-[#102b1e]">
-                    <img
-                      src={article.coverImage}
-                      alt={article.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <div className="absolute top-3 left-3 px-2.5 py-0.5 rounded-full bg-[#012d1d]/85 backdrop-blur-xs text-[#b0f1cc] text-[10px] font-bold">
-                      {article.categoryLabel}
-                    </div>
-                    <div className="absolute bottom-3 right-3 px-2.5 py-0.5 rounded-full bg-white/90 backdrop-blur-xs text-[#012d1d] text-[10px] font-bold shadow-2xs flex items-center gap-1">
-                      <span className="material-symbols-outlined text-xs">timer</span>
-                      <span>{article.readTime}</span>
-                    </div>
-                  </div>
-
-                  <div className="p-5 space-y-2">
-                    <h3 className="font-headline font-bold text-base text-[#012d1d] dark:text-white group-hover:text-[#2b694d] dark:group-hover:text-[#b0f1cc] transition-colors leading-snug">
-                      {article.title}
-                    </h3>
-                    <p className="text-xs text-[#414844] dark:text-[#a7b8ae] leading-relaxed line-clamp-3">
-                      {article.summary}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="p-5 pt-0">
-                  <div className="pt-3 border-t border-[#efeee9] dark:border-[#173328] flex items-center justify-between text-xs font-bold text-[#2b694d] dark:text-[#b0f1cc] group-hover:text-[#012d1d]">
-                    <span>Leer guía completa</span>
-                    <span className="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">
-                      arrow_forward
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ===================================================================== */}
-      {/* SECCIÓN 2: INFOGRAFÍAS Y DIAGRAMAS VISUALES                         */}
+      {/* SECCIÓN 1: INFOGRAFÍAS Y DIAGRAMAS VISUALES                         */}
       {/* ===================================================================== */}
       {(activeFormat === 'todos' || activeFormat === 'infografias') && (
-        <div className="space-y-4 pt-4">
+        <div className="space-y-4 pt-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="w-8 h-8 rounded-xl bg-[#e8f5ed] dark:bg-[#16382c] text-[#2b694d] dark:text-[#b0f1cc] flex items-center justify-center">
@@ -409,88 +338,173 @@ export const TutorialsSection: React.FC<TutorialsSectionProps> = ({
             </span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {filteredInfographics.map((info) => (
-              <div
-                key={info.id}
-                className="hover-elevate bg-white dark:bg-[#0e241c] rounded-3xl border border-[#c1c8c2]/50 dark:border-[#2b694d]/40 overflow-hidden shadow-xs hover:border-[#012d1d] transition-all flex flex-col justify-between"
-              >
-                <div className="space-y-3">
-                  <div
-                    onClick={() => setActiveInfographic(info)}
-                    className="relative aspect-video w-full overflow-hidden bg-[#102b1e] cursor-pointer group"
-                  >
-                    <img
-                      src={info.previewUrl}
-                      alt={info.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <span className="px-3 py-1.5 rounded-full bg-white text-[#012d1d] text-xs font-bold flex items-center gap-1 shadow-md">
-                        <span className="material-symbols-outlined text-sm">zoom_in</span>
-                        <span>Ampliar diagrama</span>
-                      </span>
-                    </div>
-                    <div className="absolute top-3 left-3 px-2.5 py-0.5 rounded-full bg-[#012d1d]/85 backdrop-blur-xs text-[#b0f1cc] text-[10px] font-bold">
-                      {info.categoryLabel}
-                    </div>
-                  </div>
-
-                  <div className="p-5 space-y-2">
-                    <h3 className="font-headline font-bold text-base text-[#012d1d] dark:text-white">
-                      {info.title}
-                    </h3>
-                    <p className="text-xs text-[#414844] dark:text-[#a7b8ae] leading-relaxed line-clamp-2">
-                      {info.description}
-                    </p>
-
-                    {/* Step pill preview */}
-                    <div className="pt-2 flex flex-wrap gap-1.5">
-                      {info.steps.map((st, idx) => (
-                        <span
-                          key={idx}
-                          className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#faf9f4] dark:bg-[#112920] border border-[#efeee9] dark:border-[#2b694d]/30 text-[#2b694d] dark:text-[#b0f1cc]"
-                        >
-                          {st.number}. {st.title}
+          {filteredInfographics.length === 0 ? (
+            <div className="p-8 text-center bg-white dark:bg-[#0e241c] rounded-3xl border border-[#c1c8c2]/50 text-xs text-[#717973]">
+              No se encontraron infografías con el término de búsqueda ingresado.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {filteredInfographics.map((info) => (
+                <div
+                  key={info.id}
+                  className="card hover-elevate bg-white dark:bg-[#0e241c] rounded-3xl border border-[#c1c8c2]/50 dark:border-[#2b694d]/40 overflow-hidden shadow-xs hover:border-[#012d1d] transition-all flex flex-col justify-between"
+                >
+                  <div className="space-y-3">
+                    <div
+                      onClick={() => setActiveInfographic(info)}
+                      className="relative aspect-video w-full overflow-hidden bg-[#102b1e] cursor-pointer group"
+                    >
+                      <img
+                        src={info.previewUrl}
+                        alt={info.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <span className="px-3 py-1.5 rounded-full bg-white text-[#012d1d] text-xs font-bold flex items-center gap-1 shadow-md">
+                          <span className="material-symbols-outlined text-sm">zoom_in</span>
+                          <span>Ampliar diagrama</span>
                         </span>
-                      ))}
+                      </div>
+                      <div className="absolute top-3 left-3 px-2.5 py-0.5 rounded-full bg-[#012d1d]/85 backdrop-blur-xs text-[#b0f1cc] text-[10px] font-bold flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[12px]">schema</span>
+                        <span>Infografía • {info.categoryLabel}</span>
+                      </div>
+                    </div>
+
+                    <div className="p-5 space-y-2">
+                      <h3 className="font-headline font-bold text-base text-[#012d1d] dark:text-white">
+                        {info.title}
+                      </h3>
+                      <p className="text-xs text-[#414844] dark:text-[#a7b8ae] leading-relaxed line-clamp-2">
+                        {info.description}
+                      </p>
+
+                      {/* Step pill preview */}
+                      <div className="pt-2 flex flex-wrap gap-1.5">
+                        {info.steps.map((st, idx) => (
+                          <span
+                            key={idx}
+                            className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#faf9f4] dark:bg-[#112920] border border-[#efeee9] dark:border-[#2b694d]/30 text-[#2b694d] dark:text-[#b0f1cc]"
+                          >
+                            {st.number}. {st.title}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="p-5 pt-0 grid grid-cols-2 gap-2 border-t border-[#efeee9] dark:border-[#173328]">
-                  <button
-                    type="button"
-                    onClick={() => setActiveInfographic(info)}
-                    className="py-2 px-3 rounded-xl bg-[#faf9f4] dark:bg-[#112920] hover:bg-[#efeee9] text-[#012d1d] dark:text-[#b0f1cc] text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1"
-                  >
-                    <span className="material-symbols-outlined text-sm">visibility</span>
-                    <span>Ver detalle</span>
-                  </button>
+                  <div className="p-5 pt-0 grid grid-cols-2 gap-2 border-t border-[#efeee9] dark:border-[#173328]">
+                    <button
+                      type="button"
+                      onClick={() => setActiveInfographic(info)}
+                      className="py-2 px-3 rounded-xl bg-[#faf9f4] dark:bg-[#112920] hover:bg-[#efeee9] text-[#012d1d] dark:text-[#b0f1cc] text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1"
+                    >
+                      <span className="material-symbols-outlined text-sm">visibility</span>
+                      <span>Ver detalle</span>
+                    </button>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setDownloadSuccessToast(`Descargando esquema: ${info.title}...`);
-                      setTimeout(() => setDownloadSuccessToast(null), 3000);
-                    }}
-                    className="py-2 px-3 rounded-xl bg-[#012d1d] hover:bg-[#2b694d] text-white text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1 active:scale-95"
-                  >
-                    <span className="material-symbols-outlined text-sm">download</span>
-                    <span>Descargar</span>
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDownloadSuccessToast(`Descargando esquema: ${info.title}...`);
+                        setTimeout(() => setDownloadSuccessToast(null), 3000);
+                      }}
+                      className="py-2 px-3 rounded-xl bg-[#012d1d] hover:bg-[#2b694d] text-white text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1 active:scale-95"
+                    >
+                      <span className="material-symbols-outlined text-sm">download</span>
+                      <span>Descargar</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
       {/* ===================================================================== */}
-      {/* SECCIÓN 3: RECURSOS DESCARGABLES (PDF / PLANTILLAS)                 */}
+      {/* SECCIÓN 2: GUÍAS LECTIVAS / ARTÍCULOS INTERACTIVOS                   */}
+      {/* ===================================================================== */}
+      {(activeFormat === 'todos' || activeFormat === 'articulos') && (
+        <div className="space-y-4 pt-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="w-8 h-8 rounded-xl bg-[#e8f5ed] dark:bg-[#16382c] text-[#2b694d] dark:text-[#b0f1cc] flex items-center justify-center">
+                <span className="material-symbols-outlined text-lg">article</span>
+              </span>
+              <div>
+                <h2 className="font-headline font-bold text-lg text-[#012d1d] dark:text-white">
+                  Guías Lectivas y Artículos Interactivos
+                </h2>
+                <p className="text-xs text-[#717973] dark:text-[#a7b8ae]">
+                  Estrategias digitales, técnica fotográfica de prendas y fichas técnicas estándar.
+                </p>
+              </div>
+            </div>
+            <span className="text-xs font-bold text-[#2b694d] dark:text-[#b0f1cc]">
+              {filteredArticles.length} guías
+            </span>
+          </div>
+
+          {filteredArticles.length === 0 ? (
+            <div className="p-8 text-center bg-white dark:bg-[#0e241c] rounded-3xl border border-[#c1c8c2]/50 text-xs text-[#717973]">
+              No se encontraron guías lectivas con el término de búsqueda ingresado.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {filteredArticles.map((article) => (
+                <div
+                  key={article.id}
+                  onClick={() => setActiveArticle(article)}
+                  className="card hover-elevate bg-white dark:bg-[#0e241c] rounded-3xl border border-[#c1c8c2]/50 dark:border-[#2b694d]/40 overflow-hidden shadow-xs hover:border-[#012d1d] transition-all cursor-pointer flex flex-col justify-between group"
+                >
+                  <div className="space-y-3">
+                    <div className="relative aspect-video w-full overflow-hidden bg-[#102b1e]">
+                      <img
+                        src={article.coverImage}
+                        alt={article.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className="absolute top-3 left-3 px-2.5 py-0.5 rounded-full bg-[#012d1d]/85 backdrop-blur-xs text-[#b0f1cc] text-[10px] font-bold flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[12px]">menu_book</span>
+                        <span>Guía Lectiva • {article.categoryLabel}</span>
+                      </div>
+                      <div className="absolute bottom-3 right-3 px-2.5 py-0.5 rounded-full bg-white/90 backdrop-blur-xs text-[#012d1d] text-[10px] font-bold shadow-2xs flex items-center gap-1">
+                        <span className="material-symbols-outlined text-xs">timer</span>
+                        <span>{article.readTime}</span>
+                      </div>
+                    </div>
+
+                    <div className="p-5 space-y-2">
+                      <h3 className="font-headline font-bold text-base text-[#012d1d] dark:text-white group-hover:text-[#2b694d] dark:group-hover:text-[#b0f1cc] transition-colors leading-snug">
+                        {article.title}
+                      </h3>
+                      <p className="text-xs text-[#414844] dark:text-[#a7b8ae] leading-relaxed line-clamp-3">
+                        {article.summary}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="p-5 pt-0">
+                    <div className="pt-3 border-t border-[#efeee9] dark:border-[#173328] flex items-center justify-between text-xs font-bold text-[#2b694d] dark:text-[#b0f1cc] group-hover:text-[#012d1d]">
+                      <span>Leer guía completa</span>
+                      <span className="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">
+                        arrow_forward
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ===================================================================== */}
+      {/* SECCIÓN 3: RECURSOS PDF Y PLANTILLAS DESCARGABLES                   */}
       {/* ===================================================================== */}
       {(activeFormat === 'todos' || activeFormat === 'descargas') && (
-        <div className="space-y-4 pt-4">
+        <div className="space-y-4 pt-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="w-8 h-8 rounded-xl bg-[#e8f5ed] dark:bg-[#16382c] text-[#2b694d] dark:text-[#b0f1cc] flex items-center justify-center">
@@ -498,10 +512,10 @@ export const TutorialsSection: React.FC<TutorialsSectionProps> = ({
               </span>
               <div>
                 <h2 className="font-headline font-bold text-lg text-[#012d1d] dark:text-white">
-                  Guías en PDF y Recursos Descargables
+                  Recursos PDF y Plantillas Descargables
                 </h2>
                 <p className="text-xs text-[#717973] dark:text-[#a7b8ae]">
-                  Plantillas de medidas, guías de puntadas upcycling y checklist de control de calidad listos para usar.
+                  Plantillas de medidas, guías de puntadas upcycling y checklist de control de calidad listos para usar en formato PDF.
                 </p>
               </div>
             </div>
@@ -510,67 +524,73 @@ export const TutorialsSection: React.FC<TutorialsSectionProps> = ({
             </span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {filteredResources.map((res) => (
-              <div
-                key={res.id}
-                className="hover-elevate bg-white dark:bg-[#0e241c] rounded-3xl p-6 border border-[#c1c8c2]/50 dark:border-[#2b694d]/40 shadow-xs hover:border-[#012d1d] transition-all flex flex-col justify-between space-y-4"
-              >
-                <div className="space-y-3">
-                  <div className="flex items-start justify-between">
-                    <div className="w-12 h-12 rounded-2xl bg-[#012d1d] text-[#b0f1cc] flex items-center justify-center shadow-xs">
-                      <span className="material-symbols-outlined text-2xl">{res.icon}</span>
-                    </div>
-                    <span className="px-2.5 py-1 rounded-lg bg-[#faf9f4] dark:bg-[#112920] border border-[#efeee9] text-[10px] font-black text-[#2b694d] dark:text-[#b0f1cc] uppercase">
-                      {res.fileType} • {res.sizeFormatted}
-                    </span>
-                  </div>
-
-                  <div>
-                    <h3 className="font-headline font-bold text-base text-[#012d1d] dark:text-white">
-                      {res.title}
-                    </h3>
-                    <p className="text-xs text-[#414844] dark:text-[#a7b8ae] mt-1 leading-relaxed">
-                      {res.description}
-                    </p>
-                  </div>
-
-                  {/* Bullet Preview */}
-                  <div className="space-y-1.5 pt-1">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#717973] dark:text-[#a7b8ae] block">
-                      Contenido incluido:
-                    </span>
-                    {res.contentPreview.slice(0, 3).map((item, idx) => (
-                      <div key={idx} className="flex items-start gap-1.5 text-xs text-[#414844] dark:text-[#a7b8ae]">
-                        <span className="material-symbols-outlined text-sm text-[#2b694d] dark:text-[#b0f1cc] shrink-0">check_small</span>
-                        <span className="line-clamp-1">{item}</span>
+          {filteredResources.length === 0 ? (
+            <div className="p-8 text-center bg-white dark:bg-[#0e241c] rounded-3xl border border-[#c1c8c2]/50 text-xs text-[#717973]">
+              No se encontraron recursos PDF con el término de búsqueda ingresado.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {filteredResources.map((res) => (
+                <div
+                  key={res.id}
+                  className="card hover-elevate bg-white dark:bg-[#0e241c] rounded-3xl p-6 border border-[#c1c8c2]/50 dark:border-[#2b694d]/40 shadow-xs hover:border-[#012d1d] transition-all flex flex-col justify-between space-y-4"
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div className="w-12 h-12 rounded-2xl bg-[#012d1d] text-[#b0f1cc] flex items-center justify-center shadow-xs">
+                        <span className="material-symbols-outlined text-2xl">{res.icon}</span>
                       </div>
-                    ))}
+                      <span className="px-2.5 py-1 rounded-lg bg-[#faf9f4] dark:bg-[#112920] border border-[#efeee9] text-[10px] font-black text-[#2b694d] dark:text-[#b0f1cc] uppercase">
+                        Recurso PDF • {res.fileType} • {res.sizeFormatted}
+                      </span>
+                    </div>
+
+                    <div>
+                      <h3 className="font-headline font-bold text-base text-[#012d1d] dark:text-white">
+                        {res.title}
+                      </h3>
+                      <p className="text-xs text-[#414844] dark:text-[#a7b8ae] mt-1 leading-relaxed">
+                        {res.description}
+                      </p>
+                    </div>
+
+                    {/* Bullet Preview */}
+                    <div className="space-y-1.5 pt-1">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#717973] dark:text-[#a7b8ae] block">
+                        Contenido incluido:
+                      </span>
+                      {res.contentPreview.slice(0, 3).map((item, idx) => (
+                        <div key={idx} className="flex items-start gap-1.5 text-xs text-[#414844] dark:text-[#a7b8ae]">
+                          <span className="material-symbols-outlined text-sm text-[#2b694d] dark:text-[#b0f1cc] shrink-0">check_small</span>
+                          <span className="line-clamp-1">{item}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-[#efeee9] dark:border-[#173328] grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setActiveResource(res)}
+                      className="py-2.5 px-3 rounded-xl bg-[#faf9f4] dark:bg-[#112920] hover:bg-[#efeee9] text-[#012d1d] dark:text-[#b0f1cc] text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                    >
+                      <span className="material-symbols-outlined text-sm">visibility</span>
+                      <span>Ver ficha</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => triggerDownload(res)}
+                      className="py-2.5 px-3 rounded-xl bg-[#012d1d] hover:bg-[#2b694d] text-white text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center justify-center gap-1.5 active:scale-95"
+                    >
+                      <span className="material-symbols-outlined text-sm">download</span>
+                      <span>Descargar PDF</span>
+                    </button>
                   </div>
                 </div>
-
-                <div className="pt-3 border-t border-[#efeee9] dark:border-[#173328] grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setActiveResource(res)}
-                    className="py-2.5 px-3 rounded-xl bg-[#faf9f4] dark:bg-[#112920] hover:bg-[#efeee9] text-[#012d1d] dark:text-[#b0f1cc] text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
-                  >
-                    <span className="material-symbols-outlined text-sm">visibility</span>
-                    <span>Ver ficha</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => triggerDownload(res)}
-                    className="py-2.5 px-3 rounded-xl bg-[#012d1d] hover:bg-[#2b694d] text-white text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center justify-center gap-1.5 active:scale-95"
-                  >
-                    <span className="material-symbols-outlined text-sm">download</span>
-                    <span>Descargar</span>
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -578,7 +598,7 @@ export const TutorialsSection: React.FC<TutorialsSectionProps> = ({
       {/* SECCIÓN 4: GALERÍA DE VIDEOS EMBEBIDOS (MANTENIDA Y REFORZADA)        */}
       {/* ===================================================================== */}
       {(activeFormat === 'todos' || activeFormat === 'videos') && (
-        <div className="space-y-4 pt-4">
+        <div className="space-y-4 pt-2">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <span className="w-8 h-8 rounded-xl bg-[#e8f5ed] dark:bg-[#16382c] text-[#2b694d] dark:text-[#b0f1cc] flex items-center justify-center">
@@ -613,62 +633,69 @@ export const TutorialsSection: React.FC<TutorialsSectionProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredVideos.map((video) => (
-              <div
-                key={video.id}
-                className="bg-white dark:bg-[#0e241c] rounded-3xl border border-[#c1c8c2]/50 dark:border-[#2b694d]/40 overflow-hidden shadow-xs hover:shadow-lg transition-all flex flex-col justify-between"
-              >
-                <div>
-                  <div className="relative aspect-video w-full bg-black overflow-hidden">
-                    <iframe
-                      title={video.title}
-                      src={video.embedUrl}
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                      allowFullScreen
-                      className="w-full h-full border-0"
-                    />
-                  </div>
-
-                  <div className="p-5 space-y-2.5">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#012d1d]/10 dark:bg-[#b0f1cc]/15 text-[#012d1d] dark:text-[#b0f1cc] border border-[#012d1d]/20 dark:border-[#b0f1cc]/30">
-                        {video.categoryLabel}
-                      </span>
-                      <span className="text-[10px] text-[#717973] dark:text-[#a7b8ae] flex items-center gap-1 font-semibold">
-                        <span className="material-symbols-outlined text-xs">timer</span>
-                        {video.duration}
-                      </span>
+          {filteredVideos.length === 0 ? (
+            <div className="p-8 text-center bg-white dark:bg-[#0e241c] rounded-3xl border border-[#c1c8c2]/50 text-xs text-[#717973]">
+              No se encontraron videos tutoriales con el término o filtro seleccionado.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredVideos.map((video) => (
+                <div
+                  key={video.id}
+                  className="card bg-white dark:bg-[#0e241c] rounded-3xl border border-[#c1c8c2]/50 dark:border-[#2b694d]/40 overflow-hidden shadow-xs hover:shadow-lg transition-all flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="relative aspect-video w-full bg-black overflow-hidden">
+                      <iframe
+                        title={video.title}
+                        src={video.embedUrl}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowFullScreen
+                        className="w-full h-full border-0"
+                      />
                     </div>
 
-                    <h3 className="font-headline font-bold text-sm text-[#012d1d] dark:text-white line-clamp-2">
-                      {video.title}
-                    </h3>
+                    <div className="p-5 space-y-2.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#012d1d]/10 dark:bg-[#b0f1cc]/15 text-[#012d1d] dark:text-[#b0f1cc] border border-[#012d1d]/20 dark:border-[#b0f1cc]/30 flex items-center gap-1">
+                          <span className="material-symbols-outlined text-[12px]">smart_display</span>
+                          <span>Video Tutorial • {video.categoryLabel}</span>
+                        </span>
+                        <span className="text-[10px] text-[#717973] dark:text-[#a7b8ae] flex items-center gap-1 font-semibold">
+                          <span className="material-symbols-outlined text-xs">timer</span>
+                          {video.duration}
+                        </span>
+                      </div>
 
-                    <p className="text-xs text-[#717973] dark:text-[#a7b8ae] leading-relaxed line-clamp-2">
-                      {video.description}
-                    </p>
+                      <h3 className="font-headline font-bold text-sm text-[#012d1d] dark:text-white line-clamp-2">
+                        {video.title}
+                      </h3>
+
+                      <p className="text-xs text-[#717973] dark:text-[#a7b8ae] leading-relaxed line-clamp-2">
+                        {video.description}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="p-5 pt-0">
+                    <div className="pt-2 border-t border-[#efeee9] dark:border-[#2b694d]/30 flex items-center justify-between">
+                      <button
+                        type="button"
+                        onClick={() => setActiveVideo(video)}
+                        className="text-xs font-bold text-[#012d1d] dark:text-[#b0f1cc] hover:underline flex items-center gap-1.5 cursor-pointer py-1"
+                      >
+                        <span className="material-symbols-outlined text-sm">checklist</span>
+                        <span>Ver pasos detallados</span>
+                      </button>
+                      <span className="text-[10px] text-[#717973] dark:text-[#a7b8ae]">
+                        {video.steps.length} pasos
+                      </span>
+                    </div>
                   </div>
                 </div>
-
-                <div className="p-5 pt-0">
-                  <div className="pt-2 border-t border-[#efeee9] dark:border-[#2b694d]/30 flex items-center justify-between">
-                    <button
-                      type="button"
-                      onClick={() => setActiveVideo(video)}
-                      className="text-xs font-bold text-[#012d1d] dark:text-[#b0f1cc] hover:underline flex items-center gap-1.5 cursor-pointer py-1"
-                    >
-                      <span className="material-symbols-outlined text-sm">checklist</span>
-                      <span>Ver pasos detallados</span>
-                    </button>
-                    <span className="text-[10px] text-[#717973] dark:text-[#a7b8ae]">
-                      {video.steps.length} pasos
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

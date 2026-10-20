@@ -249,6 +249,9 @@ export interface MessageItem {
   sender: 'user' | 'pro' | 'other';
   text: string;
   time: string;
+  imageUrl?: string;
+  mediaType?: 'text' | 'image';
+  timestamp?: number;
 }
 
 export type ChatMessage = MessageItem;

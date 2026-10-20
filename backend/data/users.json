@@ -18,7 +18,7 @@
     "authProvider": "email",
     "isVerified": true,
     "createdAt": "2026-03-01T00:00:00.000Z",
-    "lastLoginAt": "2026-10-12T20:47:43.224Z",
+    "lastLoginAt": "2026-10-18T21:01:01.826Z",
     "reset_code_hash": "",
     "reset_expires_at": "2026-10-11T17:29:17.909Z",
     "avatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocKka2XII4_n9fufi5gzJBCFEE9FJXP9Ysed-Fht3cGc6e29wx-2bQ=s96-c",
@@ -133,62 +133,6 @@
       "name": "Taller Marroquinería y Denim",
       "location": "Chapinero, Bogotá D.C., Colombia",
       "address": "Calle 63 # 9-45"
-    }
-  },
-  {
-    "id": "usr-demo-costurera",
-    "name": "Taller Demo Sostenible",
-    "email": "costurera.demo@plataforma.com",
-    "password": "$2b$10$G5mZhxYbSAgos2NBVOkVie3u3r.fcDaY9JSoxB29hUqvL0hsWfHJy",
-    "role": "profesional",
-    "isVerified": true,
-    "email_confirmed": true,
-    "status": "active",
-    "createdAt": "2026-10-14T00:00:00.000Z",
-    "lastLoginAt": "2026-10-15T06:58:25.038Z",
-    "location": "El Poblado, Medellín, Antioquia, Colombia",
-    "address": "Carrera 43A # 1-50",
-    "specialty": "Upcycling Creativo y Alta Modistería",
-    "startingPrice": 28000,
-    "rating": 5,
-    "reviewsCount": 18,
-    "bio": "Taller modelo oficial para pruebas y demostraciones del equipo Reborn Your Style. Confección artesanal, rediseño de prendas denim y patronaje sostenible.",
-    "avatarUrl": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&auto=format&fit=crop&q=80",
-    "picture": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&auto=format&fit=crop&q=80",
-    "tags": [
-      "Upcycling",
-      "Alta Modistería",
-      "Denim",
-      "Arreglos"
-    ],
-    "profile": {
-      "name": "Taller Demo Sostenible",
-      "location": "El Poblado, Medellín, Antioquia, Colombia",
-      "address": "Carrera 43A # 1-50",
-      "bio": "Taller modelo oficial para pruebas y demostraciones del equipo Reborn Your Style. Confección artesanal, rediseño de prendas denim y patronaje sostenible.",
-      "avatarUrl": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&auto=format&fit=crop&q=80"
-    }
-  },
-  {
-    "id": "usr-demo-cliente",
-    "name": "Cliente Demo Reborn",
-    "email": "cliente.demo@plataforma.com",
-    "password": "$2b$10$G5mZhxYbSAgos2NBVOkVie3u3r.fcDaY9JSoxB29hUqvL0hsWfHJy",
-    "role": "cliente",
-    "isVerified": true,
-    "email_confirmed": true,
-    "status": "active",
-    "createdAt": "2026-10-14T00:00:00.000Z",
-    "lastLoginAt": "2026-10-15T06:58:34.677Z",
-    "location": "Medellín, Antioquia, Colombia",
-    "bio": "Cuenta modelo de cliente para pruebas del equipo: exploración del catálogo, evaluaciones de conocimiento, solicitudes y chat en vivo con costureros.",
-    "avatarUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80",
-    "picture": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80",
-    "profile": {
-      "name": "Cliente Demo Reborn",
-      "location": "Medellín, Antioquia, Colombia",
-      "bio": "Cuenta modelo de cliente para pruebas del equipo: exploración del catálogo, evaluaciones de conocimiento, solicitudes y chat en vivo con costureros.",
-      "avatarUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80"
     }
   }
 ]

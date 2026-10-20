@@ -163,70 +163,6 @@ export const INITIAL_PERSISTED_ACCOUNTS: StoredUserAccount[] = [
     createdAt: '2026-09-29T13:58:55.006Z',
     isVerified: true,
   },
-  {
-    id: 'usr-demo-costurera',
-    email: 'costurera.demo@plataforma.com',
-    name: 'Taller Demo Sostenible',
-    role: 'profesional',
-    profile: {
-      id: 'usr-demo-costurera',
-      name: 'Taller Demo Sostenible',
-      email: 'costurera.demo@plataforma.com',
-      role: 'profesional',
-      avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&auto=format&fit=crop&q=80',
-      username: '@tallerdemo',
-      bio: 'Taller modelo oficial para pruebas y demostraciones del equipo Reborn Your Style. Confección artesanal, rediseño de prendas denim y patronaje sostenible.',
-      location: 'El Poblado, Medellín, Antioquia, Colombia',
-      department: 'Antioquia',
-      municipality: 'Medellín',
-      phone: '+57 300 123 4567',
-      instagram: '@tallerdemo_reborn',
-      joinedDate: 'Octubre 2026',
-      publishedCount: 3,
-      upcycledCount: 18,
-      waterSavedLiters: 9200,
-      co2SavedKg: 34.5,
-    },
-    garments: [],
-    services: [],
-    requests: [],
-    conversations: [],
-    createdAt: '2026-10-14T00:00:00.000Z',
-    isVerified: true,
-    password: 'demo1234',
-  },
-  {
-    id: 'usr-demo-cliente',
-    email: 'cliente.demo@plataforma.com',
-    name: 'Cliente Demo Reborn',
-    role: 'cliente',
-    profile: {
-      id: 'usr-demo-cliente',
-      name: 'Cliente Demo Reborn',
-      email: 'cliente.demo@plataforma.com',
-      role: 'cliente',
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
-      username: '@clientedemo',
-      bio: 'Cuenta modelo de cliente para pruebas del equipo: exploración del catálogo, evaluaciones de conocimiento, solicitudes y chat en vivo con costureros.',
-      location: 'Medellín, Antioquia, Colombia',
-      department: 'Antioquia',
-      municipality: 'Medellín',
-      phone: '+57 312 987 6543',
-      instagram: '@clientedemo_reborn',
-      joinedDate: 'Octubre 2026',
-      publishedCount: 1,
-      upcycledCount: 2,
-      waterSavedLiters: 2400,
-      co2SavedKg: 8.4,
-    },
-    garments: [],
-    services: [],
-    requests: [],
-    conversations: [],
-    createdAt: '2026-10-14T00:00:00.000Z',
-    isVerified: true,
-    password: 'demo1234',
-  },
 ];
 
 /**
@@ -433,7 +369,8 @@ export async function registerVerifiedUser(params: {
  */
 export async function loginUser(
   identifier: string,
-  passwordAttempt: string
+  passwordAttempt: string,
+  requestedRole?: 'cliente' | 'profesional'
 ): Promise<{ success: boolean; error?: string; user?: StoredUserAccount }> {
   const cleanEmail = identifier.trim().toLowerCase();
   if (!cleanEmail) {
@@ -462,9 +399,7 @@ export async function loginUser(
   // Compute hash of attempt
   const attemptHash = await computeSHA256(passwordAttempt);
 
-  const isDemoAccount = cleanEmail === 'costurera.demo@plataforma.com' || cleanEmail === 'cliente.demo@plataforma.com';
   const isPasswordValid =
-    (isDemoAccount && (passwordAttempt === 'demo1234' || passwordAttempt === 'demo')) ||
     (user.passwordHash && user.passwordHash === attemptHash) ||
     (user.password && user.password === passwordAttempt) ||
     (!user.password && !user.passwordHash && passwordAttempt.length >= 6);
@@ -496,6 +431,12 @@ export async function loginUser(
       success: false,
       error: `Esta cuenta se encuentra temporalmente suspendida por administración. Motivo: ${user.profile.suspensionReason || 'En revisión'}.`,
     };
+  }
+
+  // If user explicitly picked a role during login and is not admin, apply requested role
+  if (requestedRole && user.role !== 'admin') {
+    user.role = requestedRole;
+    user.profile.role = requestedRole;
   }
 
   user.lastLoginAt = new Date().toISOString();

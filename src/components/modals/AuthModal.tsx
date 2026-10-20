@@ -116,8 +116,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [viewMode, setViewMode] = useState<AuthViewMode>(initialMode === 'register' ? 'register' : 'login');
   const [selectedRole, setSelectedRole] = useState<'cliente' | 'profesional'>('cliente');
   const [googleRole, setGoogleRole] = useState<'cliente' | 'profesional' | null>(null);
+  const [pendingGoogleUser, setPendingGoogleUser] = useState<{
+    email: string;
+    name: string;
+    picture?: string;
+  } | null>(null);
 
   // Input states for Login
+  const [loginRole, setLoginRole] = useState<'cliente' | 'profesional'>('cliente');
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [showLoginPassword, setShowLoginPassword] = useState(false);
@@ -265,7 +271,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     setIsLoading(true);
     try {
-      const res = await loginUser(cleanEmail, cleanPassword);
+      const res = await loginUser(cleanEmail, cleanPassword, loginRole);
       setIsLoading(false);
 
       if (res.success && res.user) {
@@ -275,39 +281,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           onClose();
         }, 500);
       } else {
-        // Displays exact user-specified message:
-        // "No encontramos una cuenta con este correo. Puedes crear una cuenta nueva."
-        // or "La contraseña no es correcta. Inténtalo nuevamente o recupera tu contraseña."
         setErrorMsg(res.error || 'La contraseña no es correcta. Inténtalo nuevamente o recupera tu contraseña.');
       }
     } catch {
       setIsLoading(false);
       setErrorMsg('No pudimos procesar tu solicitud. Por favor intenta nuevamente.');
-    }
-  };
-
-  // Quick Demo Account Login for Team Testing
-  const handleQuickDemoLogin = async (email: string, pass: string) => {
-    setLoginEmail(email);
-    setLoginPassword(pass);
-    setErrorMsg('');
-    setSuccessMsg('');
-    setIsLoading(true);
-    try {
-      const res = await loginUser(email, pass);
-      setIsLoading(false);
-      if (res.success && res.user) {
-        setSuccessMsg(isEn ? `Welcome back, ${res.user.name}!` : `¡Bienvenido(a) de nuevo, ${res.user.name}!`);
-        setTimeout(() => {
-          onLoginAccount(res.user!);
-          onClose();
-        }, 400);
-      } else {
-        setErrorMsg(res.error || 'No se pudo iniciar sesión con la cuenta demo.');
-      }
-    } catch {
-      setIsLoading(false);
-      setErrorMsg('No pudimos procesar la solicitud.');
     }
   };
 
@@ -329,22 +307,43 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     // Look up if account already exists to strictly preserve previously assigned role
     const existingAccount = findAccountByIdentifier(cleanEmail);
-    const effectiveRole =
-      existingAccount?.role ||
-      roleOverride ||
-      googleRole ||
-      (viewMode === 'register' ? selectedRole : 'cliente');
+
+    const fallbackName = cleanEmail.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+    const displayName = rawName?.trim() || fallbackName;
+    const avatarUrl =
+      rawPicture ||
+      `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName)}&backgroundColor=012d1d&textColor=b0f1cc`;
+
+    // 1. Si el usuario se autentica con Google por primera vez o no tiene un rol asignado en la base de datos (user.role == null),
+    // redirige de forma obligatoria a un modal/pantalla de selección de rol.
+    const hasAssignedRole =
+      existingAccount &&
+      Boolean(existingAccount.role) &&
+      (existingAccount.role === 'cliente' || existingAccount.role === 'profesional' || existingAccount.role === 'admin');
+
+    if (!hasAssignedRole && !roleOverride && !googleRole) {
+      setPendingGoogleUser({
+        email: cleanEmail,
+        name: displayName,
+        picture: avatarUrl,
+      });
+      setIsLoading(false);
+      setViewMode('google_role_select');
+      return;
+    }
+
+    const effectiveRole: 'cliente' | 'profesional' =
+      existingAccount?.role === 'profesional' ||
+      roleOverride === 'profesional' ||
+      googleRole === 'profesional'
+        ? 'profesional'
+        : 'cliente';
 
     setIsLoading(true);
     setErrorMsg('');
     setSuccessMsg('');
 
     try {
-      const fallbackName = cleanEmail.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-      const displayName = rawName?.trim() || fallbackName;
-      const avatarUrl =
-        rawPicture ||
-        `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName)}&backgroundColor=012d1d&textColor=b0f1cc`;
 
       try {
         await safeApiCall('/api/auth/google/login', 'POST', {
@@ -1171,48 +1170,46 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </p>
               </div>
 
-              {/* Acceso Rápido Cuentas Demo para Pruebas del Equipo */}
-              <div className="mb-5 p-3.5 rounded-2xl bg-[#f2f8f4] border border-[#b0f1cc]/80 space-y-2">
-                <div className="flex items-center justify-between text-xs font-bold text-[#012d1d]">
-                  <span className="flex items-center gap-1.5">
-                    <span className="material-symbols-outlined text-sm text-[#2b694d]">science</span>
-                    <span>{isEn ? 'Team Test Accounts (1-Click)' : 'Cuentas Demo para Pruebas (1-Clic)'}</span>
-                  </span>
+              {/* Selector explícito de rol para inicio de sesión */}
+              <div className="mb-5 p-3.5 bg-[#f5f4ef] rounded-2xl border border-[#e2e0d8] space-y-2">
+                <label className="block text-xs font-bold text-[#012d1d] flex items-center justify-between">
+                  <span>{isEn ? 'Select your role to sign in:' : 'Selecciona tu rol para ingresar:'}</span>
                   <span className="text-[10px] font-semibold text-[#2b694d] bg-white px-2 py-0.5 rounded-full border border-[#b0f1cc]">
-                    Equipo
+                    {isEn ? 'Required' : 'Requerido'}
                   </span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-0.5">
+                </label>
+                <div className="grid grid-cols-2 gap-2 pt-0.5">
                   <button
                     type="button"
-                    onClick={() => handleQuickDemoLogin('costurera.demo@plataforma.com', 'demo1234')}
-                    className="p-2.5 rounded-xl bg-white hover:bg-[#e8f5ed] border border-[#b0f1cc] text-left transition-all cursor-pointer flex items-center gap-2.5 shadow-2xs group active:scale-98"
-                    title={isEn ? 'Login as Demo Tailor / Workshop' : 'Iniciar sesión como Costurera / Taller Demo'}
+                    onClick={() => setLoginRole('cliente')}
+                    className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer border ${
+                      loginRole === 'cliente'
+                        ? 'bg-[#012d1d] text-white border-[#012d1d] shadow-xs'
+                        : 'bg-white text-[#414844] border-[#c1c8c2]/60 hover:text-[#012d1d] hover:bg-[#faf9f4]'
+                    }`}
                   >
-                    <span className="w-8 h-8 rounded-lg bg-[#012d1d] text-[#b0f1cc] flex items-center justify-center shrink-0">
-                      <span className="material-symbols-outlined text-base">architecture</span>
-                    </span>
-                    <div className="min-w-0">
-                      <p className="text-xs font-bold text-[#012d1d] truncate">Costurera / Taller</p>
-                      <p className="text-[10px] text-[#717973] truncate">costurera.demo@plataforma.com</p>
-                    </div>
+                    <span className="material-symbols-outlined text-base">person</span>
+                    <span>{isEn ? 'Client' : 'Cliente'}</span>
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => handleQuickDemoLogin('cliente.demo@plataforma.com', 'demo1234')}
-                    className="p-2.5 rounded-xl bg-white hover:bg-[#e8f5ed] border border-[#b0f1cc] text-left transition-all cursor-pointer flex items-center gap-2.5 shadow-2xs group active:scale-98"
-                    title={isEn ? 'Login as Demo Client' : 'Iniciar sesión como Cliente Demo'}
+                    onClick={() => setLoginRole('profesional')}
+                    className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer border ${
+                      loginRole === 'profesional'
+                        ? 'bg-[#012d1d] text-white border-[#012d1d] shadow-xs'
+                        : 'bg-white text-[#414844] border-[#c1c8c2]/60 hover:text-[#012d1d] hover:bg-[#faf9f4]'
+                    }`}
                   >
-                    <span className="w-8 h-8 rounded-lg bg-[#2b694d] text-white flex items-center justify-center shrink-0">
-                      <span className="material-symbols-outlined text-base">person</span>
-                    </span>
-                    <div className="min-w-0">
-                      <p className="text-xs font-bold text-[#012d1d] truncate">Cliente Demo</p>
-                      <p className="text-[10px] text-[#717973] truncate">cliente.demo@plataforma.com</p>
-                    </div>
+                    <span className="material-symbols-outlined text-base">architecture</span>
+                    <span>{isEn ? 'Tailor / Workshop' : 'Costurero'}</span>
                   </button>
                 </div>
+                <p className="text-[10px] text-[#717973] px-0.5 pt-0.5">
+                  {loginRole === 'profesional'
+                    ? (isEn ? 'Entering as Costurero: will open your Studio / Workshop dashboard.' : 'Ingresando como Costurero: se abrirá tu panel de Mi Estudio / Taller.')
+                    : (isEn ? 'Entering as Client: will open catalog exploration and tailors directory.' : 'Ingresando como Cliente: se abrirá la exploración del catálogo y costureros.')}
+                </p>
               </div>
 
               <form onSubmit={handleLoginSubmit} className="space-y-4">
@@ -2115,39 +2112,51 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           {viewMode === 'google_role_select' && (
             <div>
               <div className="text-center mb-5">
-                <div className="w-12 h-12 rounded-full bg-white border border-[#e2e0d8] shadow-xs flex items-center justify-center mx-auto mb-2.5">
-                  <svg className="w-6 h-6" viewBox="0 0 24 24">
-                    <path
-                      fill="#4285F4"
-                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                <div className="w-12 h-12 rounded-full bg-white border border-[#e2e0d8] shadow-xs flex items-center justify-center mx-auto mb-2.5 overflow-hidden">
+                  {pendingGoogleUser?.picture ? (
+                    <img
+                      src={pendingGoogleUser.picture}
+                      alt={pendingGoogleUser.name}
+                      className="w-full h-full object-cover"
                     />
-                    <path
-                      fill="#34A853"
-                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                    />
-                    <path
-                      fill="#FBBC05"
-                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                    />
-                    <path
-                      fill="#EA4335"
-                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                    />
-                  </svg>
+                  ) : (
+                    <svg className="w-6 h-6" viewBox="0 0 24 24">
+                      <path
+                        fill="#4285F4"
+                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                      />
+                      <path
+                        fill="#34A853"
+                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                      />
+                      <path
+                        fill="#FBBC05"
+                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                      />
+                      <path
+                        fill="#EA4335"
+                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                      />
+                    </svg>
+                  )}
                 </div>
                 <h2 className="text-xl font-bold tracking-tight text-[#012d1d]">
-                  {isEn ? 'Choose your role' : 'Elige tu rol en la plataforma'}
+                  {pendingGoogleUser
+                    ? `¡Hola, ${pendingGoogleUser.name}!`
+                    : (isEn ? 'Choose your role' : 'Elige tu rol en la plataforma')}
                 </h2>
                 <p className="text-xs text-[#717973] mt-1.5 leading-relaxed font-medium">
-                  {isEn
-                    ? 'Select your role before continuing with Google.'
-                    : 'Antes de continuar con Google, indícanos cómo participarás en Reborn Your Style.'}
+                  {pendingGoogleUser
+                    ? `Es tu primera vez ingresando con Google (${pendingGoogleUser.email}). Elige obligatoriamente tu rol para continuar:`
+                    : (isEn
+                      ? 'Select your role before continuing with Google.'
+                      : 'Antes de continuar con Google, indícanos cómo participarás en Reborn Your Style.')}
                 </p>
               </div>
 
               {/* Las 2 opciones requeridas */}
               <div className="space-y-3 mb-5">
-                {/* Opción 1: [ 👤 Usuario / Cliente ] */}
+                {/* Opción 1: [ Soy Cliente ] */}
                 <button
                   type="button"
                   onClick={() => {
@@ -2169,8 +2178,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </div>
                   <div className="flex-1 pr-6">
                     <div className="flex items-center gap-2">
-                      <h4 className="text-sm font-bold text-[#012d1d]">
-                        {isEn ? '👤 User / Client' : '👤 Usuario / Cliente'}
+                      <h4 className="text-sm font-black text-[#012d1d]">
+                        [ Soy Cliente ]
                       </h4>
                       <span className="text-[10px] font-bold bg-[#b0f1cc]/40 text-[#012d1d] px-2 py-0.5 rounded-full">
                         {isEn ? 'Client' : 'Cliente'}
@@ -2192,7 +2201,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   )}
                 </button>
 
-                {/* Opción 2: [ 🪡 Costurero / Sastre ] */}
+                {/* Opción 2: [ Soy Costurero / Taller ] */}
                 <button
                   type="button"
                   onClick={() => {
@@ -2214,11 +2223,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </div>
                   <div className="flex-1 pr-6">
                     <div className="flex items-center gap-2">
-                      <h4 className="text-sm font-bold text-[#012d1d]">
-                        {isEn ? '🪡 Tailor / Artisan' : '🪡 Costurero / Sastre'}
+                      <h4 className="text-sm font-black text-[#012d1d]">
+                        [ Soy Costurero / Taller ]
                       </h4>
                       <span className="text-[10px] font-bold bg-[#b0f1cc]/40 text-[#012d1d] px-2 py-0.5 rounded-full">
-                        {isEn ? 'Tailor' : 'Costurero'}
+                        {isEn ? 'Tailor' : 'Costurero / Taller'}
                       </span>
                     </div>
                     <p className="text-xs font-bold text-[#2b694d] mt-0.5">
@@ -2229,7 +2238,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     <p className="text-[11px] text-[#717973] mt-1 leading-snug">
                       {isEn
                         ? 'Offer tailoring, modifications and upcycling. Your profile will appear in the tailors directory.'
-                        : 'Ofrece servicios de confección, ajustes y upcycling. Tu perfil quedará registrado y visible en el directorio de costureros.'}
+                        : 'Ofrece servicios de confección, ajustes y upcycling. Tu perfil quedará registrado y visible en el directorio "Encuentra a tu costurero".'}
                     </p>
                   </div>
                   {googleRole === 'profesional' && (
@@ -2240,11 +2249,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </button>
               </div>
 
-              {/* Botón: [ Continuar con Google ] */}
+              {/* Botón de acción */}
               <button
                 type="button"
-                onClick={() => {
-                  if (googleRole) {
+                onClick={async () => {
+                  if (!googleRole) return;
+                  if (pendingGoogleUser) {
+                    await processGoogleEmail(
+                      pendingGoogleUser.email,
+                      pendingGoogleUser.name,
+                      pendingGoogleUser.picture,
+                      googleRole
+                    );
+                  } else {
                     handleGoogleClick(googleRole);
                   }
                 }}
@@ -2280,7 +2297,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
                       />
                     </svg>
-                    <span>{isEn ? 'Continue with Google' : 'Continuar con Google'}</span>
+                    <span>
+                      {pendingGoogleUser
+                        ? googleRole === 'profesional'
+                          ? 'Continuar como [ Soy Costurero / Taller ]'
+                          : googleRole === 'cliente'
+                          ? 'Continuar como [ Soy Cliente ]'
+                          : 'Elige tu rol para continuar'
+                        : isEn
+                        ? 'Continue with Google'
+                        : 'Continuar con Google'}
+                    </span>
                   </>
                 )}
               </button>

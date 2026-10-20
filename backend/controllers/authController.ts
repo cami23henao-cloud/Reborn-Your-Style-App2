@@ -262,10 +262,8 @@ export const login = async (req: Request, res: Response) => {
       });
     }
 
-    // Compare provided password with bcrypt hash or demo credentials
-    const isDemoAccount = cleanEmail === 'costurera.demo@plataforma.com' || cleanEmail === 'cliente.demo@plataforma.com';
+    // Compare provided password with bcrypt hash
     const isMatch =
-      (isDemoAccount && (password === 'demo1234' || password === 'demo' || password === 'password')) ||
       user.password === password ||
       (await bcrypt.compare(password, user.password || '').catch(() => false));
 

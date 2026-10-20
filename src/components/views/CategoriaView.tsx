@@ -9,6 +9,7 @@ interface CategoriaViewProps {
   onBackToCatalogos: () => void;
   onSelectCategory: (categoryName: string) => void;
   onSelectGarment: (garment: GarmentProject) => void;
+  onContactGarment?: (garment: GarmentProject) => void;
   onNavigate: (view: AppView) => void;
 }
 
@@ -20,27 +21,27 @@ export function isGarmentInCategory(garmentCategory: string, targetCategory: str
 
   // 1. Camisas strictly
   if (target === 'camisas' || target === 'camisa') {
-    return g === 'camisas' || g === 'camisa' || g.startsWith('camisa ');
+    return g === 'camisas' || g === 'camisa' || g.includes('camisa');
   }
 
   // 2. Blusas strictly
   if (target === 'blusas' || target === 'blusa') {
-    return g === 'blusas' || g === 'blusa' || g.startsWith('blusa ');
+    return g === 'blusas' || g === 'blusa' || g.includes('blusa');
   }
 
   // 3. Pantalones strictly
   if (target === 'pantalones' || target === 'pantalon' || target === 'pantalón') {
-    return g.includes('pantalon') || g.includes('pantalón') || g.includes('jeans');
+    return g === 'pantalones' || g === 'pantalon' || g === 'pantalón' || g.includes('pantalon') || g.includes('pantalón') || g.includes('jeans');
   }
 
   // 4. Vestidos strictly
   if (target === 'vestidos' || target === 'vestido') {
-    return g.includes('vestido');
+    return g === 'vestidos' || g === 'vestido' || g.includes('vestido');
   }
 
   // 5. Chaquetas strictly
-  if (target === 'chaquetas' || target === 'chaqueta') {
-    return g.includes('chaqueta') || g.includes('blazer') || g.includes('abrigo') || g.includes('cazadora') || g.includes('chaleco');
+  if (target === 'chaquetas' || target === 'chaqueta' || target.includes('abrigo')) {
+    return g === 'chaquetas' || g === 'chaqueta' || g.includes('chaqueta') || g.includes('blazer') || g.includes('abrigo') || g.includes('cazadora') || g.includes('chaleco');
   }
 
   // 6. Shorts strictly
@@ -77,6 +78,7 @@ export const CategoriaView: React.FC<CategoriaViewProps> = ({
   onBackToCatalogos,
   onSelectCategory,
   onSelectGarment,
+  onContactGarment,
   onNavigate,
 }) => {
   const { t, tCategory, language } = useThemeLanguage();
@@ -381,11 +383,11 @@ export const CategoriaView: React.FC<CategoriaViewProps> = ({
 
               {/* Card Body */}
               <div className="p-5 flex flex-col justify-between flex-1 gap-3">
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <div className="flex items-center justify-between text-[11px] text-[#717973] dark:text-[#a7b8ae]">
-                    <span>{language === 'en' ? 'Size:' : 'Talla:'} {garment.size || (language === 'en' ? 'One size' : 'Única')}</span>
-                    <span className="flex items-center gap-1">
-                      <span className="material-symbols-outlined text-xs text-[#2b694d] dark:text-[#b0f1cc]">location_on</span>
+                    <span className="font-semibold">{language === 'en' ? 'Size:' : 'Talla:'} {garment.size || (language === 'en' ? 'One size' : 'Única')}</span>
+                    <span className="flex items-center gap-1 font-medium text-[#2b694d] dark:text-[#b0f1cc]">
+                      <span className="material-symbols-outlined text-xs">location_on</span>
                       <span>{garment.municipality || garment.department || garment.location.split(',')[0]}</span>
                     </span>
                   </div>
@@ -394,31 +396,68 @@ export const CategoriaView: React.FC<CategoriaViewProps> = ({
                     {garment.title}
                   </h3>
 
+                  {/* Arreglo / Modificación requerida o realizada */}
+                  {garment.modifications && (
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#b0f1cc]/30 dark:bg-[#112920] text-[#002113] dark:text-[#b0f1cc] text-[11px] font-bold border border-[#2b694d]/20 w-full">
+                      <span className="material-symbols-outlined text-xs text-[#2b694d] dark:text-[#b0f1cc] shrink-0">tune</span>
+                      <span className="line-clamp-1">{garment.modifications}</span>
+                    </div>
+                  )}
+
+                  {/* Descripción corta */}
                   <p className="text-xs text-[#414844] dark:text-[#a7b8ae] leading-relaxed line-clamp-2">
                     {garment.description}
                   </p>
                 </div>
 
-                {/* Author footer */}
-                <div className="pt-3 border-t border-[#efeee9] dark:border-[#173328] flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <img
-                      src={
-                        garment.authorAvatar ||
-                        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&auto=format&fit=crop&q=80'
-                      }
-                      alt={garment.authorName}
-                      className="w-6 h-6 rounded-full object-cover"
-                    />
-                    <span className="text-xs text-[#414844] dark:text-[#a7b8ae] font-medium truncate max-w-[120px]">
-                      {garment.authorName}
-                    </span>
+                {/* Footer with author & Contact / Chat button */}
+                <div className="pt-3 border-t border-[#efeee9] dark:border-[#173328] space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <img
+                        src={
+                          garment.authorAvatar ||
+                          'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&auto=format&fit=crop&q=80'
+                        }
+                        alt={garment.authorName}
+                        className="w-6 h-6 rounded-full object-cover"
+                      />
+                      <span className="text-xs text-[#414844] dark:text-[#a7b8ae] font-medium truncate max-w-[120px]">
+                        {garment.authorName}
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectGarment(garment);
+                      }}
+                      className="text-xs font-bold text-[#2b694d] dark:text-[#b0f1cc] hover:underline flex items-center gap-0.5 cursor-pointer"
+                    >
+                      <span>{language === 'en' ? 'Details' : 'Detalles'}</span>
+                      <span className="material-symbols-outlined text-xs">arrow_forward</span>
+                    </button>
                   </div>
 
-                  <span className="text-xs font-bold text-[#2b694d] dark:text-[#b0f1cc] group-hover:translate-x-1 transition-transform flex items-center gap-0.5">
-                    <span>{language === 'en' ? 'View details' : 'Ver detalle'}</span>
-                    <span className="material-symbols-outlined text-xs">arrow_forward</span>
-                  </span>
+                  {/* Botón [ Contactar / Chatear ] */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (onContactGarment) {
+                        onContactGarment(garment);
+                      } else {
+                        onSelectGarment(garment);
+                      }
+                    }}
+                    className="w-full py-2.5 px-3 rounded-xl bg-[#012d1d] hover:bg-[#2b694d] dark:bg-[#b0f1cc] dark:hover:bg-[#8ee7b4] text-white dark:text-[#002113] font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-all active:scale-98 cursor-pointer group/btn"
+                  >
+                    <span className="material-symbols-outlined text-sm text-[#b0f1cc] dark:text-[#002113] group-hover/btn:scale-110 transition-transform">
+                      chat
+                    </span>
+                    <span>{language === 'en' ? 'Contact / Chat' : 'Contactar / Chatear'}</span>
+                  </button>
                 </div>
               </div>
             </div>

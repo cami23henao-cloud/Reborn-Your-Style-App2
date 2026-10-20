@@ -603,12 +603,25 @@ export function App() {
       setConversations(account.conversations);
     }
     setActiveSession(account);
+
+    // If account is a costurero / profesional, immediately refresh professionals directory
+    if (account.role === 'profesional') {
+      const registeredPros = getRegisteredTailorsAsProfessionals();
+      if (registeredPros.length > 0) {
+        setProfessionals((prev) => {
+          const regIds = new Set(registeredPros.map((r) => r.id));
+          const others = prev.filter((p) => !regIds.has(p.id));
+          return [...registeredPros, ...others];
+        });
+      }
+    }
+
     if (account.role === 'admin') {
       handleNavigate('admin');
       addToast('Sesión administrativa iniciada', 'Bienvenido al panel central de administración.', 'success');
     } else if (account.role === 'profesional') {
       handleNavigate('mi-estudio');
-      addToast('Sesión de taller iniciada', `Bienvenido(a) a tu taller, ${account.name}. Gestiona tus servicios y mensajes.`, 'success');
+      addToast('Sesión de taller iniciada', `Bienvenido(a) a tu taller, ${account.name}. Tu perfil ha sido registrado en "Encuentra a tu costurero".`, 'success');
     } else {
       handleNavigate('explora');
       addToast('Sesión iniciada', `Bienvenido(a), ${account.name}. Explora prendas y costureros disponibles.`, 'success');
@@ -1078,7 +1091,7 @@ export function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#faf9f4] text-[#1b1c19] font-sans antialiased selection:bg-[#b0f1cc] selection:text-[#002113] w-full overflow-x-hidden">
+    <div className="main-container min-h-screen flex flex-col bg-[#faf9f4] text-[#1b1c19] font-sans antialiased selection:bg-[#b0f1cc] selection:text-[#002113] w-full max-w-[100vw] overflow-x-hidden">
       {/* 1. Ultra dynamic Scissors & Fabric cutting Splash Screen directly redirecting to Inicio */}
       {showSplash && (
         <SplashScreen
@@ -1108,7 +1121,7 @@ export function App() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 pt-20 flex flex-col w-full overflow-x-hidden">
+      <main className="main-container flex-1 pt-20 flex flex-col w-full max-w-[100vw] overflow-x-hidden">
         {currentView === 'inicio' && (
           <HomeView
             onNavigate={handleNavigate}
@@ -1135,6 +1148,7 @@ export function App() {
             onBackToCatalogos={() => handleNavigate('catalogos')}
             onSelectCategory={handleSelectCategory}
             onSelectGarment={(g) => setSelectedGarment(g)}
+            onContactGarment={(g) => handleStartChatWithUser(g.authorName, g.authorAvatar)}
             onNavigate={handleNavigate}
           />
         )}
@@ -1154,6 +1168,8 @@ export function App() {
             professionals={professionals}
             garments={garments}
             onSelectProfessional={handleSelectProfessional}
+            onSelectGarment={(g) => setSelectedGarment(g)}
+            onContactGarment={(g) => handleStartChatWithUser(g.authorName, g.authorAvatar)}
             onNavigate={handleNavigate}
             user={userProfile}
             initialTab={exploraTab}

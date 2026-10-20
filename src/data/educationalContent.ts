@@ -436,105 +436,275 @@ ESTADO FINAL: [ ] APROBADO CON EXCELENCIA   [ ] REQUIERE AJUSTE`,
 ];
 
 // -----------------------------------------------------------------------------
-// 4. BANCO DE PREGUNTAS: EVALUACIÓN DE CONOCIMIENTOS (QUIZ)
+// 4. BANCO DE PREGUNTAS: JUEGO 1 - "¿QUÉ TANTO SABES DE REBORN?" (TRIVIA OFICIAL)
 // -----------------------------------------------------------------------------
-export const QUIZ_QUESTIONS: QuizQuestion[] = [
+export const REBORN_TRIVIA_QUESTIONS: QuizQuestion[] = [
   {
     id: 1,
     topic: 'buenas-practicas',
-    topicLabel: 'Buenas Prácticas Textiles',
-    question: 'Al modificar una prenda de denim grueso (mezclilla pesada de 12 a 14 oz), ¿cuál es la aguja y técnica más recomendada para evitar quiebres y saltos de puntada?',
+    topicLabel: 'Modelo de Plataforma',
+    question: '¿Reborn Your Style vende ropa directamente?',
     options: [
-      { id: 'a', text: 'Aguja universal calibre 70/10 con puntada muy rápida y sin planchar.' },
-      { id: 'b', text: 'Aguja específica para Jeans/Denim de calibre 90/14 o 100/16 con hilo torzal y avance constante.' },
-      { id: 'c', text: 'Aguja punta de bola elástica con hilo de coser poliéster común calibre 120.' },
-      { id: 'd', text: 'Coser directamente con doble aguja fina sin importar el grosor de las uniones.' },
+      { id: 'a', text: 'A) Sí, vende ropa nueva y usada.' },
+      { id: 'b', text: 'B) Sí, pero solo por encargo.' },
+      { id: 'c', text: 'C) No, facilita ideas y el contacto con personas que ofrecen servicios de costura.' },
     ],
-    correctAnswerId: 'b',
-    explanation: 'El denim rígido requiere una aguja con punta afilada y cuerpo reforzado (calibre 90/14 a 100/16) que penetre la trama tupida sin desviarse ni despuntarse, además de un hilo de mayor resistencia como el torzal.',
+    correctAnswerId: 'c',
+    explanation: 'Reborn Your Style es una plataforma circular que conecta a dueños de prendas con costureros y talleres artesanales para transformar ropa, sin ser una tienda de venta directa.',
   },
   {
     id: 2,
-    topic: 'contenido-digital',
-    topicLabel: 'Creación de Contenido Digital',
-    question: '¿Cuál es el factor más determinante para lograr fotografías de alta calidad de tus prendas usando únicamente un smartphone?',
+    topic: 'buenas-practicas',
+    topicLabel: 'Identidad y Significado',
+    question: '¿Qué significa el nombre Reborn Your Style?',
     options: [
-      { id: 'a', text: 'Usar el flash directo de la cámara a corta distancia en una habitación oscura.' },
-      { id: 'b', text: 'Aplicar filtros de saturación intensa para que los colores se vean más brillantes que en la realidad.' },
-      { id: 'c', text: 'Aprovechar luz natural difusa (cerca de una ventana sin sol directo), limpiar el lente y usar un fondo neutro.' },
-      { id: 'd', text: 'Tomar la foto con la prenda muy arrugada para que se note que es ropa usada.' },
+      { id: 'a', text: 'A) Renueva tu estilo.' },
+      { id: 'b', text: 'B) Compra tu ropa.' },
+      { id: 'c', text: 'C) Rediseña tu estilo.' },
     ],
-    correctAnswerId: 'c',
-    explanation: 'La luz natural difusa revela la textura y el color fidedigno del textil sin sombras duras. Un fondo neutro y la lente limpia aseguran nitidez y una apariencia profesional para el catálogo.',
+    correctAnswerId: 'a',
+    explanation: '"Reborn Your Style" traduce e inspira el concepto de "Renueva tu estilo", dándole una segunda vida a tu ropa a través de la creatividad y la costura.',
   },
   {
     id: 3,
     topic: 'cuidado-catalogo',
-    topicLabel: 'Cuidado e Interpretación del Catálogo',
-    question: 'En el catálogo de Reborn Your Style, ¿cuál es la diferencia principal entre una publicación de tipo "Transformación" y una de tipo "Intercambio"?',
+    topicLabel: 'Sostenibilidad Ambiental',
+    question: '¿Cómo ayuda el proyecto al medio ambiente?',
     options: [
-      { id: 'a', text: 'No existe diferencia; en ambas opciones la prenda se vende al precio más alto posible.' },
-      { id: 'b', text: '"Transformación" solicita los servicios de un modista para rediseñar la prenda; "Intercambio" busca trocar la pieza por otra prenda o material con otro usuario.' },
-      { id: 'c', text: '"Transformación" es solo para prendas de cuero sintético y no admite modistas independientes.' },
-      { id: 'd', text: '"Intercambio" implica obligatoriamente regalar la prenda a una fábrica textil industrial.' },
+      { id: 'a', text: 'A) Promoviendo la compra de más ropa.' },
+      { id: 'b', text: 'B) Fomentando la reutilización y transformación de prendas.' },
+      { id: 'c', text: 'C) Reemplazando la ropa vieja por ropa nueva.' },
     ],
     correctAnswerId: 'b',
-    explanation: 'Reborn Your Style clasifica los proyectos según su propósito circular: en Transformación un cliente busca conectar con un taller/modista para intervenir la prenda, mientras que en Intercambio busca permutarla directamente con otro usuario.',
+    explanation: 'Al transformar y reutilizar ropa existente, se reduce drásticamente el consumo de agua, las emisiones de CO₂ y los desechos textiles en vertederos.',
   },
   {
     id: 4,
     topic: 'buenas-practicas',
-    topicLabel: 'Buenas Prácticas Textiles',
-    question: 'Al unir retazos de telas de diferente procedencia (ejemplo: algodón de camisa con denim elástico de jean), ¿qué precaución fundamental se debe tomar antes de cortar y coser?',
+    topicLabel: 'Objetivo Principal',
+    question: '¿Cuál es el objetivo principal de Reborn Your Style?',
     options: [
-      { id: 'a', text: 'Ninguna; todas las fibras reaccionan exactamente igual al lavado y al calor.' },
-      { id: 'b', text: 'Lavar y planchar previamente ambos retazos para evitar encogimientos diferenciales y evaluar la elasticidad.' },
-      { id: 'c', text: 'Estirar con fuerza el tejido que no tiene elasticidad para que se rompan las fibras.' },
-      { id: 'd', text: 'Pegar las telas con pegamento escolar antes de pasar la máquina de coser.' },
+      { id: 'a', text: 'A) Vender ropa nueva por internet.' },
+      { id: 'b', text: 'B) Promover la reutilización de ropa mediante ideas de transformación y servicios de costura.' },
+      { id: 'c', text: 'C) Crear una tienda de accesorios.' },
     ],
     correctAnswerId: 'b',
-    explanation: 'El pre-lavado y planchado estabiliza las dimensiones del tejido. Si mezclas telas sin pre-lavar, una puede encoger en el primer lavado deformando toda la prenda intervenida.',
+    explanation: 'El propósito central es impulsar la economía circular y el supra-reciclaje mediante catálogo de ideas creativas y contacto directo con costureros calificados.',
   },
   {
     id: 5,
-    topic: 'contenido-digital',
-    topicLabel: 'Contenido Digital y Ficha Técnica',
-    question: 'Al redactar la ficha técnica digital de una prenda en el catálogo, ¿por qué es indispensable registrar medidas en centímetros en vez de solo la talla comercial (S/M/L)?',
+    topic: 'buenas-practicas',
+    topicLabel: 'Impacto Social y Ecológico',
+    question: '¿Qué problema busca solucionar el proyecto?',
     options: [
-      { id: 'a', text: 'Porque las tallas comerciales varían radicalmente entre marcas y el suprareciclaje requiere precisión anatómica.' },
-      { id: 'b', text: 'Porque las medidas en centímetros son obligatorias únicamente para prendas exportadas fuera del país.' },
-      { id: 'c', text: 'Para que la prenda no pueda ser vista por otros costureros de la plataforma.' },
-      { id: 'd', text: 'Porque en moda circular está prohibido usar la letra M o L.' },
+      { id: 'a', text: 'A) La falta de tiendas de ropa.' },
+      { id: 'b', text: 'B) La dificultad para encontrar zapatos económicos.' },
+      { id: 'c', text: 'C) El desaprovechamiento de la ropa que ya no se utiliza.' },
     ],
-    correctAnswerId: 'a',
-    explanation: 'En las prendas vintage y modificadas la talla de la etiqueta original casi nunca coincide con el ajuste real. Registrar medidas exactas en centímetros (busto, cintura, cadera, largo) garantiza que el cliente o modista sepan exactamente las dimensiones reales.',
+    correctAnswerId: 'c',
+    explanation: 'En promedio, más del 70% de la ropa en los armarios se encuentra en desuso. Reborn busca rescatar ese valor textil antes de que termine en la basura.',
   },
   {
     id: 6,
-    topic: 'buenas-practicas',
-    topicLabel: 'Buenas Prácticas Textiles',
-    question: '¿Qué es la técnica japonesa "Sashiko" aplicada al supra-reciclaje y moda circular?',
+    topic: 'contenido-digital',
+    topicLabel: 'Comunidad y Audiencia',
+    question: '¿A quién va dirigido el proyecto?',
     options: [
-      { id: 'a', text: 'Un tipo de tinte químico sintético altamente contaminante para ropa oscura.' },
-      { id: 'b', text: 'Una técnica de bordado geométrico de reparación visible que refuerza y embellece áreas desgastadas.' },
-      { id: 'c', text: 'Un método para quemar con soplete los bordes deshilachados de las telas sintéticas.' },
-      { id: 'd', text: 'Una máquina industrial para cortar 100 prendas al mismo tiempo.' },
+      { id: 'a', text: 'A) A personas de 18 a 50 años interesadas en renovar su ropa y ofrecer servicios de costura.' },
+      { id: 'b', text: 'B) Únicamente a empresas de moda.' },
+      { id: 'c', text: 'C) Solo a estudiantes.' },
     ],
-    correctAnswerId: 'b',
-    explanation: 'El Sashiko es una tradición artesanal japonesa que utiliza puntadas rectas visibles con hilos contrastantes para unir capas de tela desgastadas, transformando la reparación en un elemento estético y funcional de larga duración.',
+    correctAnswerId: 'a',
+    explanation: 'Conecta tanto a clientes de 18 a 50 años que quieren personalizar o ajustar sus prendas, como a modistas y sastres independientes que ofrecen sus servicios.',
   },
   {
     id: 7,
-    topic: 'cuidado-catalogo',
-    topicLabel: 'Sostenibilidad y Cuidado Textil',
-    question: '¿Cuál es la recomendación óptima para el lavado y cuidado de prendas que han sido intervenidas con técnicas mixtas (bordados, parches de mezclilla o pintura textil)?',
+    topic: 'contenido-digital',
+    topicLabel: 'Servicios Disponibles',
+    question: '¿Qué servicios ofrece la página?',
     options: [
-      { id: 'a', text: 'Lavar con agua caliente a 90°C y usar blanqueador con cloro en cada ciclo.' },
-      { id: 'b', text: 'Lavar con agua fría, al revés, en ciclo suave o a mano, y secar tendido a la sombra sin retorcer.' },
-      { id: 'c', text: 'Secar en secadora a temperatura máxima durante 2 horas continuas.' },
-      { id: 'd', text: 'No lavar nunca la prenda bajo ninguna circunstancia.' },
+      { id: 'a', text: 'A) Venta de ropa nueva.' },
+      { id: 'b', text: 'B) Ideas para transformar prendas y contacto con servicios de costura.' },
+      { id: 'c', text: 'C) Alquiler de vestidos.' },
     ],
     correctAnswerId: 'b',
-    explanation: 'El agua fría y el lavado al revés protegen las aplicaciones artesanales, evitan el desgaste de las tintas o bordados y previenen la decoloración y el encogimiento del tejido.',
+    explanation: 'La plataforma ofrece un catálogo interactivo con ideas de suprareciclaje, mensajería en tiempo real y conexión con costureros verificados.',
+  },
+  {
+    id: 8,
+    topic: 'cuidado-catalogo',
+    topicLabel: 'Diferencial Circular',
+    question: '¿Qué diferencia a Reborn Your Style de una tienda virtual?',
+    options: [
+      { id: 'a', text: 'A) Promueve la transformación de ropa y conecta a clientes con costureras, sin vender prendas directamente.' },
+      { id: 'b', text: 'B) Vende más ropa que otras tiendas.' },
+      { id: 'c', text: 'C) Solo vende ropa nueva.' },
+    ],
+    correctAnswerId: 'a',
+    explanation: 'A diferencia del fast fashion o e-commerce tradicional, Reborn fomenta la economía local y artesanal transformando prendas existentes sin generar producción desmedida.',
   },
 ];
+
+// Compatibility alias
+export const QUIZ_QUESTIONS = REBORN_TRIVIA_QUESTIONS;
+
+// -----------------------------------------------------------------------------
+// 5. BANCO DE PREGUNTAS: JUEGO 2 - "VERDADERO O FALSO" (DESAFÍO DE VELOCIDAD)
+// -----------------------------------------------------------------------------
+export interface TrueFalseQuestion {
+  id: number;
+  statement: string;
+  isTrue: boolean;
+  explanation: string;
+  topic: string;
+}
+
+export const TRUE_FALSE_QUESTIONS: TrueFalseQuestion[] = [
+  {
+    id: 1,
+    statement: 'Reborn Your Style comercializa lotes de ropa importada al por mayor.',
+    isTrue: false,
+    explanation: 'FALSO: Reborn no vende ropa importada ni inventarios; conecta a dueños de prendas con costureros para transformarlas artesanalmente.',
+    topic: 'Modelo de Plataforma',
+  },
+  {
+    id: 2,
+    statement: 'Alargar la vida útil de una prenda apenas 9 meses reduce su huella de carbono y agua hasta en un 30%.',
+    isTrue: true,
+    explanation: 'VERDADERO: Estudios del programa WRAP confirman que prolongar el uso activo de la ropa reduce significativamente su impacto ambiental global.',
+    topic: 'Sostenibilidad',
+  },
+  {
+    id: 3,
+    statement: 'Para ajustar la cintura de un jean denim grueso, es adecuado usar cualquier aguja delgada de máquina.',
+    isTrue: false,
+    explanation: 'FALSO: El denim grueso requiere agujas reforzadas para Jeans (calibre 90/14 o 100/16) e hilo torzal para no quebrar la aguja.',
+    topic: 'Técnica Textil',
+  },
+  {
+    id: 4,
+    statement: 'La técnica Sashiko es un método japonés de reparación visible con bordado geométrico de gran resistencia.',
+    isTrue: true,
+    explanation: 'VERDADERO: El Sashiko nació como una solución campesina japonesa para reforzar textiles y hoy es un emblema de la moda circular.',
+    topic: 'Moda Circular',
+  },
+  {
+    id: 5,
+    statement: 'En Reborn Your Style, los costureros pueden publicar sus servicios y chatear directamente con los clientes.',
+    isTrue: true,
+    explanation: 'VERDADERO: La plataforma incluye mensajería bidireccional en tiempo real y catálogo público de perfiles profesionales.',
+    topic: 'Funcionalidad',
+  },
+  {
+    id: 6,
+    statement: 'Lavar prendas intervenidas con parches o bordados con agua hirviendo a 90°C ayuda a fijar los hilos.',
+    isTrue: false,
+    explanation: 'FALSO: El agua caliente encoge el tejido, debilita las fibras artesanales y desgasta los colores. Se debe lavar con agua fría.',
+    topic: 'Cuidado Textil',
+  },
+];
+
+// -----------------------------------------------------------------------------
+// 6. BANCO DE PREGUNTAS: JUEGO 3 - "DESAFÍO DE CONOCIMIENTO GENERAL REBORN"
+// -----------------------------------------------------------------------------
+export interface StageQuestion extends QuizQuestion {
+  stage: 1 | 2 | 3;
+  stageName: string;
+}
+
+export const GENERAL_KNOWLEDGE_QUESTIONS: StageQuestion[] = [
+  // ETAPA 1: Técnicas de Modistería
+  {
+    id: 101,
+    stage: 1,
+    stageName: 'Etapa 1: Técnicas de Modistería & Costura',
+    topic: 'buenas-practicas',
+    topicLabel: 'Acabados Profesionales',
+    question: '¿Qué tipo de costura interna es ideal para telas delgadas (como lino o gasa) sin necesidad de máquina fileteadora/overlock?',
+    options: [
+      { id: 'a', text: 'A) Costura francesa (French seam) cosiendo revés con revés y luego derecho.' },
+      { id: 'b', text: 'B) Pegar los bordes con cinta adhesiva de embalaje.' },
+      { id: 'c', text: 'C) Dejar la tela deshilachada sin rematar.' },
+    ],
+    correctAnswerId: 'a',
+    explanation: 'La costura francesa encierra los bordes deshilachados en un pliegue pulcro, garantizando acabados limpios y de alta costura.',
+  },
+  {
+    id: 102,
+    stage: 1,
+    stageName: 'Etapa 1: Técnicas de Modistería & Costura',
+    topic: 'buenas-practicas',
+    topicLabel: 'Patronaje y Ajuste',
+    question: 'Al reducir 2 tallas en un pantalón de vestir, ¿cuál es el procedimiento correcto?',
+    options: [
+      { id: 'a', text: 'A) Cortar únicamente la pretina frontal con tijeras y coser en zigzag.' },
+      { id: 'b', text: 'B) Distribuir el entalle simétricamente entre costados y tiro posterior para no descalzar los bolsillos.' },
+      { id: 'c', text: 'C) Coser solo un costado para terminar más rápido.' },
+    ],
+    correctAnswerId: 'b',
+    explanation: 'Un entalle profesional distribuye los centímetros sobrantes equilibrando costados externos y costura de tiro trasero.',
+  },
+  // ETAPA 2: Moda Circular & Sostenibilidad
+  {
+    id: 103,
+    stage: 2,
+    stageName: 'Etapa 2: Moda Circular & Impacto Ambiental',
+    topic: 'cuidado-catalogo',
+    topicLabel: 'Concepto Upcycling',
+    question: '¿Cuál es la diferencia entre el reciclaje textil tradicional (downcycling) y el supra-reciclaje (upcycling)?',
+    options: [
+      { id: 'a', text: 'A) El upcycling transforma una prenda otorgándole mayor valor estético y calidad que la original.' },
+      { id: 'b', text: 'B) No hay diferencia, ambos significan triturar ropa para hacer trapos.' },
+      { id: 'c', text: 'C) El upcycling consiste en botar ropa a la basura.' },
+    ],
+    correctAnswerId: 'a',
+    explanation: 'El supra-reciclaje eleva el valor de la prenda mediante diseño y maestría artesanal, evitando la degradación del material.',
+  },
+  {
+    id: 104,
+    stage: 2,
+    stageName: 'Etapa 2: Moda Circular & Impacto Ambiental',
+    topic: 'cuidado-catalogo',
+    topicLabel: 'Huella Hídrica',
+    question: '¿Cuántos litros de agua potable se ahorran aproximadamente al transformar un jean en lugar de fabricar uno nuevo?',
+    options: [
+      { id: 'a', text: 'A) Apenas 5 litros.' },
+      { id: 'b', text: 'B) Alrededor de 7.500 a 10.000 litros de agua.' },
+      { id: 'c', text: 'C) Cero litros, el agua no se usa en textiles.' },
+    ],
+    correctAnswerId: 'b',
+    explanation: 'La producción de algodón y el teñido de un solo pantalón vaquero nuevo consume entre 7.500 y 10.000 litros de agua.',
+  },
+  // ETAPA 3: Plataforma y Catálogo Reborn
+  {
+    id: 105,
+    stage: 3,
+    stageName: 'Etapa 3: Plataforma y Catálogo Reborn',
+    topic: 'contenido-digital',
+    topicLabel: 'Interacción Cliente - Costurero',
+    question: '¿Cómo coordina un cliente las medidas y los detalles de una transformación en Reborn Your Style?',
+    options: [
+      { id: 'a', text: 'A) Enviando una carta por correo postal tradicional.' },
+      { id: 'b', text: 'B) Mediante el chat bidireccional en tiempo real adjuntando fotos de la prenda y solicitando cotización.' },
+      { id: 'c', text: 'C) Esperando que el sistema seleccione al azar sin hablar con nadie.' },
+    ],
+    correctAnswerId: 'b',
+    explanation: 'El chat en tiempo real permite al cliente enviar imágenes de su prenda, coordinar medidas y acordar presupuestos transparentes con el taller.',
+  },
+  {
+    id: 106,
+    stage: 3,
+    stageName: 'Etapa 3: Plataforma y Catálogo Reborn',
+    topic: 'contenido-digital',
+    topicLabel: 'Catálogo de Prendas',
+    question: '¿Qué categorías principales organiza el catálogo de prendas en la plataforma para facilitar el suprareciclaje?',
+    options: [
+      { id: 'a', text: 'A) Secciones organizadas como Camisas, Vestidos, Pantalones y Chaquetas.' },
+      { id: 'b', text: 'B) Únicamente calzado deportivo y botas.' },
+      { id: 'c', text: 'C) Muebles y electrodomésticos para el hogar.' },
+    ],
+    correctAnswerId: 'a',
+    explanation: 'El catálogo está estructurado por categorías de prendas de vestir para facilitar búsquedas y asignación de modistas especializados.',
+  },
+];
+
