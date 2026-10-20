@@ -398,7 +398,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   const handleGoogleClick = async (roleOverride?: 'cliente' | 'profesional') => {
-    const roleForAuth = roleOverride || googleRole || selectedRole || 'cliente';
+    const roleForAuth = roleOverride || googleRole || undefined;
     setErrorMsg('');
     setSuccessMsg('');
     setIsLoading(true);

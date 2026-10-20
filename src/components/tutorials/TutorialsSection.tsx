@@ -12,6 +12,7 @@ import { AppView } from '../../types';
 
 export interface TutorialVideo {
   id: string;
+  format_type?: 'video';
   title: string;
   duration: string;
   category: 'upcycling' | 'diy' | 'costura' | 'denim' | 'plataforma';
@@ -133,13 +134,13 @@ interface TutorialsSectionProps {
   onNavigate?: (view: AppView) => void;
 }
 
-type TutorialFormat = 'todos' | 'videos' | 'articulos' | 'infografias' | 'descargas';
+type TutorialFormat = 'infografias' | 'articulos' | 'descargas' | 'videos' | 'todos';
 
 export const TutorialsSection: React.FC<TutorialsSectionProps> = ({
   isStandalonePage = false,
   onNavigate,
 }) => {
-  const [activeFormat, setActiveFormat] = useState<TutorialFormat>('todos');
+  const [activeFormat, setActiveFormat] = useState<TutorialFormat>('infografias');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedVideoCategory, setSelectedVideoCategory] = useState<string>('todos');
 

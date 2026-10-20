@@ -10,8 +10,9 @@ import {
 } from '../../data/educationalContent';
 import { AppView, UserProfile } from '../../types';
 import { useThemeLanguage } from '../../context/ThemeLanguageContext';
+import { RuletaReborn } from '../interactive/RuletaReborn';
 
-export type GameMode = 'trivia' | 'verdadero_falso' | 'desafio_etapas';
+export type GameMode = 'ruleta' | 'trivia' | 'verdadero_falso' | 'desafio_etapas';
 
 interface EvaluacionViewProps {
   userProfile?: UserProfile;
@@ -236,8 +237,56 @@ export const EvaluacionView: React.FC<EvaluacionViewProps> = ({
               <div className="absolute top-0 right-0 w-80 h-80 bg-[#b0f1cc]/20 rounded-full blur-3xl pointer-events-none" />
             </div>
 
-            {/* Games Grid (3 Selectable Modes) */}
+            {/* Games Grid (Selectable Modes) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* NUEVO JUEGO: LA RULETA REBORN (DESTACADO) */}
+              <motion.div
+                whileHover={{ y: -4 }}
+                transition={{ duration: 0.2 }}
+                onClick={() => setSelectedGame('ruleta')}
+                className="bg-white dark:bg-[#0e241c] rounded-3xl p-6 border-2 border-[#10b981] dark:border-[#10b981] hover:border-[#012d1d] dark:hover:border-[#b0f1cc] shadow-md hover:shadow-xl transition-all cursor-pointer flex flex-col justify-between group relative overflow-hidden"
+              >
+                <div className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-[#10b981] text-white text-[9px] font-black uppercase tracking-wider shadow-xs">
+                  Nuevo
+                </div>
+
+                <div className="space-y-4">
+                  <div className="w-14 h-14 rounded-2xl bg-[#e8f5ed] dark:bg-[#112920] text-[#012d1d] dark:text-[#b0f1cc] border-2 border-[#10b981] flex items-center justify-center group-hover:scale-110 transition-transform shadow-xs">
+                    <span className="material-symbols-outlined text-3xl">casino</span>
+                  </div>
+
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-[#10b981] block mb-1">
+                      {isEn ? 'Featured Game • Circular Wheel' : 'Juego Destacado • 8 Casillas'}
+                    </span>
+                    <h3 className="font-headline text-lg font-bold text-[#012d1d] dark:text-white leading-tight">
+                      🎡 La Ruleta Reborn
+                    </h3>
+                  </div>
+
+                  <p className="text-xs text-[#414844] dark:text-[#a7b8ae] leading-relaxed">
+                    Ruleta interactiva con animación dinámica dividida en 8 casillas con preguntas oficiales, validación y feedback en tiempo real.
+                  </p>
+
+                  <div className="flex items-center gap-2 text-[11px] font-semibold text-[#717973] dark:text-[#a7b8ae] pt-1">
+                    <span className="material-symbols-outlined text-sm text-[#10b981]">rotate_right</span>
+                    <span>8 Casillas circulares</span>
+                    <span>•</span>
+                    <span>Giro animado</span>
+                  </div>
+                </div>
+
+                <div className="pt-6 mt-4 border-t border-[#efeee9] dark:border-[#173328]">
+                  <button
+                    type="button"
+                    className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#012d1d] to-[#10b981] text-white text-xs font-bold transition-all flex items-center justify-center gap-2 group-hover:shadow-md"
+                  >
+                    <span>🎯 Girar Ruleta</span>
+                    <span className="material-symbols-outlined text-base">arrow_forward</span>
+                  </button>
+                </div>
+              </motion.div>
+
               {/* JUEGO 1: ¿QUÉ TANTO SABES DE REBORN? */}
               <motion.div
                 whileHover={{ y: -4 }}
@@ -325,53 +374,19 @@ export const EvaluacionView: React.FC<EvaluacionViewProps> = ({
                   </button>
                 </div>
               </motion.div>
-
-              {/* JUEGO 3: DESAFÍO DE CONOCIMIENTO GENERAL REBORN */}
-              <motion.div
-                whileHover={{ y: -4 }}
-                transition={{ duration: 0.2 }}
-                onClick={() => setSelectedGame('desafio_etapas')}
-                className="bg-white dark:bg-[#0e241c] rounded-3xl p-6 border-2 border-[#efeee9] dark:border-[#2b694d]/40 hover:border-[#012d1d] dark:hover:border-[#b0f1cc] shadow-sm hover:shadow-xl transition-all cursor-pointer flex flex-col justify-between group"
-              >
-                <div className="space-y-4">
-                  <div className="w-14 h-14 rounded-2xl bg-[#fdf4ff] dark:bg-[#3b0764] text-[#a855f7] dark:text-[#d8b4fe] border border-[#f0abfc] flex items-center justify-center group-hover:scale-105 transition-transform">
-                    <span className="material-symbols-outlined text-3xl">military_tech</span>
-                  </div>
-
-                  <div>
-                    <span className="text-[10px] font-black uppercase tracking-wider text-[#a855f7] dark:text-[#d8b4fe] block mb-1">
-                      {isEn ? 'Game 3 • Structured Stages' : 'Juego 3 • Evaluación por Etapas'}
-                    </span>
-                    <h3 className="font-headline text-lg font-bold text-[#012d1d] dark:text-white leading-tight">
-                      Desafío General Reborn
-                    </h3>
-                  </div>
-
-                  <p className="text-xs text-[#414844] dark:text-[#a7b8ae] leading-relaxed">
-                    Evaluación estructurada por 3 etapas: Modistería, Moda Circular y Plataforma Digital para obtener certificación avanzada.
-                  </p>
-
-                  <div className="flex items-center gap-2 text-[11px] font-semibold text-[#717973] dark:text-[#a7b8ae] pt-1">
-                    <span className="material-symbols-outlined text-sm text-[#a855f7]">layers</span>
-                    <span>3 Etapas progresivas</span>
-                    <span>•</span>
-                    <span>Certificado completo</span>
-                  </div>
-                </div>
-
-                <div className="pt-6 mt-4 border-t border-[#efeee9] dark:border-[#173328]">
-                  <button
-                    type="button"
-                    className="w-full py-2.5 px-4 rounded-xl bg-[#7e22ce] hover:bg-[#6b21a8] text-white text-xs font-bold transition-all flex items-center justify-center gap-2"
-                  >
-                    <span>{isEn ? 'Start Challenge' : 'Iniciar Desafío'}</span>
-                    <span className="material-symbols-outlined text-base">arrow_forward</span>
-                  </button>
-                </div>
-              </motion.div>
             </div>
           </motion.div>
         ) : null}
+
+        {/* ================================================================= */}
+        {/* VISTA: NUEVO JUEGO - LA RULETA REBORN                             */}
+        {/* ================================================================= */}
+        {selectedGame === 'ruleta' && (
+          <RuletaReborn
+            onBackToMenu={() => setSelectedGame(null)}
+            userName={certificateName}
+          />
+        )}
 
         {/* ================================================================= */}
         {/* VISTA 2: JUEGO 1 - TRIVIA "¿QUÉ TANTO SABES DE REBORN?"           */}

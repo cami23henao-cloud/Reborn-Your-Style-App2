@@ -102,23 +102,25 @@ body,
   scroll-behavior: smooth;
 }
 
-/* Universal Viewport Fit & Parent Containers */
+/* Universal Viewport Fit & Parent Containers (.main-container, .dashboard-wrapper, .card, .modal) */
 .main-container,
-.dashboard-wrapper {
-  width: 100%;
-  max-width: 100vw;
-  overflow-x: hidden;
-  box-sizing: border-box;
-}
-
+.dashboard-wrapper,
 .card,
 .modal,
 [role="dialog"] {
-  max-width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
   box-sizing: border-box;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
-/* Word-break and overflow wrap defense across long emails, names, descriptions */
+.main-container,
+.dashboard-wrapper {
+  width: 100%;
+}
+
+/* Word-break and overflow wrap defense across emails, names, descriptions */
 .card,
 .modal,
 .email-label,

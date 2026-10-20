@@ -1,5 +1,6 @@
 export interface ReadingArticle {
   id: string;
+  format_type?: 'articulo';
   title: string;
   subtitle: string;
   readTime: string;
@@ -18,6 +19,7 @@ export interface ReadingArticle {
 
 export interface InfographicItem {
   id: string;
+  format_type?: 'infografia';
   title: string;
   subtitle: string;
   category: 'cadena' | 'anatomia' | 'circular';
@@ -36,6 +38,7 @@ export interface InfographicItem {
 
 export interface DownloadableResource {
   id: string;
+  format_type?: 'recurso_pdf';
   title: string;
   description: string;
   fileType: 'PDF' | 'DOC' | 'SHEET';

@@ -108,8 +108,17 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
         ];
 
   return (
-    <nav className="fixed top-0 left-0 w-full z-50 px-4 sm:px-6 lg:px-8 h-20 bg-[#faf9f4]/95 dark:bg-[#071510]/95 backdrop-blur-md shadow-[0_2px_12px_rgba(1,45,29,0.05)] border-b border-[#c1c8c2]/30 dark:border-[#2b694d]/30 flex items-center transition-colors">
-      <div className="max-w-7xl mx-auto w-full flex justify-between items-center gap-3 sm:gap-6">
+    <nav className="fixed top-0 left-0 w-full z-50 bg-[#faf9f4]/95 dark:bg-[#071510]/95 backdrop-blur-md shadow-[0_2px_12px_rgba(1,45,29,0.05)] border-b border-[#c1c8c2]/30 dark:border-[#2b694d]/30 transition-colors">
+      <div
+        className="w-full max-w-[1200px] mx-auto"
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: '1.5rem',
+          padding: '0.8rem 2rem',
+        }}
+      >
         {/* Brand Logo - Aligned, sharp, with clean margins */}
         <div className="flex items-center shrink-0">
           <button
@@ -121,7 +130,10 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
           </button>
 
           {userRole === 'admin' && (
-            <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#012d1d] text-[#b0f1cc] text-xs font-bold shadow-xs ml-3">
+            <span
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#012d1d] text-[#b0f1cc] text-xs font-bold shadow-xs ml-3"
+              style={{ whiteSpace: 'nowrap' }}
+            >
               <span className="material-symbols-outlined text-sm">admin_panel_settings</span>
               <span>Panel Admin Central</span>
             </span>
@@ -135,6 +147,7 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
               <button
                 key={item.id}
                 onClick={item.onClick}
+                style={{ whiteSpace: 'nowrap' }}
                 className={`text-xs md:text-sm font-semibold px-3 py-2 rounded-xl transition-all duration-150 whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
                   item.isActive
                     ? 'text-[#012d1d] dark:text-[#b0f1cc] font-bold bg-[#efeee9] dark:bg-[#112920] shadow-xs'
@@ -142,7 +155,7 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
                 }`}
               >
                 <span className="material-symbols-outlined text-base text-[#2b694d] dark:text-[#b0f1cc]">{item.icon}</span>
-                <span>{item.label}</span>
+                <span style={{ whiteSpace: 'nowrap' }}>{item.label}</span>
               </button>
             ))}
           </div>

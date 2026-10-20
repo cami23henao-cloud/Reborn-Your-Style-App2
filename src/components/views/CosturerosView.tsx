@@ -252,11 +252,27 @@ export const CosturerosView: React.FC<CosturerosViewProps> = ({
           </button>
         </div>
       ) : (
-        <div className="scroll-reveal grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div
+          className="scroll-reveal tailors-grid adaptive-tailors-grid"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
+            gap: '1rem',
+            width: '100%',
+            maxWidth: '100%',
+            boxSizing: 'border-box',
+          }}
+        >
           {filteredProfessionals.map((pro) => (
             <div
               key={pro.id}
-              className="hover-elevate bg-white dark:bg-[#0e241c] rounded-3xl p-6 border border-[#c1c8c2]/50 dark:border-[#2b694d]/40 hover:border-[#012d1d] hover:shadow-xl transition-all flex flex-col justify-between space-y-5"
+              className="card hover-elevate bg-white dark:bg-[#0e241c] rounded-3xl p-6 border border-[#c1c8c2]/50 dark:border-[#2b694d]/40 hover:border-[#012d1d] hover:shadow-xl transition-all flex flex-col justify-between space-y-5"
+              style={{
+                maxWidth: '100%',
+                wordBreak: 'break-word',
+                overflowWrap: 'anywhere',
+                boxSizing: 'border-box',
+              }}
             >
               <div className="space-y-4">
                 {/* Header: Avatar, Name, Specialty, Rating */}

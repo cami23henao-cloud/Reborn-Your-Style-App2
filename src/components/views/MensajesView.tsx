@@ -8,7 +8,7 @@ interface MensajesViewProps {
   conversations: ChatConversation[];
   activeConvId: string;
   onSelectConversation: (id: string) => void;
-  onSendMessage: (convId: string, text: string) => void;
+  onSendMessage: (convId: string, text: string, imageUrl?: string) => void;
   onNavigate: (view: AppView) => void;
 }
 
@@ -21,8 +21,10 @@ export const MensajesView: React.FC<MensajesViewProps> = ({
 }) => {
   const { language } = useThemeLanguage();
   const [inputText, setInputText] = useState('');
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [showMobileChat, setShowMobileChat] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const activeConv =
     conversations.find((c) => c.id === activeConvId) ||
@@ -47,11 +49,25 @@ export const MensajesView: React.FC<MensajesViewProps> = ({
     }
   }, [activeConv?.id, activeConv?.messages.length]);
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setSelectedImage(reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputText.trim() || !activeConv) return;
-    onSendMessage(activeConv.id, inputText.trim());
+    if ((!inputText.trim() && !selectedImage) || !activeConv) return;
+    onSendMessage(activeConv.id, inputText.trim(), selectedImage || undefined);
     setInputText('');
+    setSelectedImage(null);
     setTimeout(scrollToBottom, 50);
   };
 

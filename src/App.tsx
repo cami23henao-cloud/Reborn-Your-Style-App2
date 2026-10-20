@@ -1091,7 +1091,18 @@ export function App() {
   };
 
   return (
-    <div className="main-container min-h-screen flex flex-col bg-[#faf9f4] text-[#1b1c19] font-sans antialiased selection:bg-[#b0f1cc] selection:text-[#002113] w-full max-w-[100vw] overflow-x-hidden">
+    <div
+      className="global-wrapper main-container flex flex-col bg-[#faf9f4] text-[#1b1c19] font-sans antialiased selection:bg-[#b0f1cc] selection:text-[#002113]"
+      style={{
+        width: '100%',
+        maxWidth: '100vw',
+        minHeight: '100vh',
+        margin: 0,
+        padding: 0,
+        boxSizing: 'border-box',
+        overflowX: 'hidden',
+      }}
+    >
       {/* 1. Ultra dynamic Scissors & Fabric cutting Splash Screen directly redirecting to Inicio */}
       {showSplash && (
         <SplashScreen
@@ -1121,7 +1132,17 @@ export function App() {
       />
 
       {/* Main Content Area */}
-      <main className="main-container flex-1 pt-20 flex flex-col w-full max-w-[100vw] overflow-x-hidden">
+      <main
+        className="main-container flex-1 pt-16 viewport-fit-main flex flex-col"
+        style={{
+          width: '100%',
+          maxWidth: '100%',
+          margin: 0,
+          padding: 0,
+          boxSizing: 'border-box',
+          overflowX: 'hidden',
+        }}
+      >
         {currentView === 'inicio' && (
           <HomeView
             onNavigate={handleNavigate}

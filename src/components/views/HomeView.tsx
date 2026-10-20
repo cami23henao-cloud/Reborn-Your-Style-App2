@@ -26,26 +26,26 @@ export const HomeView: React.FC<HomeViewProps> = ({
   return (
     <div className="flex flex-col w-full animate-in fade-in pb-16">
       {/* ========================================================================= */}
-      {/* 1. HERO SECTION - Clean, Responsive Proportions, No Cut-off Buttons        */}
+      {/* 1. HERO SECTION - Viewport Fit, Proportional Heights, Fully Visible Actions*/}
       {/* ========================================================================= */}
-      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 lg:py-20 flex flex-col lg:flex-row items-center gap-10 lg:gap-14">
-        {/* Left Column: Brand, Pitch & Primary CTAs with Staggered Entrance */}
-        <div className="flex-1 flex flex-col gap-6 sm:gap-7 items-start w-full">
+      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-7 lg:py-9 flex flex-col lg:flex-row items-center gap-6 lg:gap-10">
+        {/* Left Column: Brand, Pitch & Primary CTAs */}
+        <div className="flex-1 flex flex-col gap-3.5 sm:gap-4.5 items-start w-full">
           {/* Badge (Stagger 1 with delicate float) */}
-          <div className="flex flex-wrap items-center gap-3 animate-stagger-1">
+          <div className="flex flex-wrap items-center gap-2.5 animate-stagger-1">
             <div className="animate-delicate-float">
               <BrandLogo size="xs" variant="emblem" />
             </div>
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#b0f1cc]/50 dark:bg-[#112920] text-[#002113] dark:text-[#b0f1cc] text-xs sm:text-sm font-bold border border-[#2b694d]/30 shadow-2xs animate-soft-glow">
-              <span className="material-symbols-outlined text-base">recycling</span>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#b0f1cc]/50 dark:bg-[#112920] text-[#002113] dark:text-[#b0f1cc] text-xs sm:text-sm font-bold border border-[#2b694d]/30 shadow-2xs animate-soft-glow">
+              <span className="material-symbols-outlined text-sm">recycling</span>
               <span>{t('hero.badge')}</span>
             </div>
           </div>
 
-          {/* Headline (Stagger 2) - Progressive text reveal with elegant typography */}
+          {/* Headline (Stagger 2) - Clean proportional scale */}
           <h1
-            style={{ fontSize: 'clamp(1.8rem, 4vw, 2.8rem)' }}
-            className="font-headline font-black text-[#012d1d] dark:text-white leading-[1.15] tracking-tight animate-fade-up text-hover-lift"
+            style={{ fontSize: 'clamp(1.5rem, 3.2vw, 2.3rem)' }}
+            className="font-headline font-black text-[#012d1d] dark:text-white leading-[1.18] tracking-tight animate-fade-up text-hover-lift"
           >
             <span className="letter-reveal inline-block">{t('hero.title_pre')}</span>{' '}
             <span className="text-[#2b694d] dark:text-[#b0f1cc] letter-reveal inline-block" style={{ animationDelay: '0.15s' }}>
@@ -53,40 +53,40 @@ export const HomeView: React.FC<HomeViewProps> = ({
             </span>
           </h1>
 
-          {/* Subtitle (Stagger 2) - Increased readability and spacing */}
+          {/* Subtitle (Stagger 2) - Proportional height */}
           <p
-            className="text-base sm:text-lg text-[#414844] dark:text-[#a7b8ae] leading-relaxed max-w-2xl font-normal animate-fade-up"
+            className="text-xs sm:text-sm md:text-base text-[#414844] dark:text-[#a7b8ae] leading-relaxed max-w-2xl font-normal animate-fade-up"
             style={{ animationDelay: '0.2s' }}
           >
             {t('hero.desc')}
           </p>
 
-          {/* Action Buttons (Stagger 3) - Fully responsive, width 100% on mobile, max-width on desktop */}
+          {/* Action Buttons (Stagger 3) - Framed for immediate 100% visibility */}
           <div
-            className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 sm:gap-4 w-full sm:w-auto pt-2 overflow-hidden animate-fade-up"
-            style={{ animationDelay: '0.35s' }}
+            className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto pt-1 sm:pt-2 overflow-hidden animate-fade-up"
+            style={{ animationDelay: '0.35s', marginBottom: '1rem' }}
           >
             <button
               onClick={() => onNavigate('costureros')}
-              className="btn-interactive w-full sm:w-auto max-w-full sm:max-w-xs bg-[#012d1d] hover:bg-[#1b4332] active:bg-[#002113] text-white font-bold text-sm sm:text-base px-7 py-4 rounded-2xl shadow-md flex items-center justify-center gap-2.5 transition-all cursor-pointer whitespace-nowrap"
+              className="btn-interactive w-full sm:w-auto max-w-full sm:max-w-xs bg-[#012d1d] hover:bg-[#1b4332] active:bg-[#002113] text-white font-bold text-xs sm:text-sm px-6 py-3.5 rounded-xl shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer whitespace-nowrap"
             >
-              <span className="material-symbols-outlined text-xl text-[#b0f1cc]">handyman</span>
+              <span className="material-symbols-outlined text-lg text-[#b0f1cc]">handyman</span>
               <span>{t('hero.btn_costurero')}</span>
             </button>
 
             <button
               onClick={() => onNavigate('publicar-prenda')}
-              className="btn-interactive w-full sm:w-auto max-w-full sm:max-w-xs bg-white dark:bg-[#0e241c] text-[#012d1d] dark:text-white hover:bg-[#efeee9] dark:hover:bg-[#16382c] border border-[#c1c8c2] dark:border-[#2b694d]/50 font-bold text-sm sm:text-base px-6 py-4 rounded-2xl flex items-center justify-center gap-2.5 shadow-2xs transition-all cursor-pointer whitespace-nowrap"
+              className="btn-interactive w-full sm:w-auto max-w-full sm:max-w-xs bg-white dark:bg-[#0e241c] text-[#012d1d] dark:text-white hover:bg-[#efeee9] dark:hover:bg-[#16382c] border-2 border-[#012d1d]/70 dark:border-[#2b694d] font-bold text-xs sm:text-sm px-6 py-3.5 rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer whitespace-nowrap"
             >
-              <span className="material-symbols-outlined text-xl text-[#2b694d] dark:text-[#b0f1cc]">add_circle</span>
+              <span className="material-symbols-outlined text-lg text-[#2b694d] dark:text-[#b0f1cc]">add_circle</span>
               <span>{t('hero.btn_publicar')}</span>
             </button>
           </div>
         </div>
 
-        {/* Right Column: Hero Visual Showcase (Stagger 2 with smooth transition) */}
+        {/* Right Column: Hero Visual Showcase */}
         <div
-          className="w-full lg:flex-1 h-80 sm:h-[440px] lg:h-[480px] rounded-3xl overflow-hidden shadow-2xl relative border border-[#c1c8c2]/40 dark:border-[#2b694d]/40 bg-[#102b1e] animate-fade-up transition-transform duration-500 hover:shadow-[0_20px_50px_rgba(1,45,29,0.2)]"
+          className="w-full lg:flex-1 h-60 sm:h-72 lg:h-[350px] rounded-3xl overflow-hidden shadow-xl relative border border-[#c1c8c2]/40 dark:border-[#2b694d]/40 bg-[#102b1e] animate-fade-up transition-transform duration-500 hover:shadow-[0_20px_50px_rgba(1,45,29,0.2)]"
           style={{ animationDelay: '0.25s' }}
         >
           <img
@@ -98,24 +98,24 @@ export const HomeView: React.FC<HomeViewProps> = ({
           <div className="absolute inset-0 bg-gradient-to-t from-[#012d1d]/90 via-[#012d1d]/25 to-transparent pointer-events-none"></div>
 
           {/* Floating Brand Stamp with gentle float */}
-          <div className="absolute top-5 right-5 p-2.5 bg-white/95 dark:bg-[#071510]/95 backdrop-blur-md rounded-2xl shadow-lg border border-white/30 dark:border-[#2b694d]/40 animate-delicate-float">
+          <div className="absolute top-4 right-4 p-2 bg-white/95 dark:bg-[#071510]/95 backdrop-blur-md rounded-xl shadow-md border border-white/30 dark:border-[#2b694d]/40 animate-delicate-float">
             <BrandLogo size="xs" variant="horizontal" />
           </div>
 
           {/* Bottom Project Feature Card */}
-          <div className="absolute bottom-5 left-4 right-4 sm:left-6 sm:right-6 p-4 sm:p-5 rounded-2xl bg-white/95 dark:bg-[#071510]/95 backdrop-blur-md border border-white/50 dark:border-[#2b694d]/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xl transition-all duration-300 hover:translate-y-[-2px]">
-            <div className="flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-xl bg-[#012d1d] text-[#b0f1cc] flex items-center justify-center shrink-0 shadow-xs">
-                <span className="material-symbols-outlined text-2xl">recycling</span>
+          <div className="absolute bottom-4 left-3 right-3 sm:left-5 sm:right-5 p-3 sm:p-3.5 rounded-xl bg-white/95 dark:bg-[#071510]/95 backdrop-blur-md border border-white/50 dark:border-[#2b694d]/40 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shadow-lg transition-all duration-300 hover:translate-y-[-2px]">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-[#012d1d] text-[#b0f1cc] flex items-center justify-center shrink-0 shadow-xs">
+                <span className="material-symbols-outlined text-xl">recycling</span>
               </div>
               <div>
-                <p className="text-sm font-bold text-[#012d1d] dark:text-white">{t('hero.card_title')}</p>
-                <p className="text-xs text-[#717973] dark:text-[#a7b8ae]">{t('hero.card_desc')}</p>
+                <p className="text-xs sm:text-sm font-bold text-[#012d1d] dark:text-white leading-tight">{t('hero.card_title')}</p>
+                <p className="text-[11px] text-[#717973] dark:text-[#a7b8ae]">{t('hero.card_desc')}</p>
               </div>
             </div>
             <button
               onClick={() => onNavigate('inspiracion')}
-              className="btn-interactive px-4 py-2 bg-[#012d1d] text-white text-xs sm:text-sm font-bold rounded-xl hover:bg-[#2b694d] transition-colors self-end sm:self-center cursor-pointer shadow-xs whitespace-nowrap"
+              className="btn-interactive px-3.5 py-1.5 bg-[#012d1d] text-white text-xs font-bold rounded-lg hover:bg-[#2b694d] transition-colors self-end sm:self-center cursor-pointer shadow-xs whitespace-nowrap"
             >
               {t('hero.btn_tecnicas')}
             </button>

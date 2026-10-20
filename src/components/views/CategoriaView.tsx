@@ -163,162 +163,167 @@ export const CategoriaView: React.FC<CategoriaViewProps> = ({
   const localizedCategoryName = tCategory(categoryMeta.name);
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 md:px-12 py-8 md:py-12 animate-in fade-in">
-      {/* Breadcrumb Navigation */}
-      <div className="flex items-center gap-2 text-xs font-semibold text-[#717973] dark:text-[#a7b8ae] mb-6">
-        <button
-          onClick={onBackToCatalogos}
-          className="hover:text-[#012d1d] dark:hover:text-white transition-colors flex items-center gap-1 cursor-pointer"
-        >
-          <span className="material-symbols-outlined text-sm">arrow_back</span>
-          <span>{t('category.back')}</span>
-        </button>
-        <span>/</span>
-        <span className="text-[#012d1d] dark:text-[#b0f1cc] font-bold">{localizedCategoryName}</span>
-      </div>
+    <div className="w-full max-w-7xl mx-auto px-4 md:px-8 py-3 sm:py-5 animate-in fade-in catalog-container-fit">
+      {/* Contenedor Superior (Fold Area) - Encuadre visual completo */}
+      <div className="catalog-fold-container w-full mb-1">
+        {/* Breadcrumb Navigation */}
+        <div className="flex items-center gap-2 text-xs font-semibold text-[#717973] dark:text-[#a7b8ae] mb-2">
+          <button
+            onClick={onBackToCatalogos}
+            className="hover:text-[#012d1d] dark:hover:text-white transition-colors flex items-center gap-1 cursor-pointer"
+          >
+            <span className="material-symbols-outlined text-sm">arrow_back</span>
+            <span>{t('category.back')}</span>
+          </button>
+          <span>/</span>
+          <span className="text-[#012d1d] dark:text-[#b0f1cc] font-bold">{localizedCategoryName}</span>
+        </div>
 
-      {/* Category Hero Header */}
-      <div className="bg-white dark:bg-[#0e241c] rounded-3xl p-6 md:p-8 border border-[#c1c8c2]/50 dark:border-[#2b694d]/40 shadow-sm mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="flex items-start gap-4">
-          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#faf9f4] dark:bg-[#112920] border border-[#c1c8c2]/40 dark:border-[#2b694d]/30 flex items-center justify-center shadow-2xs shrink-0">
-            <span className="material-symbols-outlined text-2xl sm:text-3xl text-[#012d1d] dark:text-[#b0f1cc]">
-              {categoryMeta.icon}
-            </span>
-          </div>
-
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#2b694d] dark:text-[#b0f1cc]">
-                {language === 'en' ? 'Exclusive Catalog' : 'Catálogo Exclusivo'}
-              </span>
-              <span className="px-2.5 py-0.5 rounded-full bg-[#b0f1cc]/50 dark:bg-[#112920] text-[#002113] dark:text-[#b0f1cc] text-[11px] font-bold">
-                {categoryGarments.length} {categoryGarments.length === 1 ? t('catalog.garment_count') : t('catalog.garments_count')}
+        {/* Category Hero Header - Compact & Framed */}
+        <div className="bg-white dark:bg-[#0e241c] rounded-2xl p-3 sm:p-3.5 border border-[#c1c8c2]/50 dark:border-[#2b694d]/40 shadow-xs mb-2.5 flex flex-col md:flex-row md:items-center justify-between gap-2.5">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#faf9f4] dark:bg-[#112920] border border-[#c1c8c2]/40 dark:border-[#2b694d]/30 flex items-center justify-center shadow-2xs shrink-0">
+              <span className="material-symbols-outlined text-xl text-[#012d1d] dark:text-[#b0f1cc]">
+                {categoryMeta.icon}
               </span>
             </div>
-            <h1 className="font-headline text-2xl sm:text-3xl md:text-4xl font-black text-[#012d1d] dark:text-white animate-title-entry text-hover-lift">
-              {language === 'en' ? `${localizedCategoryName} Catalog` : `Catálogo de ${categoryMeta.name}`}
-            </h1>
-            <p className="text-xs sm:text-sm text-[#414844] dark:text-[#a7b8ae] max-w-2xl leading-relaxed animate-fade-up">
-              {categoryMeta.description}
-            </p>
+
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#2b694d] dark:text-[#b0f1cc]">
+                  {language === 'en' ? 'Exclusive Catalog' : 'Catálogo Exclusivo'}
+                </span>
+                <span className="px-2 py-0.2 rounded-full bg-[#b0f1cc]/50 dark:bg-[#112920] text-[#002113] dark:text-[#b0f1cc] text-[10px] font-bold">
+                  {categoryGarments.length} {categoryGarments.length === 1 ? t('catalog.garment_count') : t('catalog.garments_count')}
+                </span>
+              </div>
+              <h1 className="font-headline text-lg sm:text-xl md:text-2xl font-black text-[#012d1d] dark:text-white leading-tight animate-title-entry">
+                {language === 'en' ? `${localizedCategoryName} Catalog` : `Catálogo de ${categoryMeta.name}`}
+              </h1>
+            </div>
+          </div>
+
+          {/* Fast Category Switcher Inside Header Strip */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none text-xs">
+            {EXPANDED_CATEGORIES.slice(0, 5).map((cat) => {
+              const isActive = cat.name.toLowerCase() === categoryMeta.name.toLowerCase();
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => onSelectCategory(cat.name)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition-all flex items-center gap-1 cursor-pointer ${
+                    isActive
+                      ? 'bg-[#012d1d] text-[#b0f1cc] shadow-xs'
+                      : 'bg-[#faf9f4] dark:bg-[#112920] text-[#012d1d] dark:text-[#a7b8ae] border border-[#c1c8c2]/60 dark:border-[#2b694d]/40 hover:bg-[#efeee9]'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-xs">{cat.icon}</span>
+                  <span>{tCategory(cat.name)}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* Action CTAs in Header */}
-        <div className="flex flex-wrap gap-2.5 shrink-0">
+        {/* Barra de herramientas: Buscador, filtros y botón [ Publicar prenda ] en una sola fila responsiva */}
+        <div
+          className="catalog-actions-bar p-2.5 sm:p-3 bg-white dark:bg-[#0e241c] rounded-2xl border border-[#c1c8c2]/50 dark:border-[#2b694d]/40 shadow-xs"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '1rem',
+            flexWrap: 'wrap',
+            marginBottom: '1rem',
+          }}
+        >
+        {/* Lado izquierdo: Buscador y Filtros */}
+        <div className="flex flex-1 flex-col sm:flex-row items-stretch sm:items-center gap-2 min-w-0">
+          <div className="relative w-full sm:w-56 shrink-0">
+            <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[#717973] dark:text-[#a7b8ae] text-base">
+              search
+            </span>
+            <input
+              type="text"
+              placeholder={language === 'en' ? `Search...` : `Buscar prenda...`}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-8 pr-3 py-1.5 bg-[#faf9f4] dark:bg-[#112920] border border-[#c1c8c2]/70 dark:border-[#2b694d]/40 rounded-xl text-xs sm:text-sm text-[#012d1d] dark:text-white placeholder-[#717973] dark:placeholder-[#7b9487] focus:outline-none focus:ring-1 focus:ring-[#012d1d]"
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-1.5 text-xs">
+            <select
+              value={selectedType}
+              onChange={(e) => setSelectedType(e.target.value)}
+              className="px-2.5 py-1.5 bg-[#faf9f4] dark:bg-[#112920] border border-[#c1c8c2]/70 dark:border-[#2b694d]/40 rounded-xl text-[11px] font-semibold text-[#012d1d] dark:text-white focus:outline-none cursor-pointer"
+            >
+              <option value="todos">{t('category.all_modalities')}</option>
+              <option value="Venta">{language === 'en' ? 'Sale' : 'Venta'}</option>
+              <option value="Transformación">{language === 'en' ? 'Redesign' : 'Transformación'}</option>
+              <option value="Intercambio">{language === 'en' ? 'Exchange' : 'Intercambio'}</option>
+              <option value="Donación">{language === 'en' ? 'Donation' : 'Donación'}</option>
+            </select>
+
+            {availableDepartments.length > 0 && (
+              <select
+                value={selectedDept}
+                onChange={(e) => setSelectedDept(e.target.value)}
+                className="px-2.5 py-1.5 bg-[#faf9f4] dark:bg-[#112920] border border-[#c1c8c2]/70 dark:border-[#2b694d]/40 rounded-xl text-[11px] font-semibold text-[#012d1d] dark:text-white focus:outline-none cursor-pointer"
+              >
+                <option value="todos">{t('category.all_departments')}</option>
+                {availableDepartments.map((dept) => (
+                  <option key={dept} value={dept}>
+                    {dept}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="px-2.5 py-1.5 bg-[#faf9f4] dark:bg-[#112920] border border-[#c1c8c2]/70 dark:border-[#2b694d]/40 rounded-xl text-[11px] font-semibold text-[#012d1d] dark:text-white focus:outline-none cursor-pointer"
+            >
+              <option value="recientes">{t('category.sort_recent')}</option>
+              <option value="precio-bajo">{t('category.sort_low_price')}</option>
+              <option value="precio-alto">{t('category.sort_high_price')}</option>
+            </select>
+
+            {(searchQuery || selectedType !== 'todos' || selectedDept !== 'todos') && (
+              <button
+                onClick={() => {
+                  setSearchQuery('');
+                  setSelectedType('todos');
+                  setSelectedDept('todos');
+                }}
+                className="text-[11px] text-[#2b694d] dark:text-[#b0f1cc] hover:underline font-bold px-1.5 py-1 cursor-pointer"
+              >
+                {t('category.clear_filters')}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Lado derecho: Botón [ Publicar prenda ] y Costureros */}
+        <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={() => onNavigate('publicar-prenda')}
-            className="btn-interactive bg-[#012d1d] hover:bg-[#2b694d] text-white text-xs sm:text-sm font-bold px-5 py-2.5 rounded-full transition-all shadow-sm flex items-center gap-2 active:scale-95 cursor-pointer"
+            className="btn-interactive bg-[#012d1d] hover:bg-[#2b694d] text-white text-xs sm:text-sm font-bold px-4 py-2 rounded-xl transition-all shadow-sm flex items-center gap-1.5 active:scale-95 cursor-pointer whitespace-nowrap"
           >
-            <span className="material-symbols-outlined text-base">add_circle</span>
-            <span>{language === 'en' ? `Post in ${localizedCategoryName.toLowerCase()}` : `Publicar en ${categoryMeta.name.toLowerCase()}`}</span>
+            <span className="material-symbols-outlined text-base text-[#b0f1cc]">add_circle</span>
+            <span>{language === 'en' ? `Post garment` : `Publicar prenda`}</span>
           </button>
           <button
             onClick={() => onNavigate('costureros')}
-            className="btn-interactive bg-[#faf9f4] dark:bg-[#112920] hover:bg-[#efeee9] dark:hover:bg-[#16382c] text-[#012d1d] dark:text-[#b0f1cc] border border-[#c1c8c2] dark:border-[#2b694d]/40 text-xs sm:text-sm font-bold px-4 py-2.5 rounded-full transition-all flex items-center gap-2 cursor-pointer"
+            className="btn-interactive bg-[#faf9f4] dark:bg-[#112920] hover:bg-[#efeee9] dark:hover:bg-[#16382c] text-[#012d1d] dark:text-[#b0f1cc] border border-[#c1c8c2] dark:border-[#2b694d]/40 text-xs sm:text-sm font-bold px-3 py-2 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
           >
             <span className="material-symbols-outlined text-base">person_search</span>
-            <span>{language === 'en' ? 'Recommended tailors' : 'Costureros recomendados'}</span>
+            <span>{language === 'en' ? 'Tailors' : 'Costureros'}</span>
           </button>
         </div>
       </div>
-
-      {/* Fast Category Switcher Tabs */}
-      <div className="mb-6 flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-        <span className="text-xs font-bold text-[#717973] dark:text-[#a7b8ae] whitespace-nowrap">
-          {language === 'en' ? 'Switch catalog:' : 'Cambiar de catálogo:'}
-        </span>
-        {EXPANDED_CATEGORIES.map((cat) => {
-          const isActive = cat.name.toLowerCase() === categoryMeta.name.toLowerCase();
-          return (
-            <button
-              key={cat.id}
-              onClick={() => onSelectCategory(cat.name)}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
-                isActive
-                  ? 'bg-[#012d1d] text-[#b0f1cc] shadow-xs'
-                  : 'bg-white dark:bg-[#0e241c] text-[#012d1d] dark:text-[#a7b8ae] border border-[#c1c8c2]/60 dark:border-[#2b694d]/40 hover:bg-[#efeee9] dark:hover:bg-[#16382c]'
-              }`}
-            >
-              <span className="material-symbols-outlined text-sm">{cat.icon}</span>
-              <span>{tCategory(cat.name)}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Filters & Search Toolbar */}
-      <div className="bg-[#faf9f4] dark:bg-[#112920] p-4 rounded-2xl border border-[#c1c8c2]/40 dark:border-[#2b694d]/40 mb-8 flex flex-col md:flex-row gap-3 items-center justify-between">
-        {/* Search */}
-        <div className="relative w-full md:w-80">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#717973] dark:text-[#a7b8ae] text-lg">
-            search
-          </span>
-          <input
-            type="text"
-            placeholder={language === 'en' ? `Search in ${localizedCategoryName.toLowerCase()}...` : `Buscar en ${categoryMeta.name.toLowerCase()}...`}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-white dark:bg-[#0e241c] border border-[#c1c8c2] dark:border-[#2b694d]/40 rounded-xl text-xs sm:text-sm text-[#012d1d] dark:text-white placeholder-[#717973] dark:placeholder-[#7b9487] focus:outline-none focus:ring-2 focus:ring-[#012d1d]/30"
-          />
-        </div>
-
-        {/* Dropdown Filters */}
-        <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
-          {/* Listing type */}
-          <select
-            value={selectedType}
-            onChange={(e) => setSelectedType(e.target.value)}
-            className="px-3 py-2 bg-white dark:bg-[#0e241c] border border-[#c1c8c2] dark:border-[#2b694d]/40 rounded-xl text-xs font-semibold text-[#012d1d] dark:text-white focus:outline-none cursor-pointer"
-          >
-            <option value="todos">{t('category.all_modalities')}</option>
-            <option value="Venta">{language === 'en' ? 'Sale' : 'Venta'}</option>
-            <option value="Transformación">{language === 'en' ? 'Redesign / Upcycling' : 'Transformación'}</option>
-            <option value="Intercambio">{language === 'en' ? 'Exchange' : 'Intercambio'}</option>
-            <option value="Donación">{language === 'en' ? 'Donation' : 'Donación'}</option>
-          </select>
-
-          {/* Department */}
-          {availableDepartments.length > 0 && (
-            <select
-              value={selectedDept}
-              onChange={(e) => setSelectedDept(e.target.value)}
-              className="px-3 py-2 bg-white dark:bg-[#0e241c] border border-[#c1c8c2] dark:border-[#2b694d]/40 rounded-xl text-xs font-semibold text-[#012d1d] dark:text-white focus:outline-none cursor-pointer"
-            >
-              <option value="todos">{t('category.all_departments')}</option>
-              {availableDepartments.map((dept) => (
-                <option key={dept} value={dept}>
-                  {dept}
-                </option>
-              ))}
-            </select>
-          )}
-
-          {/* Sort */}
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as any)}
-            className="px-3 py-2 bg-white dark:bg-[#0e241c] border border-[#c1c8c2] dark:border-[#2b694d]/40 rounded-xl text-xs font-semibold text-[#012d1d] dark:text-white focus:outline-none cursor-pointer"
-          >
-            <option value="recientes">{t('category.sort_recent')}</option>
-            <option value="precio-bajo">{t('category.sort_low_price')}</option>
-            <option value="precio-alto">{t('category.sort_high_price')}</option>
-          </select>
-
-          {(searchQuery || selectedType !== 'todos' || selectedDept !== 'todos') && (
-            <button
-              onClick={() => {
-                setSearchQuery('');
-                setSelectedType('todos');
-                setSelectedDept('todos');
-              }}
-              className="text-xs text-[#2b694d] dark:text-[#b0f1cc] hover:underline font-bold px-2 py-1 cursor-pointer"
-            >
-              {t('category.clear_filters')}
-            </button>
-          )}
-        </div>
-      </div>
+    </div>
 
       {/* Grid of Garments EXCLUSIVELY for this category */}
       {displayedGarments.length === 0 ? (
@@ -344,15 +349,34 @@ export const CategoriaView: React.FC<CategoriaViewProps> = ({
           </button>
         </div>
       ) : (
-        <div className="scroll-reveal grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div
+          className="scroll-reveal catalog-grid adaptive-catalog-grid garments-grid"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
+            gap: '1rem',
+            width: '100%',
+            maxWidth: '100%',
+            boxSizing: 'border-box',
+          }}
+        >
           {displayedGarments.map((garment) => (
             <div
               key={garment.id}
               onClick={() => onSelectGarment(garment)}
-              className="hover-elevate bg-white dark:bg-[#0e241c] rounded-3xl overflow-hidden border border-[#c1c8c2]/40 dark:border-[#2b694d]/40 hover:border-[#012d1d] transition-all hover:shadow-lg cursor-pointer flex flex-col justify-between group"
+              className="card hover-elevate bg-white dark:bg-[#0e241c] rounded-3xl overflow-hidden border border-[#c1c8c2]/40 dark:border-[#2b694d]/40 hover:border-[#012d1d] transition-all hover:shadow-lg cursor-pointer flex flex-col justify-between group"
+              style={{
+                maxWidth: '100%',
+                wordBreak: 'break-word',
+                overflowWrap: 'anywhere',
+                boxSizing: 'border-box',
+              }}
             >
               {/* Product Image & Badges */}
-              <div className="relative aspect-4/3 w-full bg-[#102b1e] overflow-hidden">
+              <div
+                className="relative aspect-4/3 card-media-fixed w-full bg-[#102b1e] overflow-hidden"
+                style={{ aspectRatio: '4/3' }}
+              >
                 <img
                   src={
                     garment.imageUrl ||
@@ -360,6 +384,7 @@ export const CategoriaView: React.FC<CategoriaViewProps> = ({
                   }
                   alt={garment.title}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  style={{ objectFit: 'cover' }}
                   onError={(e) => {
                     // Fallback to avoid broken image display
                     (e.currentTarget as HTMLImageElement).src =

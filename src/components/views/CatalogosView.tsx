@@ -41,83 +41,109 @@ export const CatalogosView: React.FC<CatalogosViewProps> = ({
   });
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 md:px-12 py-10 md:py-14 animate-in fade-in">
-      {/* Hero Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-8 border-b border-[#c1c8c2]/40 dark:border-[#2b694d]/40">
-        <div className="space-y-3 max-w-2xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#b0f1cc]/50 dark:bg-[#112920] text-[#002113] dark:text-[#b0f1cc] text-xs font-bold border border-[#2b694d]/20">
-            <span className="material-symbols-outlined text-sm">category</span>
-            <span>{language === 'en' ? 'Textile Classification by Garment Type' : 'Clasificación Textil por Tipo de Prenda'}</span>
+    <div className="w-full max-w-7xl mx-auto px-4 md:px-8 py-3 sm:py-5 animate-in fade-in catalog-container-fit">
+      {/* Contenedor Superior (Fold Area) - Encuadre visual completo */}
+      <div className="catalog-fold-container w-full mb-1">
+        {/* Hero Header - Proporcional y compacto */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5 pb-2.5 mb-2.5 border-b border-[#c1c8c2]/40 dark:border-[#2b694d]/40">
+          <div className="space-y-1 max-w-2xl">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#b0f1cc]/50 dark:bg-[#112920] text-[#002113] dark:text-[#b0f1cc] text-[11px] font-bold border border-[#2b694d]/20">
+              <span className="material-symbols-outlined text-xs">category</span>
+              <span>{language === 'en' ? 'Textile Classification by Garment Type' : 'Clasificación Textil por Tipo de Prenda'}</span>
+            </div>
+            <h1 className="font-headline text-2xl sm:text-3xl font-black text-[#012d1d] dark:text-white tracking-tight animate-title-entry">
+              {t('catalog.title')}
+            </h1>
+            <p className="text-xs sm:text-sm text-[#414844] dark:text-[#a7b8ae] leading-snug">
+              {t('catalog.desc')}
+            </p>
           </div>
-          <h1 className="font-headline text-3xl sm:text-4xl md:text-5xl font-black text-[#012d1d] dark:text-white tracking-tight animate-title-entry text-hover-lift">
-            {t('catalog.title')}
-          </h1>
-          <p className="text-sm sm:text-base text-[#414844] dark:text-[#a7b8ae] leading-relaxed">
-            {t('catalog.desc')}
-          </p>
         </div>
 
-        <div className="flex flex-wrap gap-3">
-          <button
-            onClick={() => onNavigate('publicar-prenda')}
-            className="btn-interactive bg-[#012d1d] hover:bg-[#2b694d] text-white font-bold text-xs sm:text-sm px-5 py-3 rounded-full transition-all shadow-sm flex items-center gap-2 active:scale-95 cursor-pointer"
-          >
-            <span className="material-symbols-outlined text-base">add_circle</span>
-            <span>{language === 'en' ? 'Post in catalog' : 'Publicar en catálogo'}</span>
-          </button>
-          <button
-            onClick={() => onNavigate('costureros')}
-            className="btn-interactive bg-[#faf9f4] dark:bg-[#112920] hover:bg-[#efeee9] dark:hover:bg-[#16382c] text-[#012d1d] dark:text-[#b0f1cc] border border-[#c1c8c2] dark:border-[#2b694d]/50 font-bold text-xs sm:text-sm px-5 py-3 rounded-full transition-all flex items-center gap-2 cursor-pointer"
-          >
-            <span className="material-symbols-outlined text-base">person_search</span>
-            <span>{t('hero.btn_costurero')}</span>
-          </button>
+        {/* Barra de acciones visible: Buscador, filtros y botón [ Publicar prenda ] en una sola fila responsiva */}
+        <div
+          className="catalog-actions-bar p-2.5 sm:p-3 bg-white dark:bg-[#0e241c] rounded-2xl border border-[#c1c8c2]/50 dark:border-[#2b694d]/40 shadow-xs"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '1rem',
+            flexWrap: 'wrap',
+            marginBottom: '1rem',
+          }}
+        >
+          {/* Lado izquierdo: Buscador y Accesos Rápidos */}
+          <div className="flex flex-1 flex-col sm:flex-row items-stretch sm:items-center gap-2 min-w-0">
+            <div className="relative w-full sm:w-64 shrink-0">
+              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#717973] dark:text-[#a7b8ae] text-base">
+                search
+              </span>
+              <input
+                type="text"
+                placeholder={t('catalog.search_placeholder')}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-8 pr-7 py-1.5 bg-[#faf9f4] dark:bg-[#112920] border border-[#c1c8c2]/70 dark:border-[#2b694d]/40 rounded-xl text-xs sm:text-sm text-[#012d1d] dark:text-white placeholder-[#717973] dark:placeholder-[#7b9487] focus:outline-none focus:ring-1 focus:ring-[#012d1d]"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-[#717973] hover:text-[#012d1d] cursor-pointer"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none text-xs">
+              <span className="text-[#717973] dark:text-[#a7b8ae] font-semibold text-[11px] whitespace-nowrap hidden lg:inline">
+                {t('catalog.shortcuts')}
+              </span>
+              {EXPANDED_CATEGORIES.slice(0, 5).map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => onSelectCategory(cat.name)}
+                  className="px-2.5 py-1 rounded-lg bg-[#faf9f4] dark:bg-[#112920] hover:bg-[#b0f1cc]/40 dark:hover:bg-[#16382c] border border-[#c1c8c2]/60 dark:border-[#2b694d]/40 hover:border-[#012d1d] text-[#012d1d] dark:text-[#b0f1cc] font-semibold whitespace-nowrap transition-all flex items-center gap-1 text-[11px] cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-xs text-[#2b694d] dark:text-[#b0f1cc]">{cat.icon}</span>
+                  <span>{tCategory(cat.name)}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Lado derecho: Botón [ Publicar prenda ] y Costureros */}
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => onNavigate('publicar-prenda')}
+              className="btn-interactive bg-[#012d1d] hover:bg-[#2b694d] text-white font-bold text-xs sm:text-sm px-4 py-2 rounded-xl transition-all shadow-sm flex items-center gap-1.5 active:scale-95 cursor-pointer whitespace-nowrap"
+            >
+              <span className="material-symbols-outlined text-base text-[#b0f1cc]">add_circle</span>
+              <span>{language === 'en' ? 'Post garment' : 'Publicar prenda'}</span>
+            </button>
+            <button
+              onClick={() => onNavigate('costureros')}
+              className="btn-interactive bg-[#faf9f4] dark:bg-[#112920] hover:bg-[#efeee9] dark:hover:bg-[#16382c] text-[#012d1d] dark:text-[#b0f1cc] border border-[#c1c8c2] dark:border-[#2b694d]/50 font-bold text-xs sm:text-sm px-3 py-2 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+            >
+              <span className="material-symbols-outlined text-base">person_search</span>
+              <span>{t('hero.btn_costurero')}</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Search and Category Quick Chips */}
-      <div className="my-8 flex flex-col gap-4">
-        <div className="relative max-w-md w-full">
-          <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-[#717973] dark:text-[#a7b8ae] text-xl">
-            search
-          </span>
-          <input
-            type="text"
-            placeholder={t('catalog.search_placeholder')}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-11 pr-4 py-3 bg-white dark:bg-[#0e241c] border border-[#c1c8c2] dark:border-[#2b694d]/40 rounded-2xl text-xs sm:text-sm text-[#012d1d] dark:text-white placeholder-[#717973] dark:placeholder-[#7b9487] focus:outline-none focus:ring-2 focus:ring-[#012d1d]/30"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-[#717973] hover:text-[#012d1d] cursor-pointer"
-            >
-              {language === 'en' ? 'Clear' : 'Borrar'}
-            </button>
-          )}
-        </div>
-
-        {/* Priority Quick Buttons */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none text-xs">
-          <span className="text-[#717973] dark:text-[#a7b8ae] font-semibold whitespace-nowrap">
-            {t('catalog.shortcuts')}
-          </span>
-          {EXPANDED_CATEGORIES.slice(0, 6).map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => onSelectCategory(cat.name)}
-              className="px-3.5 py-1.5 rounded-full bg-white dark:bg-[#0e241c] hover:bg-[#b0f1cc]/40 dark:hover:bg-[#16382c] border border-[#c1c8c2]/60 dark:border-[#2b694d]/40 hover:border-[#012d1d] text-[#012d1d] dark:text-[#b0f1cc] font-bold whitespace-nowrap transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-sm text-[#2b694d] dark:text-[#b0f1cc]">{cat.icon}</span>
-              <span>{tCategory(cat.name)}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Categories Grid */}
-      <div className="scroll-reveal grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Categories Grid - Cuadrícula proporcional */}
+      <div
+        className="scroll-reveal catalog-grid adaptive-catalog-grid"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
+          gap: '1rem',
+          width: '100%',
+          maxWidth: '100%',
+          boxSizing: 'border-box',
+        }}
+      >
         {filteredCategories.map((cat) => {
           const count = getItemCount(cat);
           const previews = getPreviewGarments(cat);
